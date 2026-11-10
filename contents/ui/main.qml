@@ -56,8 +56,10 @@ PlasmoidItem {
     readonly property real compactArtworkSize: Math.max(18, islandHeight - 8)
     readonly property real realIslandWidth: compactRepresentationItem && compactRepresentationItem.width > 0 ? compactRepresentationItem.width : islandWidth
     readonly property real realIslandHeight: compactRepresentationItem && compactRepresentationItem.height > 0 ? compactRepresentationItem.height : islandHeight
-    readonly property int popupWidth: popupMode === "control" ? (controlEditMode ? 620 : 430) : 294
-    readonly property int popupHeight: popupMode === "control" ? (controlEditMode ? 570 : 540) : 104
+    readonly property int mediaPopupWidth: 340
+    readonly property int popupWidth: popupMode === "control" ? (controlEditMode ? 620 : 430) : (popupActivityMode() === "media" ? mediaPopupWidth : 294)
+    readonly property int mediaPopupHeight: 120
+    readonly property int popupHeight: popupMode === "control" ? (controlEditMode ? 570 : 540) : (popupActivityMode() === "media" ? mediaPopupHeight : 104)
     readonly property int popupRadius: popupMode === "control" ? 34 : 26
     readonly property bool islandExpandsUp: Plasmoid.location === PlasmaCore.Types.BottomEdge
     readonly property bool islandExpandsDown: Plasmoid.location === PlasmaCore.Types.TopEdge

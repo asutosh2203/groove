@@ -8,6 +8,8 @@ Item {
     property string tooltipText: ""
     property bool emphasized: false
     property bool compact: false
+    property bool flat: false
+    property real glyphSize: 0
 
     signal clicked()
 
@@ -30,9 +32,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: mouse.pressed ? "#484852" : mouse.containsMouse || control.emphasized ? "#2d2d35" : "#17171d"
+        color: control.flat ? (mouse.pressed ? "#2a2a31" : mouse.containsMouse ? "#1b1b21" : "transparent") : mouse.pressed ? "#484852" : mouse.containsMouse || control.emphasized ? "#2d2d35" : "#17171d"
         border.color: control.activeFocus ? "#8e8eff" : "#34343c"
-        border.width: 1
+        border.width: control.flat && !control.activeFocus ? 0 : 1
     }
 
     Canvas {
@@ -63,7 +65,7 @@ Item {
         }
 
         anchors.centerIn: parent
-        width: control.compact ? (control.emphasized ? 15 : 14) : (control.emphasized ? 20 : 17)
+        width: control.glyphSize > 0 ? control.glyphSize : control.compact ? (control.emphasized ? 15 : 14) : (control.emphasized ? 20 : 17)
         height: width
         antialiasing: true
         onPaint: {

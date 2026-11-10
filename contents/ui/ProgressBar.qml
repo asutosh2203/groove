@@ -7,6 +7,7 @@ Item {
     property real to: 100
     property real value: 0
     property color accent: "#5ac8fa"
+    property color trackColor: "#24242b"
     readonly property real safeFrom: isFinite(Number(from)) ? Number(from) : 0
     readonly property real safeTo: isFinite(Number(to)) ? Number(to) : safeFrom + 1
     readonly property real safeValue: isFinite(Number(value)) ? Number(value) : safeFrom
@@ -17,7 +18,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: "#24242b"
+        color: control.trackColor
     }
 
     Rectangle {

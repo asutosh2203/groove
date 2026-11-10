@@ -4,10 +4,10 @@ Row {
     id: bars
 
     property bool playing: false
-    property color barColor: "#c026d3"
-    property int barWidth: 3
+    property color barColor: "#BFC2CC"
+    property real barWidth: 3
 
-    spacing: 3
+    spacing: 2
 
     Repeater {
         model: [0.45, 0.86, 0.58, 0.74, 0.36]
@@ -22,7 +22,7 @@ Row {
             anchors.verticalCenter: parent.verticalCenter
             radius: width / 2
             color: bars.barColor
-            opacity: bars.playing ? 1 : 0.48
+            opacity: bars.playing ? 0.55 : 0.3
 
             SequentialAnimation on level {
                 running: bars.playing
@@ -33,14 +33,14 @@ Row {
                 }
 
                 NumberAnimation {
-                    to: Math.max(0.28, 1 - modelData * 0.35)
-                    duration: 210 + index * 20
+                    to: Math.max(0.35, 1 - modelData * 0.25)
+                    duration: 400 + index * 40
                     easing.type: Easing.InOutSine
                 }
 
                 NumberAnimation {
                     to: modelData
-                    duration: 240 + index * 25
+                    duration: 440 + index * 45
                     easing.type: Easing.InOutSine
                 }
             }

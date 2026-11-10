@@ -7,103 +7,143 @@ Item {
 
     property var app: null
     readonly property bool hasPlayer: app && app.hasPlayer
+    readonly property bool hasLength: hasPlayer && app.player.length > 0
+    readonly property bool playing: hasPlayer && app.isPlaying
 
     RowLayout {
         anchors.fill: parent
-        spacing: 10
+        spacing: 12
 
         ArtworkVisual {
-            Layout.preferredWidth: 58
-            Layout.preferredHeight: 58
+            Layout.preferredWidth: 72
+            Layout.preferredHeight: 72
             Layout.alignment: Qt.AlignVCenter
             source: musicPage.hasPlayer ? musicPage.app.player.artUrl : ""
-            cornerRadius: 16
+            cornerRadius: 14
             fallbackMode: "media"
             progress: musicPage.hasPlayer ? musicPage.app.player.position / Math.max(1, musicPage.app.player.length) : 0
-            playing: musicPage.hasPlayer && musicPage.app.isPlaying
+            playing: musicPage.playing
         }
 
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 3
-
-            PlasmaLabel {
-                Layout.fillWidth: true
-                text: musicPage.hasPlayer ? musicPage.app.player.track || musicPage.app.player.identity || i18n("Media") : i18n("Media")
-                color: "#ffffff"
-                font.pixelSize: 13
-                font.weight: Font.Bold
-                elide: Text.ElideRight
-                maximumLineCount: 1
-            }
+            Layout.fillHeight: true
+            spacing: 0
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 5
+                spacing: 8
 
-                PlasmaLabel {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    text: musicPage.hasPlayer ? musicPage.app.player.artist || musicPage.app.player.album || musicPage.app.player.identity || "" : ""
-                    color: "#9d9da7"
-                    font.pixelSize: 9
-                    elide: Text.ElideRight
-                    maximumLineCount: 1
+                    spacing: 1
+
+                    PlasmaLabel {
+                        Layout.fillWidth: true
+                        text: musicPage.hasPlayer ? musicPage.app.player.track || musicPage.app.player.identity || i18n("Media") : i18n("Media")
+                        color: "#ffffff"
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                    }
+
+                    PlasmaLabel {
+                        Layout.fillWidth: true
+                        text: musicPage.hasPlayer ? musicPage.app.player.artist || musicPage.app.player.album || musicPage.app.player.identity || "" : ""
+                        color: "#8d8f99"
+                        font.pixelSize: 11
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                    }
                 }
 
                 AudioBars {
-                    Layout.preferredWidth: 27
+                    Layout.preferredWidth: 16
                     Layout.preferredHeight: 12
-                    playing: musicPage.hasPlayer && musicPage.app.isPlaying
-                    barWidth: 3
+                    Layout.alignment: Qt.AlignTop
+                    Layout.topMargin: 3
+                    playing: musicPage.playing
+                    barWidth: 1.5
                 }
+            }
+
+            Item {
+                Layout.fillHeight: true
             }
 
             ProgressBar {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 5
-                visible: musicPage.hasPlayer && musicPage.app.player.length > 0
+                Layout.preferredHeight: 3
+                opacity: musicPage.hasLength ? 1 : 0
                 from: 0
                 to: Math.max(1, musicPage.hasPlayer ? musicPage.app.player.length : 1)
                 value: musicPage.hasPlayer ? musicPage.app.player.position : 0
-                accent: "#5ac8fa"
+                accent: "#dcdde3"
+                trackColor: "#25252b"
             }
 
-            PlasmaLabel {
+            RowLayout {
                 Layout.fillWidth: true
-                visible: musicPage.hasPlayer && musicPage.app.player.length > 0
-                text: musicPage.hasPlayer ? musicPage.app.formatMediaProgress(musicPage.app.player.position, musicPage.app.player.length) : ""
-                color: "#777781"
-                font.pixelSize: 8
-                horizontalAlignment: Text.AlignRight
-            }
-        }
+                Layout.topMargin: 4
+                spacing: 0
 
-        RowLayout {
-            spacing: 5
+                PlasmaLabel {
+                    Layout.preferredWidth: 36
+                    text: musicPage.hasLength ? musicPage.app.formatMediaTime(musicPage.app.player.position) : ""
+                    color: "#9a9ca6"
+                    font.pixelSize: 10
+                    font.features: { "tnum": 1 }
+                }
 
-            IslandButton {
-                iconName: "media-skip-backward"
-                compact: true
-                tooltipText: i18n("Previous")
-                enabled: musicPage.hasPlayer && musicPage.app.player.canGoPrevious
-                onClicked: musicPage.app.mediaPrevious()
-            }
+                Item {
+                    Layout.fillWidth: true
+                }
 
-            IslandButton {
-                iconName: musicPage.hasPlayer && musicPage.app.isPlaying ? "media-playback-pause" : "media-playback-start"
-                compact: true
-                emphasized: true
-                tooltipText: musicPage.hasPlayer && musicPage.app.isPlaying ? i18n("Pause") : i18n("Play")
-                enabled: musicPage.hasPlayer && (musicPage.app.player.canPlay || musicPage.app.player.canPause)
-                onClicked: musicPage.app.mediaPlayPause()
-            }
+                IslandButton {
+                    Layout.rightMargin: 8
+                    iconName: "media-skip-backward"
+                    flat: true
+                    glyphSize: 17
+                    implicitWidth: 34
+                    tooltipText: i18n("Previous")
+                    enabled: musicPage.hasPlayer && musicPage.app.player.canGoPrevious
+                    onClicked: musicPage.app.mediaPrevious()
+                }
 
-            IslandButton {
-                iconName: "media-skip-forward"
-                compact: true
-                tooltipText: i18n("Next")
-                enabled: musicPage.hasPlayer && musicPage.app.player.canGoNext
-                onClicked: musicPage.app.mediaNext()
+                IslandButton {
+                    iconName: musicPage.playing ? "media-playback-pause" : "media-playback-start"
+                    flat: true
+                    glyphSize: 23
+                    implicitWidth: 40
+                    tooltipText: musicPage.playing ? i18n("Pause") : i18n("Play")
+                    enabled: musicPage.hasPlayer && (musicPage.app.player.canPlay || musicPage.app.player.canPause)
+                    onClicked: musicPage.app.mediaPlayPause()
+                }
+
+                IslandButton {
+                    Layout.leftMargin: 8
+                    iconName: "media-skip-forward"
+                    flat: true
+                    glyphSize: 17
+                    implicitWidth: 34
+                    tooltipText: i18n("Next")
+                    enabled: musicPage.hasPlayer && musicPage.app.player.canGoNext
+                    onClicked: musicPage.app.mediaNext()
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                PlasmaLabel {
+                    Layout.preferredWidth: 36
+                    text: musicPage.hasLength ? musicPage.app.formatMediaTime(musicPage.app.player.length) : ""
+                    color: "#9a9ca6"
+                    font.pixelSize: 10
+                    font.features: { "tnum": 1 }
+                    horizontalAlignment: Text.AlignRight
+                }
             }
         }
     }
