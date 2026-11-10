@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import ".."
+import "Tokens.js" as T
 
 Item {
     id: controlSlider
@@ -12,7 +13,6 @@ Item {
     property string valueText: ""
     property real value: 0
     property real toValue: 100
-    property color accent: "#5ac8fa"
     property string actionIconName: ""
     property string secondaryActionIconName: ""
     property string actionTooltip: ""
@@ -25,6 +25,15 @@ Item {
     readonly property real safeValue: Math.max(0, Math.min(safeToValue, app.finiteNumber(value, 0)))
     readonly property real ratio: safeValue / safeToValue
     readonly property real fillRatio: ratio
+    readonly property real cornerRadius: Math.min(T.radiusCard, Math.min(width, height) / 2)
+    // Whether the neutral fill reaches the value label / glyph so their
+    // colour can flip to stay readable on the light fill.
+    // Fill length along the slider axis, including the minimum rounded cap.
+    readonly property real fillExtent: vertical ? Math.max(fillRatio > 0 ? Math.min(width, height) : 0, height * fillRatio) : Math.max(fillRatio > 0 ? Math.min(width, height) : 0, width * fillRatio)
+    readonly property bool iconCovered: vertical ? fillExtent > iconSize + 10 : fillExtent > iconSize + 14
+    readonly property bool valueCovered: vertical ? fillExtent > height - 24 : fillExtent > 10 + valueLabelWidth + 4
+    readonly property real iconSize: Math.max(16, Math.min(26, width - 14, height - 14))
+    readonly property real valueLabelWidth: 40
     readonly property bool vertical: height > width * 1.25
     readonly property bool showActions: width >= 142 && height >= 72 && (actionIconName.length > 0 || secondaryActionIconName.length > 0)
     readonly property real keyboardStep: Math.max(1, Math.round(safeToValue / 20))
@@ -53,40 +62,39 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: Math.min(18, Math.min(width, height) / 2)
-        color: "#15161d"
-        border.color: controlSlider.activeFocus ? "#8e8eff" : "#2a2b35"
+        radius: controlSlider.cornerRadius
+        color: T.sliderTrack
+        border.color: controlSlider.activeFocus ? T.focusRing : "transparent"
         border.width: 1
+        clip: true
 
         Rectangle {
             anchors.left: parent.left
             anchors.bottom: parent.bottom
-            width: controlSlider.vertical ? parent.width : parent.width * controlSlider.fillRatio
-            height: controlSlider.vertical ? parent.height * controlSlider.fillRatio : parent.height
-            radius: parent.radius
-            color: controlSlider.accent
-            opacity: controlSlider.sliderAvailable ? (app.controlEditMode ? 0.72 : 0.92) : 0.16
+            width: controlSlider.vertical ? parent.width : controlSlider.fillExtent
+            height: controlSlider.vertical ? controlSlider.fillExtent : parent.height
+            radius: controlSlider.cornerRadius
+            color: T.fill
+            opacity: controlSlider.sliderAvailable ? (app.controlEditMode ? 0.7 : 1) : 0.16
 
-            Behavior on width { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
-            Behavior on height { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            color: "transparent"
-            border.color: "#31323d"
-            border.width: 1
+            Behavior on width { NumberAnimation { duration: T.motionSlider; easing.type: Easing.OutCubic } }
+            Behavior on height { NumberAnimation { duration: T.motionSlider; easing.type: Easing.OutCubic } }
         }
     }
 
     Kirigami.Icon {
-        anchors.centerIn: parent
-        width: Math.max(16, Math.min(34, parent.width - 14, parent.height - 14))
+        id: sliderGlyph
+
+        width: controlSlider.iconSize
         height: width
-        source: controlSlider.iconName
-        color: "#f8f8fb"
+        x: controlSlider.vertical ? Math.round((parent.width - width) / 2) : 12
+        y: controlSlider.vertical ? parent.height - height - 10 : Math.round((parent.height - height) / 2)
+        source: T.symbolic(controlSlider.iconName)
+        isMask: true
+        color: controlSlider.iconCovered && controlSlider.sliderAvailable ? T.iconOnFill : T.iconIdle
         opacity: controlSlider.sliderAvailable ? 1 : 0.42
+
+        Behavior on color { ColorAnimation { duration: T.motionFast } }
     }
 
     PlasmaLabel {
@@ -95,9 +103,10 @@ Item {
         anchors.top: parent.top
         anchors.margins: 10
         text: controlSlider.valueText
-        color: "#f8f8fb"
-        font.pixelSize: 11
-        font.weight: Font.Bold
+        color: controlSlider.valueCovered && controlSlider.sliderAvailable ? T.iconOnFill : T.textCaption
+        font.pixelSize: T.fontCaption
+        font.weight: Font.DemiBold
+        font.features: { "tnum": 1 }
     }
 
     QQC2.ToolTip.visible: hoverArea.containsMouse
@@ -142,6 +151,11 @@ Item {
             width: 26
             height: 26
             compact: true
+            restColor: T.raised
+            hoverColor: T.chip
+            pressedColor: T.cardPressed
+            outlineColor: T.border
+            focusColor: T.focusRing
             iconName: controlSlider.actionIconName
             tooltipText: controlSlider.actionTooltip
             onClicked: controlSlider.actionTriggered()
@@ -152,6 +166,11 @@ Item {
             width: 26
             height: 26
             compact: true
+            restColor: T.raised
+            hoverColor: T.chip
+            pressedColor: T.cardPressed
+            outlineColor: T.border
+            focusColor: T.focusRing
             iconName: controlSlider.secondaryActionIconName
             tooltipText: controlSlider.secondaryActionTooltip
             onClicked: controlSlider.secondaryActionTriggered()
@@ -164,9 +183,10 @@ Item {
         anchors.top: parent.top
         anchors.margins: 10
         text: controlSlider.valueText
-        color: "#f8f8fb"
-        font.pixelSize: 11
-        font.weight: Font.Bold
+        color: controlSlider.valueCovered && controlSlider.sliderAvailable ? T.iconOnFill : T.textCaption
+        font.pixelSize: T.fontCaption
+        font.weight: Font.DemiBold
+        font.features: { "tnum": 1 }
     }
 }
 

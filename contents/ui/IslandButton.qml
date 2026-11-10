@@ -10,6 +10,15 @@ Item {
     property bool compact: false
     property bool flat: false
     property real glyphSize: 0
+    // Optional styling hooks. Defaults reproduce the original appearance, so
+    // existing users of this component are unchanged.
+    property color focusColor: "#8e8eff"
+    property color restColor: "#17171d"
+    property color hoverColor: "#2d2d35"
+    property color pressedColor: "#484852"
+    property color outlineColor: "#34343c"
+    property color flatHoverColor: "#1b1b21"
+    property color flatPressedColor: "#2a2a31"
 
     signal clicked()
 
@@ -32,8 +41,8 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: control.flat ? (mouse.pressed ? "#2a2a31" : mouse.containsMouse ? "#1b1b21" : "transparent") : mouse.pressed ? "#484852" : mouse.containsMouse || control.emphasized ? "#2d2d35" : "#17171d"
-        border.color: control.activeFocus ? "#8e8eff" : "#34343c"
+        color: control.flat ? (mouse.pressed ? control.flatPressedColor : mouse.containsMouse ? control.flatHoverColor : "transparent") : mouse.pressed ? control.pressedColor : mouse.containsMouse || control.emphasized ? control.hoverColor : control.restColor
+        border.color: control.activeFocus ? control.focusColor : control.outlineColor
         border.width: control.flat && !control.activeFocus ? 0 : 1
     }
 
@@ -120,7 +129,7 @@ Item {
                 ctx.lineTo(w * 0.8, h * 0.42);
                 ctx.stroke();
                 roundFill(ctx, w * 0.28, h * 0.44, w * 0.44, h * 0.32, w * 0.05);
-                ctx.fillStyle = "#17171d";
+                ctx.fillStyle = control.restColor;
                 roundFill(ctx, w * 0.43, h * 0.56, w * 0.14, h * 0.2, w * 0.03);
                 ctx.fillStyle = "#ffffff";
                 ctx.beginPath();

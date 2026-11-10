@@ -3,6 +3,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import ".."
+import "Tokens.js" as T
 
 MouseArea {
     id: networkList
@@ -29,10 +30,12 @@ MouseArea {
 
     Rectangle {
         anchors.fill: parent
-        radius: Math.min(18, Math.min(width, height) / 2)
-        color: networkList.pressed ? "#242630" : networkList.containsMouse ? "#1a1b24" : networkList.networkStatus.connected ? "#171821" : "#15161d"
-        border.color: networkList.activeFocus ? "#8e8eff" : networkList.networkStatus.connected && !networkList.iconOnly ? Qt.rgba(0.35, 0.78, 0.98, 0.36) : "#2a2b35"
+        radius: Math.min(T.radiusCard, Math.min(width, height) / 2)
+        color: networkList.pressed ? T.cardPressed : networkList.containsMouse ? T.cardHover : "transparent"
+        border.color: networkList.activeFocus ? T.focusRing : "transparent"
         border.width: 1
+
+        Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
     }
 
     ColumnLayout {
@@ -48,23 +51,25 @@ MouseArea {
                 Layout.preferredWidth: 18
                 Layout.preferredHeight: 18
                 source: networkList.networkStatus.icon
-                color: networkList.networkStatus.connected ? "#5ac8fa" : "#8f9099"
+                isMask: true
+                color: networkList.networkStatus.connected ? T.iconActive : T.iconIdle
             }
             PlasmaLabel {
                 Layout.fillWidth: true
                 text: networkList.networkStatus.title
                 textFormat: Text.PlainText
-                color: "#f8f8fb"
-                font.pixelSize: 11
-                font.weight: Font.Bold
+                color: T.textPrimary
+                font.pixelSize: T.fontBody
+                font.weight: Font.DemiBold
                 elide: Text.ElideRight
             }
             PlasmaLabel {
                 visible: networkList.width >= 156 && networkList.networkStatus.signal >= 0
                 text: networkList.networkStatus.signal + "%"
-                color: "#5ac8fa"
-                font.pixelSize: 10
-                font.weight: Font.Bold
+                color: T.textCaption
+                font.pixelSize: T.fontCaption
+                font.weight: Font.DemiBold
+                font.features: { "tnum": 1 }
             }
             IslandButton {
                 visible: !networkList.compact
@@ -74,6 +79,10 @@ MouseArea {
                 iconName: "view-refresh"
                 tooltipText: typeof i18n === "function" ? i18n("Refresh network status") : "Refresh network status"
                 compact: true
+                flat: true
+                focusColor: T.focusRing
+                flatHoverColor: T.raised
+                flatPressedColor: T.chip
                 onClicked: networkList.app.refreshWifiNetworks()
             }
             IslandButton {
@@ -84,6 +93,10 @@ MouseArea {
                 iconName: "settings"
                 tooltipText: typeof i18n === "function" ? i18n("Network settings") : "Network settings"
                 compact: true
+                flat: true
+                focusColor: T.focusRing
+                flatHoverColor: T.raised
+                flatPressedColor: T.chip
                 onClicked: networkList.app.launchNetworkSettings()
             }
         }
@@ -92,9 +105,9 @@ MouseArea {
             Layout.fillWidth: true
             text: networkList.networkStatus.summary
             textFormat: Text.PlainText
-            color: "#f8f8fb"
-            font.pixelSize: networkList.compact ? 10 : 12
-            font.weight: Font.Bold
+            color: T.textPrimary
+            font.pixelSize: networkList.compact ? T.fontCaption : T.fontBody + 1
+            font.weight: Font.DemiBold
             elide: Text.ElideRight
             maximumLineCount: 1
         }
@@ -104,8 +117,8 @@ MouseArea {
             Layout.fillWidth: true
             text: networkList.networkStatus.detailLine
             textFormat: Text.PlainText
-            color: "#8f9099"
-            font.pixelSize: 10
+            color: T.textSecondary
+            font.pixelSize: T.fontCaption
             elide: Text.ElideRight
             maximumLineCount: 1
         }
@@ -124,14 +137,14 @@ MouseArea {
                 Layout.preferredWidth: 7
                 Layout.preferredHeight: 7
                 radius: 4
-                color: networkList.networkStatus.connected ? "#34c759" : "#ff453a"
+                color: networkList.networkStatus.connected ? T.fill : T.textTertiary
             }
 
             PlasmaLabel {
                 Layout.fillWidth: true
                 text: networkList.networkStatus.footer
-                color: "#777884"
-                font.pixelSize: 9
+                color: T.textTertiary
+                font.pixelSize: T.fontCaption
                 elide: Text.ElideRight
                 maximumLineCount: 1
             }
@@ -144,7 +157,8 @@ MouseArea {
         width: Math.max(20, Math.min(36, parent.width - 14, parent.height - 14))
         height: width
         source: networkList.networkStatus.icon
-        color: networkList.networkStatus.connected ? "#5ac8fa" : "#8f9099"
+        isMask: true
+        color: networkList.networkStatus.connected ? T.iconActive : T.iconIdle
     }
 
     QQC2.ToolTip {

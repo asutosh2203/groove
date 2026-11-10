@@ -4,6 +4,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.notificationmanager as NotificationManager
 import ".."
 import "../activities" as Activities
+import "Tokens.js" as T
 
 Item {
     id: notificationsContent
@@ -47,7 +48,8 @@ Item {
                 Layout.preferredWidth: 18
                 Layout.preferredHeight: 18
                 source: notificationsContent.notificationTotal > 0 ? "notifications" : "notifications-disabled"
-                color: notificationsContent.notificationTotal > 0 ? "#ff9f0a" : "#8f9099"
+                isMask: true
+                color: notificationsContent.notificationTotal > 0 ? T.iconActive : T.iconIdle
             }
 
             ColumnLayout {
@@ -57,9 +59,9 @@ Item {
                 PlasmaLabel {
                     Layout.fillWidth: true
                     text: i18n("Notifications")
-                    color: "#f8f8fb"
-                    font.pixelSize: 12
-                    font.weight: Font.Bold
+                    color: T.textPrimary
+                    font.pixelSize: T.fontBody + 1
+                    font.weight: Font.DemiBold
                     elide: Text.ElideRight
                     maximumLineCount: 1
                 }
@@ -67,8 +69,8 @@ Item {
                 PlasmaLabel {
                     Layout.fillWidth: true
                     text: app.notificationStatusText()
-                    color: "#8f9099"
-                    font.pixelSize: 9
+                    color: T.textSecondary
+                    font.pixelSize: T.fontCaption
                     elide: Text.ElideRight
                     maximumLineCount: 1
                 }
@@ -82,6 +84,10 @@ Item {
                 tooltipText: i18n("Clear notifications")
                 compact: true
                 enabled: notificationsContent.notificationTotal > 0
+                flat: true
+                focusColor: T.focusRing
+                flatHoverColor: T.raised
+                flatPressedColor: T.chip
                 onClicked: app.clearNotifications()
             }
 
@@ -92,6 +98,10 @@ Item {
                 iconName: "settings"
                 tooltipText: i18n("Notification settings")
                 compact: true
+                flat: true
+                focusColor: T.focusRing
+                flatHoverColor: T.raised
+                flatPressedColor: T.chip
                 onClicked: app.launchNotificationSettings()
             }
         }
@@ -119,10 +129,12 @@ Item {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: 12
-                    color: rowArea.pressed ? "#242630" : rowArea.containsMouse ? "#1a1b24" : "#11121a"
-                    border.color: rowArea.activeFocus ? "#8e8eff" : rowArea.containsMouse ? "#343542" : "#242631"
+                    radius: T.radiusInner
+                    color: rowArea.pressed ? T.cardPressed : rowArea.containsMouse ? T.rowHover : T.row
+                    border.color: rowArea.activeFocus ? T.focusRing : T.border
                     border.width: 1
+
+                    Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
                 }
 
                 RowLayout {
@@ -140,7 +152,7 @@ Item {
                             anchors.fill: parent
                             source: notificationsContent.detailed && app.notificationImagesEnabled ? app.notificationMainImage(modelData) : app.notificationAppIcon(modelData)
                             fallbackSource: app.notificationMainIcon(modelData)
-                            fallbackColor: app.notificationAccent(modelData)
+                            fallbackColor: T.textCaption
                             cornerRadius: Math.min(10, width / 2)
                         }
                     }
@@ -156,19 +168,20 @@ Item {
                             PlasmaLabel {
                                 Layout.fillWidth: true
                                 text: app.notificationTitle(modelData)
-                                color: "#f4f4f8"
-                                font.pixelSize: notificationsContent.detailed ? 11 : 10
-                                font.weight: Font.Bold
+                                color: T.textPrimary
+                                font.pixelSize: notificationsContent.detailed ? T.fontBody : T.fontCaption
+                                font.weight: Font.DemiBold
                                 elide: Text.ElideRight
                                 maximumLineCount: 1
                             }
 
                             Rectangle {
-                                visible: notificationsContent.detailed
+                                // Only urgent notifications get a coloured marker.
+                                visible: notificationsContent.detailed && app.notificationUrgency(modelData) >= NotificationManager.Notifications.CriticalUrgency
                                 Layout.preferredWidth: 6
                                 Layout.preferredHeight: 6
                                 radius: 3
-                                color: app.notificationAccent(modelData)
+                                color: T.critical
                             }
                         }
 
@@ -176,8 +189,8 @@ Item {
                             Layout.fillWidth: true
                             text: notificationsContent.detailed && app.notificationBody(modelData).length > 0 ? app.notificationBody(modelData) : app.notificationAppName(modelData)
                             textFormat: Text.PlainText
-                            color: "#9b9ca6"
-                            font.pixelSize: 9
+                            color: T.textSecondary
+                            font.pixelSize: T.fontCaption
                             wrapMode: Text.Wrap
                             elide: Text.ElideRight
                             maximumLineCount: notificationsContent.detailed ? Math.min(2, app.notificationBodyLines) : 1
@@ -191,6 +204,10 @@ Item {
                         iconName: "window-close"
                         tooltipText: i18n("Dismiss")
                         compact: true
+                        flat: true
+                        focusColor: T.focusRing
+                        flatHoverColor: T.raised
+                        flatPressedColor: T.chip
                         enabled: app.rowValue(modelData, NotificationManager.Notifications.ClosableRole, true)
                         onClicked: notificationsContent.closeRow(modelData)
                     }
@@ -198,13 +215,20 @@ Item {
             }
         }
 
+        // Absorb spare height so rows stack at the top instead of spreading out.
+        Item {
+            visible: notificationsContent.notificationTotal > 0
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+        }
+
         PlasmaLabel {
             visible: notificationsContent.notificationTotal <= 0
             Layout.fillWidth: true
             Layout.fillHeight: true
             text: i18n("Quiet")
-            color: "#777884"
-            font.pixelSize: 10
+            color: T.textTertiary
+            font.pixelSize: T.fontCaption
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
@@ -213,8 +237,8 @@ Item {
             visible: notificationsContent.notificationTotal > 0 && notificationsContent.overflowCount > 0
             Layout.fillWidth: true
             text: i18n("+%1 more", notificationsContent.overflowCount)
-            color: "#777884"
-            font.pixelSize: 9
+            color: T.textTertiary
+            font.pixelSize: T.fontCaption
             horizontalAlignment: Text.AlignRight
         }
     }
@@ -225,7 +249,8 @@ Item {
         width: Math.max(20, Math.min(34, parent.width - 14, parent.height - 14))
         height: width
         source: notificationsContent.notificationTotal > 0 ? "notifications" : "notifications-disabled"
-        color: notificationsContent.notificationTotal > 0 ? "#ff9f0a" : "#8f9099"
+        isMask: true
+        color: notificationsContent.notificationTotal > 0 ? T.iconActive : T.iconIdle
     }
 
     Rectangle {
@@ -236,16 +261,16 @@ Item {
         width: Math.max(16, countLabel.implicitWidth + 8)
         height: 16
         radius: 8
-        color: "#ff453a"
+        color: T.fill
 
         PlasmaLabel {
             id: countLabel
 
             anchors.centerIn: parent
             text: notificationsContent.notificationTotal
-            color: "#ffffff"
-            font.pixelSize: 9
-            font.weight: Font.Bold
+            color: T.iconOnFill
+            font.pixelSize: T.fontCaption
+            font.weight: Font.DemiBold
         }
     }
 }

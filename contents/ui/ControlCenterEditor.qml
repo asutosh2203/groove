@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import "controlcenter/Tokens.js" as T
 
 Item {
     id: editor
@@ -468,9 +469,9 @@ Item {
         PlasmaLabel {
             Layout.fillWidth: true
             text: app.controlEditMode ? app.controlLayoutDirty ? i18n("Edit control center *") : i18n("Edit control center") : i18n("Control center")
-            color: "#f8f8fb"
-            font.pixelSize: 13
-            font.weight: Font.Bold
+            color: T.textPrimary
+            font.pixelSize: T.fontHeader
+            font.weight: Font.DemiBold
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
@@ -479,9 +480,9 @@ Item {
             visible: app.controlEditMode
             Layout.maximumWidth: 150
             text: app.controlLayoutDirty ? i18n("Unsaved") : i18n("Saved")
-            color: app.controlLayoutDirty ? "#ffd60a" : "#8f9099"
-            font.pixelSize: 10
-            font.weight: Font.Bold
+            color: app.controlLayoutDirty ? T.textPrimary : T.textSecondary
+            font.pixelSize: T.fontCaption
+            font.weight: Font.DemiBold
             elide: Text.ElideRight
         }
 
@@ -489,6 +490,11 @@ Item {
             visible: !app.controlEditMode
             iconName: "document-edit"
             compact: true
+            restColor: T.raised
+            hoverColor: T.chip
+            pressedColor: T.cardPressed
+            outlineColor: T.border
+            focusColor: T.focusRing
             tooltipText: i18n("Edit layout")
             onClicked: app.beginControlEdit()
         }
@@ -497,6 +503,11 @@ Item {
             visible: app.controlEditMode
             iconName: "dialog-cancel"
             compact: true
+            restColor: T.raised
+            hoverColor: T.chip
+            pressedColor: T.cardPressed
+            outlineColor: T.border
+            focusColor: T.focusRing
             emphasized: app.controlLayoutDirty
             tooltipText: app.controlLayoutDirty ? i18n("Cancel changes") : i18n("Exit edit mode")
             onClicked: app.cancelControlEdit()
@@ -506,6 +517,11 @@ Item {
             visible: app.controlEditMode
             iconName: "restore-defaults"
             compact: true
+            restColor: T.raised
+            hoverColor: T.chip
+            pressedColor: T.cardPressed
+            outlineColor: T.border
+            focusColor: T.focusRing
             tooltipText: i18n("Reset draft to default")
             onClicked: app.resetControlLayout()
         }
@@ -514,6 +530,11 @@ Item {
             visible: app.controlEditMode
             iconName: "dialog-ok-apply"
             compact: true
+            restColor: T.raised
+            hoverColor: T.chip
+            pressedColor: T.cardPressed
+            outlineColor: T.border
+            focusColor: T.focusRing
             enabled: app.controlLayoutDirty
             emphasized: app.controlLayoutDirty
             tooltipText: app.controlLayoutDirty ? i18n("Save layout") : i18n("No changes")
@@ -605,10 +626,10 @@ Item {
         anchors.topMargin: 8
         anchors.bottom: parent.bottom
         width: app.controlEditMode ? 150 : 0
-        radius: 20
-        color: app.controlDropOnPalette ? "#171824" : "#0d0e14"
-        border.color: app.controlDropOnPalette ? "#8e8eff" : "#282933"
-        border.width: app.controlDropOnPalette ? 2 : 1
+        radius: T.radiusCard
+        color: app.controlDropOnPalette ? T.raised : T.card
+        border.color: app.controlDropOnPalette ? T.textCaption : T.border
+        border.width: 1
         clip: true
 
         Behavior on color {
@@ -623,16 +644,16 @@ Item {
             PlasmaLabel {
                 Layout.fillWidth: true
                 text: i18n("Modules")
-                color: "#f8f8fb"
-                font.pixelSize: 12
-                font.weight: Font.Bold
+                color: T.textPrimary
+                font.pixelSize: T.fontBody + 1
+                font.weight: Font.DemiBold
             }
 
             PlasmaLabel {
                 Layout.fillWidth: true
                 text: app.controlDropOnPalette ? i18n("Release to hide this tile.") : i18n("Drag into the grid. Drop here to hide.")
-                color: app.controlDropOnPalette ? "#d8d8ff" : "#8f9099"
-                font.pixelSize: 9
+                color: app.controlDropOnPalette ? T.textPrimary : T.textSecondary
+                font.pixelSize: T.fontCaption
                 wrapMode: Text.WordWrap
             }
 
@@ -671,10 +692,10 @@ Item {
         property string iconName: ""
         property bool invalid: false
 
-        radius: Math.min(18, Math.min(width, height) / 2)
-        color: invalid ? "#211516" : "#171824"
-        border.color: invalid ? "#ff453a" : "#8e8eff"
-        border.width: 2
+        radius: Math.min(T.radiusCard, Math.min(width, height) / 2)
+        color: invalid ? "#211516" : T.raised
+        border.color: invalid ? T.critical : T.borderStrong
+        border.width: 1
 
         Behavior on x {
             NumberAnimation { duration: 105; easing.type: Easing.OutCubic }
@@ -701,7 +722,7 @@ Item {
             anchors.margins: 5
             radius: Math.max(1, parent.radius - 5)
             color: "transparent"
-            border.color: control.invalid ? "#693234" : "#3e4052"
+            border.color: control.invalid ? "#693234" : T.border
             border.width: 1
             opacity: 0.85
         }
@@ -711,7 +732,7 @@ Item {
             width: Math.max(16, Math.min(30, parent.width - 18, parent.height - 18))
             height: width
             source: control.iconName
-            color: control.invalid ? "#ffb4ae" : "#d8d8ff"
+            color: control.invalid ? "#ffb4ae" : T.textCaption
             opacity: 0.62
         }
     }
@@ -725,9 +746,9 @@ Item {
         property bool fromPalette: true
 
         implicitHeight: 42
-        radius: 13
-        color: paletteDrag.pressed ? "#2b2c35" : app.controlDropOnPalette ? "#25263a" : "#171820"
-        border.color: paletteDrag.activeFocus ? "#8e8eff" : app.controlDropOnPalette ? "#8e8eff" : "#2a2b35"
+        radius: T.radiusInner
+        color: paletteDrag.pressed ? T.chip : app.controlDropOnPalette ? T.rowHover : T.row
+        border.color: paletteDrag.activeFocus ? T.focusRing : app.controlDropOnPalette ? T.borderStrong : T.border
         border.width: 1
         opacity: app.controlDragActive && app.controlDragSource === paletteModule ? 0.48 : 1
 
@@ -740,16 +761,17 @@ Item {
             Kirigami.Icon {
                 Layout.preferredWidth: 18
                 Layout.preferredHeight: 18
-                source: app.moduleIcon(paletteModule.moduleId)
-                color: "#f1f1f6"
+                source: T.symbolic(app.moduleIcon(paletteModule.moduleId))
+                isMask: true
+                color: T.iconIdle
             }
 
             PlasmaLabel {
                 Layout.fillWidth: true
                 text: paletteModule.title
-                color: "#f1f1f6"
-                font.pixelSize: 10
-                font.weight: Font.Bold
+                color: T.textPrimary
+                font.pixelSize: T.fontCaption
+                font.weight: Font.DemiBold
                 elide: Text.ElideRight
             }
         }

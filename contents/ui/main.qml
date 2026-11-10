@@ -60,7 +60,7 @@ PlasmoidItem {
     readonly property int popupWidth: popupMode === "control" ? (controlEditMode ? 620 : 430) : (popupActivityMode() === "media" ? mediaPopupWidth : 294)
     readonly property int mediaPopupHeight: 120
     readonly property int popupHeight: popupMode === "control" ? (controlEditMode ? 570 : 540) : (popupActivityMode() === "media" ? mediaPopupHeight : 104)
-    readonly property int popupRadius: popupMode === "control" ? 34 : 26
+    readonly property int popupRadius: popupMode === "control" ? 28 : 26
     readonly property bool islandExpandsUp: Plasmoid.location === PlasmaCore.Types.BottomEdge
     readonly property bool islandExpandsDown: Plasmoid.location === PlasmaCore.Types.TopEdge
     property bool dialogVisible: false
@@ -2470,8 +2470,8 @@ PlasmoidItem {
                 width: popupShadow.width
                 height: popupShadow.height
                 radius: popupShadow.radius
-                color: "#050507"
-                border.color: "#202027"
+                color: root.popupMode === "control" ? "#0b0b0e" : "#050507"
+                border.color: root.popupMode === "control" ? "#25252b" : "#202027"
                 border.width: 1
                 clip: true
 

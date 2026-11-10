@@ -3,6 +3,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import ".."
+import "Tokens.js" as T
 
 MouseArea {
     id: simpleTile
@@ -12,7 +13,8 @@ MouseArea {
     property string title: ""
     property string subtitle: ""
     property bool active: false
-    property color accent: "#5ac8fa"
+    // Only used for the single semantic state (e.g. low battery).
+    property bool critical: false
     property real progress: -1
     property string detailText: ""
     property string footerText: ""
@@ -25,6 +27,8 @@ MouseArea {
     readonly property bool showProgressFill: progress >= 0 && !iconOnly && detailed
     readonly property real contentMargin: iconOnly ? 6 : 8
     readonly property real safeProgress: app.clampNumber(progress, 0, 100)
+    readonly property color glyphColor: critical ? T.critical : active ? T.iconActive : T.iconIdle
+    readonly property color barColor: critical ? T.critical : T.fill
 
     signal triggered()
     signal actionTriggered()
@@ -43,38 +47,42 @@ MouseArea {
     onPressed: simpleTile.forceActiveFocus()
     onClicked: simpleTile.triggered()
 
+    // The module card already provides the surface and border; the tile only
+    // adds a hover/press overlay and the focus ring.
     Rectangle {
         anchors.fill: parent
-        radius: Math.min(18, Math.min(width, height) / 2)
-        color: !simpleTile.available ? "#12131a" : simpleTile.pressed ? "#242630" : simpleTile.containsMouse ? "#1a1b24" : simpleTile.active ? "#171821" : "#15161d"
-        border.color: simpleTile.activeFocus ? "#8e8eff" : simpleTile.active && !simpleTile.iconOnly ? Qt.rgba(simpleTile.accent.r, simpleTile.accent.g, simpleTile.accent.b, 0.42) : "#2a2b35"
+        radius: Math.min(T.radiusCard, Math.min(width, height) / 2)
+        color: !simpleTile.available ? "transparent" : simpleTile.pressed ? T.cardPressed : simpleTile.containsMouse ? T.cardHover : "transparent"
+        border.color: simpleTile.activeFocus ? T.focusRing : "transparent"
         border.width: 1
-    }
 
-    Rectangle {
-        visible: simpleTile.showProgressFill
-        anchors.left: parent.left
-        anchors.bottom: parent.bottom
-        width: parent.width
-        height: parent.height * simpleTile.safeProgress / 100
-        radius: Math.min(18, Math.min(parent.width, parent.height) / 2)
-        color: simpleTile.accent
-        opacity: 0.18
+        Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
     }
 
     RowLayout {
         anchors.fill: parent
         anchors.margins: simpleTile.contentMargin
         anchors.rightMargin: simpleTile.detailed && simpleTile.hasAction ? 40 : simpleTile.contentMargin
-        spacing: simpleTile.iconOnly ? 0 : 8
+        spacing: simpleTile.iconOnly ? 0 : 10
 
-        Kirigami.Icon {
+        Rectangle {
             Layout.alignment: Qt.AlignCenter
-            Layout.preferredWidth: Math.max(18, Math.min(simpleTile.detailed ? 30 : 34, simpleTile.width - simpleTile.contentMargin * 2, simpleTile.height - simpleTile.contentMargin * 2))
+            Layout.preferredWidth: Math.max(18, Math.min(simpleTile.detailed ? 34 : 32, simpleTile.width - simpleTile.contentMargin * 2, simpleTile.height - simpleTile.contentMargin * 2))
             Layout.preferredHeight: Layout.preferredWidth
-            source: simpleTile.iconName
-            color: simpleTile.active ? simpleTile.accent : "#9c9da8"
+            radius: width / 2
+            color: simpleTile.active || simpleTile.critical ? T.chip : T.raised
             opacity: simpleTile.available ? 1 : 0.45
+
+            Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+
+            Kirigami.Icon {
+                anchors.centerIn: parent
+                width: Math.round(parent.width * 0.56)
+                height: width
+                source: T.symbolic(simpleTile.iconName)
+                isMask: true
+                color: simpleTile.glyphColor
+            }
         }
 
         ColumnLayout {
@@ -85,9 +93,9 @@ MouseArea {
             PlasmaLabel {
                 Layout.fillWidth: true
                 text: simpleTile.title
-                color: "#f8f8fb"
-                font.pixelSize: simpleTile.tiny ? 10 : 11
-                font.weight: Font.Bold
+                color: T.textPrimary
+                font.pixelSize: simpleTile.tiny ? T.fontCaption : T.fontBody
+                font.weight: Font.DemiBold
                 elide: Text.ElideRight
                 maximumLineCount: 1
             }
@@ -95,8 +103,8 @@ MouseArea {
             PlasmaLabel {
                 Layout.fillWidth: true
                 text: simpleTile.subtitle
-                color: "#8f9099"
-                font.pixelSize: 9
+                color: T.textSecondary
+                font.pixelSize: T.fontCaption
                 elide: Text.ElideRight
                 maximumLineCount: 1
             }
@@ -105,8 +113,8 @@ MouseArea {
                 visible: simpleTile.detailed && simpleTile.detailText.length > 0
                 Layout.fillWidth: true
                 text: simpleTile.detailText
-                color: "#c9c9d2"
-                font.pixelSize: 10
+                color: T.textCaption
+                font.pixelSize: T.fontCaption
                 elide: Text.ElideRight
                 maximumLineCount: 1
             }
@@ -114,9 +122,9 @@ MouseArea {
             Rectangle {
                 visible: simpleTile.showProgressFill
                 Layout.fillWidth: true
-                Layout.preferredHeight: 4
+                Layout.preferredHeight: 3
                 radius: 2
-                color: "#2a2b35"
+                color: T.track
 
                 Rectangle {
                     anchors.left: parent.left
@@ -124,9 +132,9 @@ MouseArea {
                     anchors.bottom: parent.bottom
                     width: parent.width * simpleTile.safeProgress / 100
                     radius: parent.radius
-                    color: simpleTile.accent
+                    color: simpleTile.barColor
 
-                    Behavior on width { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                    Behavior on width { NumberAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
                 }
             }
 
@@ -134,8 +142,8 @@ MouseArea {
                 visible: simpleTile.detailed && simpleTile.footerText.length > 0
                 Layout.fillWidth: true
                 text: simpleTile.footerText
-                color: "#777884"
-                font.pixelSize: 9
+                color: T.textTertiary
+                font.pixelSize: T.fontCaption
                 elide: Text.ElideRight
                 maximumLineCount: 1
             }
@@ -150,6 +158,10 @@ MouseArea {
         width: 26
         height: 26
         compact: true
+        flat: true
+        focusColor: T.focusRing
+        flatHoverColor: T.raised
+        flatPressedColor: T.chip
         iconName: simpleTile.actionIconName
         tooltipText: typeof i18n === "function" ? i18n("Open settings") : "Open settings"
         onClicked: simpleTile.actionTriggered()

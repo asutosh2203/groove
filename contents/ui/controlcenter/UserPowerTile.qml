@@ -3,6 +3,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Effects
 import org.kde.kirigami as Kirigami
 import ".."
+import "Tokens.js" as T
 
 Item {
     id: userPowerContent
@@ -27,7 +28,7 @@ Item {
         x: userPowerContent.narrow ? Math.round((parent.width - width) / 2) : userPowerContent.pad
         y: userPowerContent.narrow && !userPowerContent.shortTile ? userPowerContent.pad : Math.round((parent.height - height) / 2)
         radius: width / 2
-        color: "#24252e"
+        color: T.raised
         clip: true
 
         Image {
@@ -58,7 +59,8 @@ Item {
             width: 22
             height: 22
             source: "user-identity"
-            color: "#f8f8fb"
+            isMask: true
+            color: T.iconIdle
             visible: !profileAvatarImage.visible
         }
     }
@@ -74,9 +76,9 @@ Item {
         PlasmaLabel {
             width: parent.width
             text: app.systemUsername || i18n("User")
-            color: "#f8f8fb"
-            font.pixelSize: userPowerContent.shortTile ? 10 : userPowerContent.compact ? 11 : 13
-            font.weight: Font.Bold
+            color: T.textPrimary
+            font.pixelSize: userPowerContent.shortTile ? T.fontCaption : userPowerContent.compact ? T.fontBody : T.fontTitle
+            font.weight: Font.DemiBold
             elide: Text.ElideRight
             maximumLineCount: 1
         }
@@ -85,8 +87,8 @@ Item {
             visible: !userPowerContent.compact || userPowerContent.height >= 34
             width: parent.width
             text: app.systemHostname || i18n("KDE Plasma")
-            color: "#8f9099"
-            font.pixelSize: userPowerContent.shortTile ? 8 : userPowerContent.compact ? 9 : 10
+            color: T.textSecondary
+            font.pixelSize: userPowerContent.shortTile ? T.fontCaption - 1 : T.fontCaption
             elide: Text.ElideRight
             maximumLineCount: 1
         }
@@ -101,6 +103,11 @@ Item {
         visible: !userPowerContent.shortTile && (!userPowerContent.narrow || parent.height >= profileAvatarFrame.height + height + userPowerContent.pad * 3)
         iconName: "system-shutdown"
         compact: true
+        restColor: T.raised
+        hoverColor: T.chip
+        pressedColor: T.cardPressed
+        outlineColor: T.border
+        focusColor: T.focusRing
         tooltipText: i18n("Power options")
         onClicked: powerMenu.open()
 
@@ -128,10 +135,10 @@ Item {
         y: parent.height - height - userPowerContent.pad
         spacing: 7
 
-        IslandButton { width: 28; height: 28; iconName: "system-lock-screen"; compact: true; tooltipText: i18n("Lock"); onClicked: app.runPowerAction("lock") }
-        IslandButton { width: 28; height: 28; iconName: "system-suspend"; compact: true; tooltipText: i18n("Sleep"); onClicked: app.runPowerAction("sleep") }
-        IslandButton { width: 28; height: 28; iconName: "preferences-desktop-theme-global"; compact: true; tooltipText: i18n("Appearance"); onClicked: app.launchAppearanceSettings() }
-        IslandButton { width: 28; height: 28; iconName: "systemsettings"; compact: true; tooltipText: i18n("System Settings"); onClicked: app.launchSystemSettings() }
+        IslandButton { width: 28; height: 28; iconName: "system-lock-screen"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Lock"); onClicked: app.runPowerAction("lock") }
+        IslandButton { width: 28; height: 28; iconName: "system-suspend"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Sleep"); onClicked: app.runPowerAction("sleep") }
+        IslandButton { width: 28; height: 28; iconName: "preferences-desktop-theme-global"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Appearance"); onClicked: app.launchAppearanceSettings() }
+        IslandButton { width: 28; height: 28; iconName: "systemsettings"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("System Settings"); onClicked: app.launchSystemSettings() }
     }
 }
 

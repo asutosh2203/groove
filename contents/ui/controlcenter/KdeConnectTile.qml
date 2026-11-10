@@ -3,6 +3,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import ".."
+import "Tokens.js" as T
 
 MouseArea {
     id: kdeTile
@@ -41,10 +42,12 @@ MouseArea {
 
     Rectangle {
         anchors.fill: parent
-        radius: Math.min(18, Math.min(width, height) / 2)
-        color: kdeTile.pressed ? "#242630" : kdeTile.containsMouse ? "#1a1b24" : kdeTile.hasDevices ? "#171821" : "#15161d"
-        border.color: kdeTile.activeFocus ? "#8e8eff" : kdeTile.hasDevices && !kdeTile.iconOnly ? Qt.rgba(0.35, 0.78, 0.98, 0.42) : "#2a2b35"
+        radius: Math.min(T.radiusCard, Math.min(width, height) / 2)
+        color: kdeTile.pressed ? T.cardPressed : kdeTile.containsMouse ? T.cardHover : "transparent"
+        border.color: kdeTile.activeFocus ? T.focusRing : "transparent"
         border.width: 1
+
+        Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
     }
 
     ColumnLayout {
@@ -60,8 +63,9 @@ MouseArea {
             Kirigami.Icon {
                 Layout.preferredWidth: 19
                 Layout.preferredHeight: 19
-                source: "kdeconnect"
-                color: kdeTile.reachableDevices > 0 ? "#5ac8fa" : kdeTile.hasDevices ? "#8e8eff" : "#8f9099"
+                source: T.symbolic("kdeconnect")
+                isMask: true
+                color: kdeTile.reachableDevices > 0 ? T.iconActive : T.iconIdle
             }
 
             ColumnLayout {
@@ -71,9 +75,9 @@ MouseArea {
                 PlasmaLabel {
                     Layout.fillWidth: true
                     text: i18n("KDE Connect")
-                    color: "#f8f8fb"
-                    font.pixelSize: 11
-                    font.weight: Font.Bold
+                    color: T.textPrimary
+                    font.pixelSize: T.fontBody
+                    font.weight: Font.DemiBold
                     elide: Text.ElideRight
                     maximumLineCount: 1
                 }
@@ -81,8 +85,8 @@ MouseArea {
                 PlasmaLabel {
                     Layout.fillWidth: true
                     text: kdeTile.reachableDevices > 0 ? i18np("%1 reachable device", "%1 reachable devices", kdeTile.reachableDevices) : app.kdeConnectSummary()
-                    color: "#8f9099"
-                    font.pixelSize: 9
+                    color: T.textSecondary
+                    font.pixelSize: T.fontCaption
                     elide: Text.ElideRight
                     maximumLineCount: 1
                 }
@@ -94,6 +98,10 @@ MouseArea {
                 iconName: "view-refresh"
                 tooltipText: i18n("Refresh devices")
                 compact: true
+                flat: true
+                focusColor: T.focusRing
+                flatHoverColor: T.raised
+                flatPressedColor: T.chip
                 onClicked: app.refreshKdeConnectDevices()
             }
 
@@ -104,6 +112,10 @@ MouseArea {
                 iconName: "settings"
                 tooltipText: i18n("Open KDE Connect")
                 compact: true
+                flat: true
+                focusColor: T.focusRing
+                flatHoverColor: T.raised
+                flatPressedColor: T.chip
                 onClicked: app.launchKdeConnectSettings()
             }
         }
@@ -114,9 +126,9 @@ MouseArea {
             delegate: Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: kdeTile.detailed ? 42 : 30
-                radius: 12
-                color: "#11121a"
-                border.color: modelData && modelData.reachable ? Qt.rgba(0.35, 0.78, 0.98, 0.32) : "#242631"
+                radius: T.radiusInner
+                color: T.row
+                border.color: T.border
                 border.width: 1
 
                 RowLayout {
@@ -128,7 +140,7 @@ MouseArea {
                         Layout.preferredWidth: 7
                         Layout.preferredHeight: 7
                         radius: 4
-                        color: modelData && modelData.reachable ? "#34c759" : modelData && modelData.paired ? "#8e8eff" : "#777884"
+                        color: modelData && modelData.reachable ? T.fill : modelData && modelData.paired ? T.textCaption : T.textTertiary
                     }
 
                     ColumnLayout {
@@ -138,9 +150,9 @@ MouseArea {
                         PlasmaLabel {
                             Layout.fillWidth: true
                             text: kdeTile.deviceText(modelData, "name", i18n("Device"))
-                            color: "#f4f4f8"
-                            font.pixelSize: 10
-                            font.weight: Font.Bold
+                            color: T.textPrimary
+                            font.pixelSize: T.fontBody
+                            font.weight: Font.DemiBold
                             elide: Text.ElideRight
                             maximumLineCount: 1
                         }
@@ -149,8 +161,8 @@ MouseArea {
                             visible: kdeTile.detailed
                             Layout.fillWidth: true
                             text: kdeTile.deviceText(modelData, "status", i18n("available"))
-                            color: "#8f9099"
-                            font.pixelSize: 9
+                            color: T.textSecondary
+                            font.pixelSize: T.fontCaption
                             elide: Text.ElideRight
                             maximumLineCount: 1
                         }
@@ -166,6 +178,10 @@ MouseArea {
                             iconName: "dialog-information"
                             tooltipText: i18n("Ping device")
                             compact: true
+                            flat: true
+                            focusColor: T.focusRing
+                            flatHoverColor: T.raised
+                            flatPressedColor: T.chip
                             onClicked: app.runKdeConnectDeviceAction(kdeTile.deviceText(modelData, "id", ""), "ping")
                         }
 
@@ -175,6 +191,10 @@ MouseArea {
                             iconName: "notifications"
                             tooltipText: i18n("Ring device")
                             compact: true
+                            flat: true
+                            focusColor: T.focusRing
+                            flatHoverColor: T.raised
+                            flatPressedColor: T.chip
                             onClicked: app.runKdeConnectDeviceAction(kdeTile.deviceText(modelData, "id", ""), "ring")
                         }
 
@@ -185,6 +205,10 @@ MouseArea {
                             iconName: "folder"
                             tooltipText: i18n("Mount files")
                             compact: true
+                            flat: true
+                            focusColor: T.focusRing
+                            flatHoverColor: T.raised
+                            flatPressedColor: T.chip
                             onClicked: app.runKdeConnectDeviceAction(kdeTile.deviceText(modelData, "id", ""), "mount")
                         }
                     }
@@ -197,8 +221,8 @@ MouseArea {
             Layout.fillWidth: true
             Layout.fillHeight: true
             text: i18n("No devices found")
-            color: "#777884"
-            font.pixelSize: 10
+            color: T.textTertiary
+            font.pixelSize: T.fontCaption
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
@@ -207,8 +231,8 @@ MouseArea {
             visible: kdeTile.hasDevices && kdeTile.totalDevices > kdeTile.visibleDeviceCount
             Layout.fillWidth: true
             text: i18n("+%1 more", kdeTile.totalDevices - kdeTile.visibleDeviceCount)
-            color: "#777884"
-            font.pixelSize: 9
+            color: T.textTertiary
+            font.pixelSize: T.fontCaption
             horizontalAlignment: Text.AlignRight
         }
     }
@@ -218,8 +242,9 @@ MouseArea {
         anchors.centerIn: parent
         width: Math.max(20, Math.min(36, parent.width - 14, parent.height - 14))
         height: width
-        source: "kdeconnect"
-        color: kdeTile.reachableDevices > 0 ? "#5ac8fa" : kdeTile.hasDevices ? "#8e8eff" : "#8f9099"
+        source: T.symbolic("kdeconnect")
+        isMask: true
+        color: kdeTile.reachableDevices > 0 ? T.iconActive : T.iconIdle
     }
 
     Rectangle {
@@ -230,7 +255,7 @@ MouseArea {
         width: 8
         height: 8
         radius: 4
-        color: kdeTile.reachableDevices > 0 ? "#34c759" : "#8e8eff"
+        color: kdeTile.reachableDevices > 0 ? T.fill : T.textTertiary
     }
 
     QQC2.ToolTip.visible: kdeTile.containsMouse || kdeTile.activeFocus

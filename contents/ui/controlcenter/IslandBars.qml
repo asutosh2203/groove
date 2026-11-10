@@ -4,7 +4,7 @@ Row {
     id: islandBars
 
     property bool playing: false
-    property color color: "#c026d3"
+    property color color: "#9a9ca6"
 
     spacing: 4
 

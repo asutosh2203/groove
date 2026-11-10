@@ -1,6 +1,7 @@
 import QtQuick
 import org.kde.plasma.private.brightnesscontrolplugin as Brightness
 import ".."
+import "Tokens.js" as T
 
 Rectangle {
     id: moduleCard
@@ -21,9 +22,9 @@ Rectangle {
     property real gridGap: 8
     property bool fromPalette: false
 
-    radius: 18
-    color: "#101116"
-    border.color: app.controlEditMode ? "#4b4c58" : "#202129"
+    radius: T.radiusCard
+    color: T.card
+    border.color: app.controlEditMode ? T.borderStrong : T.border
     border.width: 1
     clip: true
     opacity: app.controlDragActive && app.controlDragSource === moduleCard ? 0 : 1
@@ -81,7 +82,7 @@ Rectangle {
         anchors.fill: parent
         visible: app.controlEditMode
         color: "transparent"
-        border.color: "#7a7b88"
+        border.color: T.borderStrong
         border.width: 1
         radius: parent.radius
     }
@@ -120,8 +121,8 @@ Rectangle {
         anchors.top: parent.top
         anchors.margins: 7
         radius: 9
-        color: "#1b1c24"
-        border.color: "#42434d"
+        color: T.raised
+        border.color: T.borderStrong
         border.width: 1
         width: moduleLabel.implicitWidth + 16
         height: 22
@@ -130,9 +131,9 @@ Rectangle {
             id: moduleLabel
             anchors.centerIn: parent
             text: app.moduleInfo(moduleCard.moduleId).name
-            color: "#d8d8e2"
-            font.pixelSize: 9
-            font.weight: Font.Bold
+            color: T.textCaption
+            font.pixelSize: T.fontCaption
+            font.weight: Font.DemiBold
         }
     }
 
@@ -191,7 +192,7 @@ Rectangle {
             onPaint: {
                 const ctx = getContext("2d");
                 ctx.reset();
-                ctx.strokeStyle = "#8e8eff";
+                ctx.strokeStyle = "#9a9ca6";
                 ctx.lineWidth = 2;
                 for (let i = 0; i < 3; ++i) {
                     ctx.beginPath();
@@ -221,7 +222,6 @@ Rectangle {
             }
             value: app.systemVolumePercent()
             toValue: 150
-            accent: "#5ac8fa"
             sliderEnabled: app.defaultSink() !== null
             actionIconName: {
                 const sink = app.defaultSink();
@@ -246,7 +246,6 @@ Rectangle {
             iconName: value <= 1 ? "brightness-low" : value < 55 ? "brightness-medium" : "brightness-high"
             valueText: screenBrightnessSource.isBrightnessAvailable ? app.displayedScreenBrightnessPercent() + "%" : "--"
             value: app.displayedScreenBrightnessPercent()
-            accent: "#f5d64a"
             sliderEnabled: screenBrightnessSource.isBrightnessAvailable
             actionIconName: "video-display"
             actionTooltip: i18n("Display settings")
@@ -266,7 +265,6 @@ Rectangle {
             subtitle: app.wifiPrimaryNetwork()
             active: connectionsSource.wirelessEnabled
             available: connectionsSource.wirelessHwEnabled
-            accent: "#0a84ff"
             progress: app.wifiSignalPercent()
             detailText: app.wifiTitle()
             footerText: connectionsSource.wirelessHwEnabled ? (connectionsSource.wirelessEnabled ? i18n("Click to turn off") : i18n("Click to turn on")) : i18n("No adapter")
@@ -287,7 +285,6 @@ Rectangle {
             subtitle: app.bluetoothSummary()
             active: app.bluetoothPowered && app.bluetoothAvailable
             available: app.bluetoothAvailable
-            accent: "#0a84ff"
             detailText: app.bluetoothDetail()
             footerText: app.bluetoothAvailable ? (app.bluetoothPowered ? i18n("Click to turn off") : i18n("Click to turn on")) : i18n("Open settings")
             actionIconName: "settings"
@@ -304,7 +301,6 @@ Rectangle {
             subtitle: app.bluetoothAvailable ? app.bluetoothSummary() : i18n("No adapter")
             active: app.bluetoothPowered && app.bluetoothAvailable
             available: app.bluetoothAvailable
-            accent: "#5ac8fa"
             detailText: app.bluetoothDetail()
             footerText: app.bluetoothAvailable ? i18n("Open Bluetooth") : i18n("Open settings")
             onTriggered: app.launchBluetoothDiscovery()
@@ -318,7 +314,7 @@ Rectangle {
             title: batterySource.hasInternalBatteries ? (batterySource.pluggedIn ? i18n("Charging") : i18n("Battery")) : i18n("Power")
             subtitle: batterySource.hasInternalBatteries ? app.batteryText() : i18n("Desktop")
             active: batterySource.pluggedIn
-            accent: batterySource.percent <= 20 && batterySource.hasInternalBatteries ? "#ff453a" : "#34c759"
+            critical: batterySource.percent <= 20 && batterySource.hasInternalBatteries
             progress: batterySource.hasInternalBatteries ? batterySource.percent : 100
             detailText: app.batteryText()
             footerText: batterySource.hasInternalBatteries ? (batterySource.pluggedIn ? i18n("Plugged in") : i18n("Discharging")) : i18n("AC power")
@@ -334,7 +330,7 @@ Rectangle {
             title: app.batteryText()
             subtitle: batterySource.hasInternalBatteries ? (batterySource.pluggedIn ? i18n("Charging") : i18n("Remaining")) : i18n("Power")
             active: batterySource.pluggedIn
-            accent: batterySource.percent <= 20 && batterySource.hasInternalBatteries ? "#ff453a" : "#34c759"
+            critical: batterySource.percent <= 20 && batterySource.hasInternalBatteries
             progress: batterySource.hasInternalBatteries ? batterySource.percent : 100
             detailText: batterySource.pluggedIn ? i18n("Charging") : i18n("Power")
             actionIconName: "settings"
@@ -349,7 +345,6 @@ Rectangle {
             title: app.powerProfileTitle()
             subtitle: i18n("Power mode")
             active: true
-            accent: "#ffd60a"
             detailText: powerProfilesSource.profiles && powerProfilesSource.profiles.length > 1 ? i18n("Click to cycle") : i18n("Current profile")
             footerText: app.powerProfileTitle()
             actionIconName: "settings"
@@ -365,7 +360,6 @@ Rectangle {
             title: Brightness.DarkModeControl.darkMode ? i18n("Dark") : i18n("Light")
             subtitle: i18n("Appearance")
             active: Brightness.DarkModeControl.darkMode
-            accent: "#bf5af2"
             detailText: i18n("Desktop color scheme")
             footerText: i18n("Click to switch")
             onTriggered: app.toggleAppearanceMode()
@@ -379,7 +373,6 @@ Rectangle {
             title: i18n("Theme")
             subtitle: i18n("Global themes")
             active: false
-            accent: "#bf5af2"
             detailText: i18n("Open KDE themes")
             onTriggered: app.launchAppearanceSettings()
         }
@@ -398,7 +391,6 @@ Rectangle {
             title: i18n("Settings")
             subtitle: i18n("System")
             active: false
-            accent: "#8e8eff"
             detailText: i18n("Open System Settings")
             onTriggered: app.launchSystemSettings()
         }
