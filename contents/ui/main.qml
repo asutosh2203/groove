@@ -47,7 +47,7 @@ PlasmoidItem {
     readonly property string keyboardLayoutDisplayName: keyboardLayoutNames ? keyboardLayoutNames.displayName || keyboardLayoutShortName : keyboardLayoutShortName
     readonly property string keyboardLayoutLongName: keyboardLayoutNames ? keyboardLayoutNames.longName || keyboardLayoutDisplayName : keyboardLayoutDisplayName
     readonly property int notificationUnreadCount: notifications.unreadNotificationsCount
-    readonly property bool hasActivity: keyboardAnnouncementActive || jobActivityEnabled && hasJobs || mediaActivityEnabled && hasPlayer || notificationActivityEnabled && hasNotifications
+    readonly property bool hasActivity: keyboardAnnouncementActive || jobActivityEnabled && hasJobs || mediaActivityEnabled && hasPlayer || noticeActivityActive
     readonly property int panelSlot: inPanel && parent ? Math.max(24, Math.min(36, (verticalPanel ? parent.width : parent.height) - 6)) : 30
     readonly property int islandHeight: Math.max(24, Math.min(36, panelSlot))
     readonly property int idleIslandWidth: Math.round(islandHeight * 2.7)
@@ -91,6 +91,11 @@ PlasmoidItem {
     property int clickButton: Qt.NoButton
     property int mediaPlayerRevision: 0
     property int notificationRevision: 0
+    // Identity of the notification the island is currently presenting as a
+    // temporary activity. History alone must not keep the activity alive.
+    property var activeNoticeId: null
+    property bool clearingNotifications: false
+    readonly property bool noticeActivityActive: notificationActivityEnabled && noticeRowFor(activeNoticeId) >= 0
     property bool keyboardAnnouncementActive: false
     property int lastUnreadNotificationsCount: 0
     property int lastActiveJobsCount: 0
@@ -390,9 +395,66 @@ PlasmoidItem {
         return finiteNumber(rowValue(row, NotificationManager.Notifications.UrgencyRole, 1), 1);
     }
 
+    function noticeRowFor(id) {
+        if (id === null || id === undefined)
+            return -1;
+        const wanted = String(id);
+        for (let i = 0; i < notifications.count; ++i) {
+            if (rowValue(i, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType) !== NotificationManager.Notifications.NotificationType)
+                continue;
+            if (String(rowValue(i, NotificationManager.Notifications.IdRole, "")) === wanted)
+                return i;
+        }
+        return -1;
+    }
+
     function notificationLatestRow() {
+        const tracked = noticeRowFor(activeNoticeId);
+        if (tracked >= 0)
+            return tracked;
         const rows = notificationRows(1);
         return rows.length > 0 ? rows[0] : -1;
+    }
+
+    // The model only exposes a limited window of history, so older entries can
+    // slide in as rows are removed. Only recently created notifications count
+    // as arrivals.
+    function isFreshNotification(row) {
+        if (clearingNotifications)
+            return false;
+        const created = rowValue(row, NotificationManager.Notifications.CreatedRole, null);
+        if (!created)
+            return true;
+        const t = created.getTime ? created.getTime() : Number(created);
+        return !isFinite(t) || Math.abs(Date.now() - t) < 15000;
+    }
+
+    // A newer notification arrived: present it and (re)start its lifetime.
+    function noticeArrived(row) {
+        if (row === undefined || row < 0)
+            return ;
+        activeNoticeId = rowValue(row, NotificationManager.Notifications.IdRole, null);
+        if (activeNoticeId === null)
+            return ;
+        noticeLifetimeTimer.interval = notificationPopupDurationMs;
+        noticeLifetimeTimer.restart();
+        bump("notice");
+    }
+
+    // Drop the notification activity without touching media, jobs or history.
+    function dismissNoticeActivity(closePopup) {
+        noticeLifetimeTimer.stop();
+        const wasShowing = activeNoticeId !== null;
+        activeNoticeId = null;
+        if (wasShowing && closePopup && dialogVisible && popupMode === "activity" && activityPopupMode === "notice")
+            closeIsland();
+    }
+
+    // Called after the model changes: if the presented notification was
+    // removed (single dismissal, Clear All, expiry), dismiss its activity.
+    function syncNoticeActivity() {
+        if (activeNoticeId !== null && noticeRowFor(activeNoticeId) < 0)
+            dismissNoticeActivity(true);
     }
 
     function notificationStatusText() {
@@ -1474,15 +1536,31 @@ PlasmoidItem {
         controlResizeHeightUnits = 1;
     }
 
-    function clearNotifications() {
+    // Close every closable notification currently in the model window. Returns
+    // how many were closed.
+    function closeNotificationRows() {
+        let closed = 0;
         for (let i = notifications.count - 1; i >= 0; --i) {
             if (rowValue(i, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType) !== NotificationManager.Notifications.NotificationType)
                 continue;
 
-            if (rowValue(i, NotificationManager.Notifications.ClosableRole, true))
+            if (rowValue(i, NotificationManager.Notifications.ClosableRole, true)) {
                 notifications.close(notifications.index(i, 0));
+                ++closed;
+            }
         }
+        if (closed === 0)
+            clearingNotifications = false;
+        return closed;
+    }
 
+    // Clear All: the model exposes a limited window of history, so keep
+    // closing until nothing closable is left, then drop the island activity.
+    function clearNotifications() {
+        clearingNotifications = true;
+        clearNotificationsGuardTimer.restart();
+        closeNotificationRows();
+        dismissNoticeActivity(true);
     }
 
     function cyclePowerProfile() {
@@ -1603,7 +1681,7 @@ PlasmoidItem {
             },
             Activities.ActivityProvider {
                 key: "notice"
-                active: root.notificationActivityEnabled && root.hasNotifications
+                active: root.noticeActivityActive
                 priority: root.notificationUrgency(root.notificationLatestRow()) >= 2 ? 400 : 200
                 title: root.notificationTitle(root.notificationLatestRow())
                 subtitle: root.notificationBody(root.notificationLatestRow())
@@ -1816,31 +1894,36 @@ PlasmoidItem {
     Connections {
         function onRowsInserted(parent, first, last) {
             root.notificationRevision++;
-            let hasInsertedNotice = false;
+            let freshNoticeRow = -1;
             let hasInsertedJob = false;
             for (let row = first; row <= last; ++row) {
                 const type = root.rowValue(row, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType);
                 if (type === NotificationManager.Notifications.JobType)
                     hasInsertedJob = true;
-                else if (type === NotificationManager.Notifications.NotificationType)
-                    hasInsertedNotice = true;
+                else if (type === NotificationManager.Notifications.NotificationType && freshNoticeRow < 0 && root.isFreshNotification(row))
+                    freshNoticeRow = row;
             }
             if (hasInsertedJob)
                 root.bump("job");
-            else if (hasInsertedNotice)
-                root.bump("notice");
+            else if (freshNoticeRow >= 0)
+                root.noticeArrived(freshNoticeRow);
         }
 
         function onRowsRemoved(parent, first, last) {
             root.notificationRevision++;
+            root.syncNoticeActivity();
+            if (root.clearingNotifications)
+                Qt.callLater(root.closeNotificationRows);
         }
 
         function onDataChanged(topLeft, bottomRight, roles) {
             root.notificationRevision++;
+            root.syncNoticeActivity();
         }
 
         function onModelReset() {
             root.notificationRevision++;
+            root.syncNoticeActivity();
         }
 
         function onActiveJobsCountChanged() {
@@ -1852,8 +1935,10 @@ PlasmoidItem {
 
         function onUnreadNotificationsCountChanged() {
             const count = notifications.unreadNotificationsCount;
-            if (count > root.lastUnreadNotificationsCount)
-                root.bump("notice");
+            // Do not treat unread-count growth as an arrival: Plasma marks a
+            // notification unread when its own popup expires, which would
+            // re-show an already presented notification. Arrivals are handled
+            // by onRowsInserted.
             root.lastUnreadNotificationsCount = count;
         }
 
@@ -1870,6 +1955,23 @@ PlasmoidItem {
                 root.closeIsland();
 
         }
+    }
+
+    // Safety net so a Clear All can never leave arrivals suppressed.
+    Timer {
+        id: clearNotificationsGuardTimer
+
+        interval: 700
+        repeat: false
+        onTriggered: root.clearingNotifications = false
+    }
+
+    Timer {
+        id: noticeLifetimeTimer
+
+        interval: root.notificationPopupDurationMs
+        repeat: false
+        onTriggered: root.dismissNoticeActivity(activityPopupTimer.running)
     }
 
     Timer {
