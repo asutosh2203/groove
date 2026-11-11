@@ -19,6 +19,45 @@ Item {
     readonly property bool genericIcon: !hasImage && (typeof iconName !== "string" || iconName.length === 0 || iconName === "notifications")
     readonly property string bodyText: hasNotification ? app.notificationBody(notificationRow) : ""
     readonly property real artSize: 44
+    readonly property real createdMs: hasNotification ? app.notificationCreatedMs(notificationRow) : 0
+    property real nowMs: Date.now()
+    // "now", then "Nm ago" up to 59 minutes, then the clock time the notification arrived.
+    readonly property string ageText: {
+        if (createdMs <= 0)
+            return "";
+        const minutes = Math.floor(Math.max(0, nowMs - createdMs) / 60000);
+        if (minutes < 1)
+            return i18n("now");
+        if (minutes < 60)
+            return i18n("%1m ago", minutes);
+        return Qt.formatTime(new Date(createdMs), Qt.locale(), Locale.ShortFormat);
+    }
+    onCreatedMsChanged: nowMs = Date.now()
+
+    Timer {
+        interval: 30000
+        repeat: true
+        running: notificationPage.visible && notificationPage.createdMs > 0
+        onTriggered: notificationPage.nowMs = Date.now()
+    }
+    readonly property real textWidth: Math.max(0, width - artSize - 12)
+    readonly property string titleText: hasNotification ? app.notificationTitle(notificationRow) : i18n("Notification")
+    // Density is chosen from the content measured at the roomy (short) sizes, so it depends only on the
+    // text and cannot flip while the notification is shown: one-line title and at most a one-line body.
+    readonly property bool shortLayout: titleMetrics.advanceWidth(titleText) <= textWidth && (bodyText.length === 0 || bodyText.indexOf("\n") < 0 && bodyMetrics.advanceWidth(bodyText) <= textWidth)
+
+    FontMetrics {
+        id: titleMetrics
+
+        font.pixelSize: 16
+        font.weight: Font.DemiBold
+    }
+
+    FontMetrics {
+        id: bodyMetrics
+
+        font.pixelSize: 12
+    }
 
     RowLayout {
         id: contentRow
@@ -83,7 +122,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: 0
-            spacing: 2
+            spacing: notificationPage.shortLayout ? 7 : 2
 
             Item {
                 Layout.fillHeight: true
@@ -102,19 +141,27 @@ Item {
                     maximumLineCount: 1
                 }
 
+                PlasmaLabel {
+                    visible: text.length > 0
+                    text: notificationPage.ageText
+                    color: "#6e707a"
+                    font.pixelSize: 10
+                    font.features: { "tnum": 1 }
+                }
+
                 Rectangle {
                     Layout.preferredWidth: 5
                     Layout.preferredHeight: 5
                     radius: 2.5
-                    color: notificationPage.hasNotification ? notificationPage.app.notificationAccent(notificationPage.notificationRow) : "#ff9f0a"
+                    color: notificationPage.hasNotification ? notificationPage.app.notificationUrgencyColor(notificationPage.notificationRow) : "#D1D3D8"
                 }
             }
 
             PlasmaLabel {
                 Layout.fillWidth: true
-                text: notificationPage.hasNotification ? notificationPage.app.notificationTitle(notificationPage.notificationRow) : i18n("Notification")
+                text: notificationPage.titleText
                 color: "#ffffff"
-                font.pixelSize: 14
+                font.pixelSize: notificationPage.shortLayout ? 16 : 14
                 font.weight: Font.DemiBold
                 wrapMode: Text.Wrap
                 elide: Text.ElideRight
@@ -127,7 +174,7 @@ Item {
                 text: notificationPage.bodyText
                 textFormat: Text.PlainText
                 color: "#9a9ca6"
-                font.pixelSize: 11
+                font.pixelSize: notificationPage.shortLayout ? 12 : 11
                 lineHeight: 1.0
                 wrapMode: Text.Wrap
                 elide: Text.ElideRight

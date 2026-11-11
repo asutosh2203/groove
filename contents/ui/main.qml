@@ -512,6 +512,28 @@ PlasmoidItem {
         return "#ff9f0a";
     }
 
+    // Colour of the small urgency dot in the expanded notification. The model role holds KDE's
+    // Notifications::Urgency enum (Low=1, Normal=2, Critical=4), not the D-Bus byte, and anything
+    // unknown is shown as Normal (green), never as Critical. Visual only: priority uses notificationUrgency().
+    function notificationUrgencyColor(row) {
+        const raw = rowValue(row, NotificationManager.Notifications.UrgencyRole, NotificationManager.Notifications.NormalUrgency);
+        switch (raw) {
+        case NotificationManager.Notifications.LowUrgency:
+            return "#6c6e78";
+        case NotificationManager.Notifications.CriticalUrgency:
+            return "#E66A65";
+        default:
+            return "#3ac255";
+        }
+    }
+
+    // Creation time (ms since epoch) of a notification row, 0 when unknown. Display only.
+    function notificationCreatedMs(row) {
+        const created = rowValue(row, NotificationManager.Notifications.CreatedRole, null);
+        const t = created && created.getTime ? created.getTime() : Number(created);
+        return isFinite(t) && t > 0 ? t : 0;
+    }
+
     function notificationUrgency(row) {
         return finiteNumber(rowValue(row, NotificationManager.Notifications.UrgencyRole, 1), 1);
     }
