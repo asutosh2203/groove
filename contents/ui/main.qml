@@ -60,6 +60,8 @@ PlasmoidItem {
     property bool panelSyncPending: false
     property int panelSyncAttempts: 0
     property string panelSyncAction: ""
+    readonly property real notchShoulder: 8
+    readonly property real notchSideMargin: notchShoulder + 4
     readonly property real notchBottomRadius: Math.round(Math.min(realIslandHeight, islandHeight) * 0.35)
     readonly property real compactArtworkSize: Math.max(18, realIslandHeight - 8)
     readonly property real realIslandWidth: compactRepresentationItem && compactRepresentationItem.width > 0 ? compactRepresentationItem.width : islandWidth
@@ -2455,42 +2457,40 @@ PlasmoidItem {
                 }
             }
 
-            // Clip so the notch can reuse a fully rounded rectangle pushed up by its
-            // radius: the cut-off top gives square top corners on every Qt 6 version.
-            Item {
+            NotchShape {
                 anchors.fill: parent
-                clip: true
+                visible: root.notchShape
+                shoulder: root.notchShoulder
+                bottomRadius: root.notchBottomRadius
+            }
+
+            Rectangle {
+                id: capsule
+
+                visible: !root.notchShape
+                anchors.fill: parent
+                radius: height / 2
+                color: "#030304"
+                border.color: "#16161b"
+                border.width: 1
 
                 Rectangle {
-                    id: capsule
-
-                    width: parent.width
-                    y: root.notchShape ? -radius : 0
-                    height: parent.height + (root.notchShape ? radius : 0)
-                    radius: root.notchShape ? root.notchBottomRadius : parent.height / 2
-                    color: "#030304"
-                    border.color: "#16161b"
-                    border.width: 1
-
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: 1
-                        height: Math.max(1, parent.height * 0.38)
-                        radius: capsule.radius
-                        color: "#22222a"
-                        opacity: 0.12
-                    }
-
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: 1
+                    height: Math.max(1, parent.height * 0.38)
+                    radius: capsule.radius
+                    color: "#22222a"
+                    opacity: 0.12
                 }
 
             }
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 6
-                anchors.rightMargin: 6
+                anchors.leftMargin: root.notchShape ? root.notchSideMargin : 6
+                anchors.rightMargin: root.notchShape ? root.notchSideMargin : 6
                 anchors.topMargin: 4
                 anchors.bottomMargin: 4
                 spacing: 5
@@ -2621,10 +2621,20 @@ PlasmoidItem {
                 width: popupShadow.width
                 height: popupShadow.height
                 radius: popupShadow.radius
-                color: root.popupMode === "control" ? "#0b0b0e" : "#050507"
+                color: root.notchShape ? "transparent" : root.popupMode === "control" ? "#0b0b0e" : "#050507"
                 border.color: root.popupMode === "control" ? "#25252b" : "#202027"
-                border.width: 1
+                border.width: root.notchShape ? 0 : 1
                 clip: true
+
+                // Notch mode: the same silhouette as the collapsed shell, grown downward.
+                NotchShape {
+                    anchors.fill: parent
+                    visible: root.notchShape
+                    shoulder: root.notchShoulder
+                    bottomRadius: popupRoot.panelRadius
+                    fillColor: root.popupMode === "control" ? "#0b0b0e" : "#050507"
+                    strokeColor: root.popupMode === "control" ? "#25252b" : "#202027"
+                }
 
                 MouseArea {
                     anchors.fill: parent
@@ -2638,8 +2648,13 @@ PlasmoidItem {
                 }
 
                 Loader {
+                    // The notch body is narrower than the window by its shoulders, so it
+                    // needs extra side padding (and a bit more top/bottom) to breathe.
                     anchors.fill: parent
-                    anchors.margins: root.popupMode === "control" ? 14 : 12
+                    anchors.leftMargin: (root.popupMode === "control" ? 14 : 12) + (root.notchShape ? root.notchShoulder + 2 : 0)
+                    anchors.rightMargin: anchors.leftMargin + (root.notchShape ? 0 : 3)
+                    anchors.topMargin: root.popupMode === "control" ? 12 : (root.notchShape ? 14 : 10)
+                    anchors.bottomMargin: anchors.topMargin - 2
                     opacity: popupRoot.contentOpacity
                     visible: opacity > 0
                     sourceComponent: root.popupMode === "control" ? controlCenterPage : activityController.expandedComponentFor(root.popupActivityMode())
@@ -2647,8 +2662,8 @@ PlasmoidItem {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 6
-                    anchors.rightMargin: 6
+                    anchors.leftMargin: root.notchShape ? root.notchSideMargin : 6
+                    anchors.rightMargin: root.notchShape ? root.notchSideMargin : 6
                     anchors.topMargin: 4
                     anchors.bottomMargin: 4
                     spacing: 5
