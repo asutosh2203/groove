@@ -18,6 +18,7 @@ import "controlcenter/ModuleRegistry.js" as ModuleRegistry
 import "controlcenter/NetworkState.js" as NetworkState
 import "TextUtils.js" as TextUtils
 import "activities" as Activities
+import "weather"
 
 PlasmoidItem {
     id: root
@@ -1061,6 +1062,32 @@ PlasmoidItem {
         return PreferredDevice.sink || null;
     }
 
+    property string idleClickTarget: ""
+    property string discoveredCalendarApp: ""
+    readonly property alias weather: weatherService
+
+    WeatherService {
+        id: weatherService
+    }
+
+    function calendarAppId() {
+        const configured = String(Plasmoid.configuration.calendarApp || "").trim();
+        return (configured.length > 0 ? configured : discoveredCalendarApp).replace(/\.desktop$/, "");
+    }
+
+    function openCalendar() {
+        const id = calendarAppId();
+        if (id.length > 0)
+            executable.exec("setsid gtk-launch " + shellQuote(id) + " >/dev/null 2>&1 &");
+    }
+
+    function openForecast() {
+        if (weatherService.configured)
+            Qt.openUrlExternally(weatherService.forecastUrl);
+        else
+            Plasmoid.internalAction("configure").trigger();
+    }
+
     // Bound to the default sink, so external mute changes and sink switches update every user.
     readonly property bool systemAudioAvailable: PreferredDevice.sink !== null && PreferredDevice.sink !== undefined
     readonly property bool systemMuted: systemAudioAvailable && PreferredDevice.sink.muted === true
@@ -2000,6 +2027,11 @@ PlasmoidItem {
                 disconnectSource(sourceName);
                 return ;
             }
+            if (String(stdout).trim().indexOf("DI_CAL") === 0) {
+                root.discoveredCalendarApp = String(stdout).trim().substring(6).trim();
+                disconnectSource(sourceName);
+                return ;
+            }
             if (sourceName === "whoami")
                 root.systemUsername = out;
             else if (sourceName === "hostname")
@@ -2031,6 +2063,7 @@ PlasmoidItem {
             panelStartTimer.start();
         root.ensureControlLayout();
         root.refreshSystemState();
+        executable.exec('echo "DI_CAL $(xdg-mime query default text/calendar 2>/dev/null)"');
         root.lastUnreadNotificationsCount = notifications.unreadNotificationsCount;
         root.lastActiveJobsCount = notifications.activeJobsCount;
     }
@@ -2181,6 +2214,10 @@ PlasmoidItem {
             else if (root.hasActivity) {
                 root.showActivityPopup(false);
                 Qt.callLater(root.focusIslandDialog);
+            } else if (root.idleClickTarget === "time") {
+                root.openCalendar();
+            } else if (root.idleClickTarget === "weather") {
+                root.openForecast();
             } else {
                 root.showControlCenter();
             }
@@ -2448,6 +2485,9 @@ PlasmoidItem {
                 Accessible.onPressAction: root.toggleControlCenter()
                 onClicked: (mouse) => {
                     root.clickButton = mouse.button;
+                    root.idleClickTarget = !root.hasActivity && mouse.button === Qt.LeftButton ? idleFace.targetAt(mouse.x, mouse.y) : "";
+                    // Time/weather launch only after the double-click window, so a double click always wins.
+                    clickTimer.interval = root.idleClickTarget !== "" ? Qt.styleHints.mouseDoubleClickInterval : 210;
                     clickTimer.restart();
                 }
                 onDoubleClicked: (mouse) => {
@@ -2490,6 +2530,21 @@ PlasmoidItem {
                     opacity: 0.12
                 }
 
+            }
+
+            IdleContent {
+                id: idleFace
+
+                anchors.fill: parent
+                app: root
+                sideMargin: root.notchShape ? 18 : 16
+                animate: !root.hasActivity && !root.islandOpen && !root.panelHidden
+                opacity: root.hasActivity ? 0 : 1
+                visible: opacity > 0
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+                }
             }
 
             RowLayout {
@@ -2663,6 +2718,15 @@ PlasmoidItem {
                     opacity: popupRoot.contentOpacity
                     visible: opacity > 0
                     sourceComponent: root.popupMode === "control" ? controlCenterPage : activityController.expandedComponentFor(root.popupActivityMode())
+                }
+
+                IdleContent {
+                    anchors.fill: parent
+                    app: root
+                    sideMargin: root.notchShape ? 18 : 16
+                    animate: false
+                    opacity: root.hasActivity ? 0 : popupRoot.compactOpacity
+                    visible: opacity > 0
                 }
 
                 RowLayout {

@@ -20,6 +20,24 @@
         <entry name="panelOrigThickness" type="Int">
             <default>0</default>
         </entry>
+        <entry name="weatherLocationName" type="String">
+            <default></default>
+        </entry>
+        <entry name="weatherLatitude" type="Double">
+            <default>0</default>
+        </entry>
+        <entry name="weatherLongitude" type="Double">
+            <default>0</default>
+        </entry>
+        <entry name="weatherUnit" type="String">
+            <default>celsius</default>
+        </entry>
+        <entry name="weatherCacheJson" type="String">
+            <default></default>
+        </entry>
+        <entry name="calendarApp" type="String">
+            <default></default>
+        </entry>
         <entry name="mediaActivityEnabled" type="Bool">
             <default>true</default>
         </entry>
