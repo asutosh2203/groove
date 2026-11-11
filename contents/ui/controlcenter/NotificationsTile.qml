@@ -78,8 +78,8 @@ Item {
             spacing: 7
 
             Kirigami.Icon {
-                Layout.preferredWidth: 18
-                Layout.preferredHeight: 18
+                Layout.preferredWidth: T.iconHeader
+                Layout.preferredHeight: T.iconHeader
                 source: notificationsContent.notificationTotal > 0 ? "notifications" : "notifications-disabled"
                 isMask: true
                 color: notificationsContent.notificationTotal > 0 ? T.iconActive : T.iconIdle
@@ -93,7 +93,7 @@ Item {
                     Layout.fillWidth: true
                     text: i18n("Notifications")
                     color: T.textPrimary
-                    font.pixelSize: T.fontBody + 1
+                    font.pixelSize: T.fontBody
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
                     maximumLineCount: 1
@@ -163,7 +163,7 @@ Item {
                     sourceItem: Rectangle {
                         width: listView.width
                         height: listView.height
-                        radius: 12
+                        radius: T.radiusInner
                         color: "#ffffff"
                     }
                 }

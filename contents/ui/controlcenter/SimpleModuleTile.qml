@@ -71,7 +71,7 @@ MouseArea {
             Layout.preferredHeight: Layout.preferredWidth
             radius: width / 2
             color: simpleTile.active || simpleTile.critical ? T.chip : T.raised
-            opacity: simpleTile.available ? 1 : 0.45
+            opacity: simpleTile.available ? 1 : T.disabledOpacity
 
             Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
 

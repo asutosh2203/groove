@@ -92,7 +92,7 @@ Item {
         source: T.symbolic(controlSlider.iconName)
         isMask: true
         color: controlSlider.iconCovered && controlSlider.sliderAvailable ? T.iconOnFill : T.iconIdle
-        opacity: controlSlider.sliderAvailable ? 1 : 0.42
+        opacity: controlSlider.sliderAvailable ? 1 : T.disabledOpacity
 
         Behavior on color { ColorAnimation { duration: T.motionFast } }
     }

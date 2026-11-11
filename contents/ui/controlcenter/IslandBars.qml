@@ -1,10 +1,11 @@
 import QtQuick
+import "Tokens.js" as T
 
 Row {
     id: islandBars
 
     property bool playing: false
-    property color color: "#9a9ca6"
+    property color color: T.textCaption
 
     spacing: 4
 

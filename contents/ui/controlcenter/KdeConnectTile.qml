@@ -61,8 +61,8 @@ MouseArea {
             spacing: 7
 
             Kirigami.Icon {
-                Layout.preferredWidth: 19
-                Layout.preferredHeight: 19
+                Layout.preferredWidth: T.iconHeader
+                Layout.preferredHeight: T.iconHeader
                 source: T.symbolic("kdeconnect")
                 isMask: true
                 color: kdeTile.reachableDevices > 0 ? T.iconActive : T.iconIdle

@@ -192,7 +192,7 @@ Rectangle {
             onPaint: {
                 const ctx = getContext("2d");
                 ctx.reset();
-                ctx.strokeStyle = "#9a9ca6";
+                ctx.strokeStyle = T.textCaption;
                 ctx.lineWidth = 2;
                 for (let i = 0; i < 3; ++i) {
                     ctx.beginPath();

@@ -41,6 +41,10 @@ const critical = "#ff453a";
 const radiusCard = 20;
 const radiusInner = 14;
 
+// Icons and states
+const iconHeader = 18;       // leading icon of a card header
+const disabledOpacity = 0.45;
+
 // Spacing
 const gap = 8;
 const padding = 12;

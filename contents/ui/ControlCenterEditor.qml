@@ -562,7 +562,7 @@ Item {
             width: parent.width
             height: editor.packedHeight()
             property int columns: 8
-            property int gap: 8
+            property int gap: T.gap
             property real unitSize: Math.max(1, Math.floor((width - gap * (columns - 1)) / columns))
             readonly property var packedLayoutState: editor.packedLayout()
             readonly property var dropPreview: editor.dropPlaceholderPlacement(packedLayoutState)

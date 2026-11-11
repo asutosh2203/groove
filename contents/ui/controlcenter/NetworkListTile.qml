@@ -48,8 +48,8 @@ MouseArea {
             Layout.fillWidth: true
             spacing: 7
             Kirigami.Icon {
-                Layout.preferredWidth: 18
-                Layout.preferredHeight: 18
+                Layout.preferredWidth: T.iconHeader
+                Layout.preferredHeight: T.iconHeader
                 source: networkList.networkStatus.icon
                 isMask: true
                 color: networkList.networkStatus.connected ? T.iconActive : T.iconIdle
