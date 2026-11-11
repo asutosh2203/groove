@@ -28,18 +28,21 @@ Item {
         return Qt.resolvedUrl("icons/" + file);
     }
 
+    // Period per precipitation kind: rain falls quickly, snow falls slowly, fog fades slowly.
+    readonly property string dropKind: layers.drops && layers.drops.length > 0 ? layers.drops[0].k : ""
+
     NumberAnimation on phase {
         from: 0
         to: 1
-        duration: 2600
+        duration: icon.layers.stars ? 3000 : icon.dropKind === "fog" ? 6000 : icon.dropKind === "snow" ? 3600 : 1700
         loops: Animation.Infinite
-        running: icon.animated && !!icon.layers.drops
+        running: icon.animated && (!!icon.layers.drops || !!icon.layers.stars)
     }
 
     NumberAnimation on sunAngle {
         from: 0
         to: 360
-        duration: 40000
+        duration: 18000
         loops: Animation.Infinite
         running: icon.animated && !!icon.layers.sun
     }
@@ -69,12 +72,40 @@ Item {
         SequentialAnimation on opacity {
             running: icon.animated && !!icon.layers.moon
             loops: Animation.Infinite
-            NumberAnimation { to: 0.72; duration: 3200; easing.type: Easing.InOutSine }
-            NumberAnimation { to: 1; duration: 3200; easing.type: Easing.InOutSine }
+            NumberAnimation { to: 0.7; duration: 2600; easing.type: Easing.InOutSine }
+            NumberAnimation { to: 1; duration: 2600; easing.type: Easing.InOutSine }
         }
     }
 
-    // Clouds drift slowly; the knock-out silhouette hides the sun/moon behind them and moves with them.
+    // Night sky: three four-point sparkles twinkle out of step (opacity and a small scale pulse).
+    Repeater {
+        model: icon.layers.stars || []
+
+        Image {
+            id: star
+
+            required property var modelData
+            required property int index
+            readonly property real tw: 0.5 + 0.5 * Math.sin((icon.phase + index / 3) * Math.PI * 2)
+
+            anchors.fill: parent
+            source: icon.src(modelData.f)
+            sourceSize: Qt.size(64, 64)
+            mipmap: true
+            opacity: icon.animated ? 0.3 + 0.7 * tw : 1
+            transform: Scale {
+                origin.x: modelData.cx * icon.u
+                origin.y: modelData.cy * icon.u
+                xScale: icon.animated ? 0.75 + 0.3 * star.tw : 1
+                yScale: xScale
+            }
+        }
+    }
+
+    // Clouds only drift sideways when nothing else in the icon moves (overcast); the knock-out
+    // silhouette hides the sun/moon behind them.
+    readonly property bool cloudsOnly: !!layers.clouds && !layers.sun && !layers.moon && !layers.drops && !layers.bolt
+
     Item {
         id: sky
 
@@ -82,10 +113,10 @@ Item {
         height: parent.height
 
         SequentialAnimation on x {
-            running: icon.animated && !!icon.layers.clouds
+            running: icon.animated && icon.cloudsOnly
             loops: Animation.Infinite
-            NumberAnimation { from: -0.04 * icon.width; to: 0.04 * icon.width; duration: 4800; easing.type: Easing.InOutSine }
-            NumberAnimation { from: 0.04 * icon.width; to: -0.04 * icon.width; duration: 4800; easing.type: Easing.InOutSine }
+            NumberAnimation { from: -0.09 * icon.width; to: 0.09 * icon.width; duration: 3200; easing.type: Easing.InOutSine }
+            NumberAnimation { from: 0.09 * icon.width; to: -0.09 * icon.width; duration: 3200; easing.type: Easing.InOutSine }
         }
 
         Image {
@@ -119,10 +150,12 @@ Item {
             source: icon.src(modelData.f)
             sourceSize: Qt.size(64, 64)
             mipmap: true
-            // Resting pose (animation off) is the original artwork.
-            x: !icon.animated ? 0 : fog ? Math.sin((icon.phase + index * 0.5) * Math.PI * 2) * 0.05 * icon.width : snow ? Math.sin(ph * Math.PI * 2) * 0.03 * icon.width : 0
-            y: !icon.animated || fog ? 0 : ph * (snow ? 0.12 : 0.16) * icon.height
-            opacity: !icon.animated || fog ? 1 : ph < 0.15 ? ph / 0.15 : ph > 0.7 ? (1 - ph) / 0.3 : 1
+            // Resting pose (animation off) is the original artwork. Falling uses a transform because
+            // anchors.fill pins x/y. Fog never moves sideways: its lines just fade in and out.
+            transform: Translate {
+                y: !icon.animated || fog ? 0 : ph * (snow ? 0.2 : 0.24) * icon.height
+            }
+            opacity: !icon.animated ? 1 : fog ? 0.55 + 0.45 * (0.5 + 0.5 * Math.sin((icon.phase + index * 0.5) * Math.PI * 2)) : ph < 0.15 ? ph / 0.15 : ph > 0.7 ? (1 - ph) / 0.3 : 1
         }
     }
 
@@ -137,7 +170,7 @@ Item {
         SequentialAnimation on opacity {
             running: icon.animated && !!icon.layers.bolt
             loops: Animation.Infinite
-            PauseAnimation { duration: 3400 }
+            PauseAnimation { duration: 2600 }
             NumberAnimation { to: 0.15; duration: 60 }
             NumberAnimation { to: 1; duration: 70 }
             NumberAnimation { to: 0.35; duration: 60 }

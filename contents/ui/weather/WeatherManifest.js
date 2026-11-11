@@ -10,7 +10,24 @@ var manifest = {
   ]
  },
  "clear-night": {
-  "moon": "clear-night-moon.svg"
+  "moon": "clear-night-moon.svg",
+  "stars": [
+   {
+    "f": "clear-night-s0.svg",
+    "cx": 94,
+    "cy": 46
+   },
+   {
+    "f": "clear-night-s1.svg",
+    "cx": 113,
+    "cy": 24
+   },
+   {
+    "f": "clear-night-s2.svg",
+    "cx": 84,
+    "cy": 20
+   }
+  ]
  },
  "partly-cloudy-day": {
   "sun": "partly-cloudy-day-sun.svg",

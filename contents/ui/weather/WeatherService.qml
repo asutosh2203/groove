@@ -20,7 +20,8 @@ Item {
     property double updatedMs: 0
     property bool failing: false
     readonly property bool hasData: configured && isFinite(temperatureC) && weatherCode >= 0
-    readonly property string temperatureText: Codes.displayTemperature(hasData ? temperatureC : NaN, fahrenheit)
+    readonly property var temperature: Codes.temperatureParts(hasData ? temperatureC : NaN, fahrenheit)
+    readonly property string temperatureText: temperature.value + temperature.unit
     readonly property string forecastUrl: configured ? Codes.forecastUrl(latitude, longitude) : ""
     readonly property int refreshMs: 30 * 60 * 1000
     property bool busy: false

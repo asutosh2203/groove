@@ -1062,6 +1062,10 @@ PlasmoidItem {
         return PreferredDevice.sink || null;
     }
 
+    // Faint 1px top highlight on the Pill surfaces (the Notch has none); set to 0 to disable.
+    readonly property real rimLight: 0.12
+    property string idleHoverTitle: ""
+    property string idleHoverText: ""
     property string idleClickTarget: ""
     property string discoveredCalendarApp: ""
     readonly property alias weather: weatherService
@@ -1761,8 +1765,9 @@ PlasmoidItem {
     Plasmoid.constraintHints: Plasmoid.CanFillArea
     Plasmoid.status: hasActivity ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.PassiveStatus
     Plasmoid.title: i18n("Dynamic Island")
-    toolTipMainText: primaryText()
-    toolTipSubText: secondaryText()
+    toolTipMainText: idleHoverTitle.length > 0 && !hasActivity ? idleHoverTitle : primaryText()
+    toolTipTextFormat: idleHoverTitle.length > 0 && !hasActivity ? Text.RichText : Text.AutoText
+    toolTipSubText: idleHoverTitle.length > 0 && !hasActivity ? idleHoverText : secondaryText()
     compactRepresentation: islandComponent
     fullRepresentation: emptyFullRepresentation
     preferredRepresentation: compactRepresentation
@@ -2509,27 +2514,12 @@ PlasmoidItem {
                 bottomRadius: root.notchBottomRadius
             }
 
-            Rectangle {
+            RoundShape {
                 id: capsule
 
                 visible: !root.notchShape
                 anchors.fill: parent
-                radius: height / 2
-                color: "#030304"
-                border.color: "#16161b"
-                border.width: 1
-
-                Rectangle {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 1
-                    height: Math.max(1, parent.height * 0.38)
-                    radius: capsule.radius
-                    color: "#22222a"
-                    opacity: 0.12
-                }
-
+                rimOpacity: root.rimLight
             }
 
             IdleContent {
@@ -2681,10 +2671,18 @@ PlasmoidItem {
                 width: popupShadow.width
                 height: popupShadow.height
                 radius: popupShadow.radius
-                color: root.notchShape ? "transparent" : root.popupMode === "control" ? "#0b0b0e" : "#050507"
-                border.color: root.popupMode === "control" ? "#25252b" : "#202027"
-                border.width: root.notchShape ? 0 : 1
+                color: "transparent"
                 clip: true
+
+                RoundShape {
+                    anchors.fill: parent
+                    visible: !root.notchShape
+                    radius: popupRoot.panelRadius
+                    fillTop: root.popupMode === "control" ? "#141419" : "#121216"
+                    fillBottom: root.popupMode === "control" ? "#09090c" : "#060608"
+                    strokeColor: root.popupMode === "control" ? "#25252b" : "#202027"
+                    rimOpacity: root.rimLight
+                }
 
                 // Notch mode: the same silhouette as the collapsed shell, grown downward.
                 NotchShape {
@@ -2692,7 +2690,8 @@ PlasmoidItem {
                     visible: root.notchShape
                     shoulder: root.notchShoulder
                     bottomRadius: popupRoot.panelRadius
-                    fillColor: root.popupMode === "control" ? "#0b0b0e" : "#050507"
+                    fillTop: root.popupMode === "control" ? "#141419" : "#121216"
+                    fillBottom: root.popupMode === "control" ? "#09090c" : "#060608"
                     strokeColor: root.popupMode === "control" ? "#25252b" : "#202027"
                 }
 
@@ -2723,6 +2722,7 @@ PlasmoidItem {
                 IdleContent {
                     anchors.fill: parent
                     app: root
+                    primary: false
                     sideMargin: root.notchShape ? 18 : 16
                     animate: false
                     opacity: root.hasActivity ? 0 : popupRoot.compactOpacity

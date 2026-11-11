@@ -29,10 +29,17 @@ function iconKey(code, isDay) {
     return "not-available";
 }
 
-function displayTemperature(celsius, fahrenheit) {
+// Rounded temperature split into number and unit so the UI can size them separately.
+function temperatureParts(celsius, fahrenheit) {
+    const unit = fahrenheit ? "°F" : "°C";
     if (typeof celsius !== "number" || !isFinite(celsius))
-        return "--°";
-    return Math.round(fahrenheit ? celsius * 9 / 5 + 32 : celsius) + "°";
+        return { "value": "--", "unit": unit };
+    return { "value": String(Math.round(fahrenheit ? celsius * 9 / 5 + 32 : celsius)), "unit": unit };
+}
+
+function displayTemperature(celsius, fahrenheit) {
+    const t = temperatureParts(celsius, fahrenheit);
+    return t.value + t.unit;
 }
 
 // Human-readable forecast page for a coordinate (yr.no accepts "lat,lon").
