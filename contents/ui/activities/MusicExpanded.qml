@@ -11,15 +11,24 @@ Item {
     readonly property bool playing: hasPlayer && app.isPlaying
 
     RowLayout {
+        id: contentRow
+
         anchors.fill: parent
+        // Shell inset (left wall and bottom edge) is equal so the artwork corner stays concentric with the shell's 26px curve.
+        readonly property real inset: app && app.notchShape ? 12 : 10
+        anchors.bottomMargin: inset - (app && app.notchShape ? 12 : 8)
+        // Artwork sits 2px inside the shell wall; both children share this row's height exactly.
+        anchors.leftMargin: -2
         spacing: 12
 
         ArtworkVisual {
-            Layout.preferredWidth: 72
-            Layout.preferredHeight: 72
-            Layout.alignment: Qt.AlignVCenter
+            // Both children take the row's exact height, so top and bottom always coincide.
+            Layout.preferredHeight: contentRow.height
+            Layout.minimumHeight: contentRow.height
+            Layout.maximumHeight: contentRow.height
+            Layout.preferredWidth: contentRow.height
             source: musicPage.hasPlayer ? musicPage.app.player.artUrl : ""
-            cornerRadius: 14
+            cornerRadius: 26 - contentRow.inset
             fallbackMode: "media"
             progress: musicPage.hasPlayer ? musicPage.app.player.position / Math.max(1, musicPage.app.player.length) : 0
             playing: musicPage.playing
@@ -27,7 +36,9 @@ Item {
 
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.preferredHeight: contentRow.height
+            Layout.minimumHeight: contentRow.height
+            Layout.maximumHeight: contentRow.height
             spacing: 0
 
             RowLayout {
@@ -58,13 +69,13 @@ Item {
                     }
                 }
 
-                AudioBars {
-                    Layout.preferredWidth: 16
-                    Layout.preferredHeight: 12
+                MuteButton {
+                    Layout.preferredWidth: 30
+                    Layout.preferredHeight: 30
                     Layout.alignment: Qt.AlignTop
-                    Layout.topMargin: 3
+                    large: true
                     playing: musicPage.playing
-                    barWidth: 1.5
+                    app: musicPage.app
                 }
             }
 
@@ -79,7 +90,7 @@ Item {
                 from: 0
                 to: Math.max(1, musicPage.hasPlayer ? musicPage.app.player.length : 1)
                 value: musicPage.hasPlayer ? musicPage.app.player.position : 0
-                accent: "#dcdde3"
+                accent: "#b4b6bf"
                 trackColor: "#25252b"
             }
 

@@ -63,7 +63,7 @@ PlasmoidItem {
     readonly property real notchShoulder: 8
     readonly property real notchSideMargin: notchShoulder + 4
     readonly property real notchBottomRadius: Math.round(Math.min(realIslandHeight, islandHeight) * 0.35)
-    readonly property real compactArtworkSize: Math.max(18, realIslandHeight - 8)
+    readonly property real compactArtworkSize: Math.max(18, realIslandHeight - 8) - (notchShape ? 2 : 0) // notch: 2px extra bottom inset
     readonly property real realIslandWidth: compactRepresentationItem && compactRepresentationItem.width > 0 ? compactRepresentationItem.width : islandWidth
     readonly property real realIslandHeight: compactRepresentationItem && compactRepresentationItem.height > 0 ? compactRepresentationItem.height : islandHeight
     readonly property int mediaPopupWidth: 340
@@ -1060,6 +1060,10 @@ PlasmoidItem {
     function defaultSink() {
         return PreferredDevice.sink || null;
     }
+
+    // Bound to the default sink, so external mute changes and sink switches update every user.
+    readonly property bool systemAudioAvailable: PreferredDevice.sink !== null && PreferredDevice.sink !== undefined
+    readonly property bool systemMuted: systemAudioAvailable && PreferredDevice.sink.muted === true
 
     function systemVolumePercent() {
         const sink = defaultSink();
@@ -2319,6 +2323,7 @@ PlasmoidItem {
 
         MaskedArtwork {
             artworkSource: root.hasPlayer ? root.player.artUrl : ""
+            cornerRadius: root.notchShape ? Math.round(Math.min(width, height) * 0.3) : Math.min(width, height) / 2 // notch: rounded square like expanded; pill: circle
             mode: "media"
             progress: root.activityProgressValue("media") / Math.max(1, root.activityProgressTo("media"))
             playing: root.isPlaying
@@ -2489,10 +2494,10 @@ PlasmoidItem {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: root.notchShape ? root.notchSideMargin : 6
+                anchors.leftMargin: root.notchShape ? root.notchSideMargin + 2 : (root.activityMode() === "media" ? 4 : 6)
                 anchors.rightMargin: root.notchShape ? root.notchSideMargin : 6
                 anchors.topMargin: 4
-                anchors.bottomMargin: 4
+                anchors.bottomMargin: root.notchShape ? 6 : 4
                 spacing: 5
 
                 Rectangle {
@@ -2662,10 +2667,10 @@ PlasmoidItem {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: root.notchShape ? root.notchSideMargin : 6
+                    anchors.leftMargin: root.notchShape ? root.notchSideMargin + 2 : (root.popupActivityMode() === "media" ? 4 : 6)
                     anchors.rightMargin: root.notchShape ? root.notchSideMargin : 6
                     anchors.topMargin: 4
-                    anchors.bottomMargin: 4
+                    anchors.bottomMargin: root.notchShape ? 6 : 4
                     spacing: 5
                     opacity: popupRoot.compactOpacity
                     visible: opacity > 0

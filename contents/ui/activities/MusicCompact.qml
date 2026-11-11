@@ -36,14 +36,16 @@ Item {
                 from: 0
                 to: Math.max(1, musicCompact.hasPlayer ? musicCompact.app.player.length : 1)
                 value: musicCompact.hasPlayer ? musicCompact.app.player.position : 0
-                accent: "#5ac8fa"
+                accent: "#b4b6bf"
+                trackColor: "#25252b"
             }
         }
 
-        AudioBars {
-            Layout.preferredWidth: 27
-            Layout.preferredHeight: Math.max(14, musicCompact.height - 6)
+        MuteButton {
+            Layout.preferredWidth: 24
+            Layout.preferredHeight: Math.min(24, Math.max(14, musicCompact.height - 6))
             Layout.alignment: Qt.AlignVCenter
+            app: musicCompact.app
             playing: musicCompact.hasPlayer && musicCompact.app.isPlaying
         }
     }
