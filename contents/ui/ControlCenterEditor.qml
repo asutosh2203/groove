@@ -564,6 +564,8 @@ Item {
             property int columns: 8
             property int gap: T.gap
             property real unitSize: Math.max(1, Math.floor((width - gap * (columns - 1)) / columns))
+            // Cell size is a whole number of pixels, so centre the grid to split the leftover width evenly.
+            x: Math.floor((width - (columns * unitSize + gap * (columns - 1))) / 2)
             readonly property var packedLayoutState: editor.packedLayout()
             readonly property var dropPreview: editor.dropPlaceholderPlacement(packedLayoutState)
 

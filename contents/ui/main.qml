@@ -2733,9 +2733,9 @@ PlasmoidItem {
                     // needs extra side padding (and a bit more top/bottom) to breathe.
                     anchors.fill: parent
                     anchors.leftMargin: (root.popupMode === "control" ? 14 : 12) + (root.notchShape ? root.notchShoulder + 2 : 0)
-                    anchors.rightMargin: anchors.leftMargin + (root.notchShape ? 0 : 3)
+                    anchors.rightMargin: root.popupMode === "control" ? (root.notchShape ? 22 : anchors.leftMargin) : (anchors.leftMargin + (root.notchShape ? 0 : 3))
                     anchors.topMargin: root.popupMode === "control" ? 12 : (root.notchShape ? 14 : 10)
-                    anchors.bottomMargin: anchors.topMargin - 2
+                    anchors.bottomMargin: root.popupMode === "control" ? 16 : anchors.topMargin - 2
                     opacity: popupRoot.contentOpacity
                     visible: opacity > 0
                     sourceComponent: root.popupMode === "control" ? controlCenterPage : activityController.expandedComponentFor(root.popupActivityMode())
