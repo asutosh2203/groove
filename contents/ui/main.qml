@@ -53,6 +53,13 @@ PlasmoidItem {
     readonly property int islandWidth: 180
     readonly property int islandHeight: 40
     readonly property bool notchShape: Plasmoid.configuration.shellShape === "notch"
+    // Notch mode attaches the containing panel to the screen edge (not floating,
+    // thickness = shell height) and Pill mode restores the panel's saved settings.
+    readonly property int notchPanelThickness: islandHeight
+    property int panelSyncPhase: 0 // 0 idle, 1 reading, 2 applying
+    property bool panelSyncPending: false
+    property int panelSyncAttempts: 0
+    property string panelSyncAction: ""
     readonly property real notchBottomRadius: Math.round(Math.min(realIslandHeight, islandHeight) * 0.35)
     readonly property real compactArtworkSize: Math.max(18, realIslandHeight - 8)
     readonly property real realIslandWidth: compactRepresentationItem && compactRepresentationItem.width > 0 ? compactRepresentationItem.width : islandWidth
@@ -163,6 +170,116 @@ PlasmoidItem {
         }
 
         return nearestScreen;
+    }
+
+    // ---- Containing-panel integration -------------------------------------
+    // The panel is found through Plasmoid.containment.id (the scripting panel id)
+    // and confirmed by checking that the panel's widget list contains this
+    // applet, so a stale or wrong id never touches another panel.
+    function panelCommand(applyFloating, applyThickness) {
+        const panelId = Math.floor(Number(Plasmoid.containment.id));
+        const appletId = Math.floor(Number(Plasmoid.id));
+        let apply = "";
+        if (applyFloating !== null)
+            apply += "p.floating = " + (applyFloating ? "true" : "false") + ";";
+        if (applyThickness > 0)
+            apply += "p.height = " + Math.floor(applyThickness) + ";";
+        const script = "var r = {ok: false}; var p = panelById(" + panelId + "); "
+            + "if (p && p.widgetIds.indexOf(" + appletId + ") >= 0) { " + apply
+            + " r = {ok: true, id: " + panelId + ", location: p.location, floating: p.floating, height: p.height}; } "
+            + "print('DI_PANEL ' + JSON.stringify(r));";
+        return "qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript " + shellQuote(script);
+    }
+
+    function panelSyncWanted() {
+        return notchShape || Plasmoid.configuration.panelOrigPanelId > 0;
+    }
+
+    function syncPanel() {
+        if (!panelSyncWanted())
+            return ;
+        if (panelSyncPhase !== 0) {
+            panelSyncPending = true;
+            return ;
+        }
+        if (!Plasmoid.containment || !(Plasmoid.containment.id > 0))
+            return ;
+        panelSyncPhase = 1;
+        executable.exec(panelCommand(null, 0));
+        panelWatchdog.restart();
+    }
+
+    function applyPanel(action, floating, thickness) {
+        panelSyncAction = action;
+        panelSyncPhase = 2;
+        executable.exec(panelCommand(floating, thickness));
+        panelWatchdog.restart();
+    }
+
+    function clearPanelOriginals() {
+        Plasmoid.configuration.panelOrigPanelId = 0;
+        Plasmoid.configuration.panelOrigFloating = -1;
+        Plasmoid.configuration.panelOrigThickness = 0;
+    }
+
+    function decidePanel(state) {
+        const cfg = Plasmoid.configuration;
+        if (state.location !== "top") {
+            console.warn("Dynamic Island: panel is not on the top edge, leaving it untouched");
+            return ;
+        }
+        // Originals only count for the panel they were captured from.
+        const stored = cfg.panelOrigPanelId === state.id && cfg.panelOrigFloating >= 0;
+        if (notchShape) {
+            const attached = !state.floating && state.height === notchPanelThickness;
+            if (!stored) {
+                // Capture once, before the first change. An already attached panel with
+                // no record has an unknown thickness: remember only that it floated.
+                cfg.panelOrigPanelId = state.id;
+                cfg.panelOrigFloating = attached ? 1 : (state.floating ? 1 : 0);
+                cfg.panelOrigThickness = attached ? 0 : state.height;
+            }
+            if (!attached)
+                applyPanel("notch", false, notchPanelThickness);
+        } else if (stored) {
+            const wantFloating = cfg.panelOrigFloating === 1;
+            const wantThickness = cfg.panelOrigThickness;
+            if (state.floating === wantFloating && (wantThickness <= 0 || state.height === wantThickness))
+                clearPanelOriginals();
+            else
+                applyPanel("restore", wantFloating, wantThickness);
+        }
+    }
+
+    function handlePanelReply(out) {
+        panelWatchdog.stop();
+        let reply = { "ok": false };
+        try {
+            reply = JSON.parse(out.substring("DI_PANEL ".length));
+        } catch (e) {
+        }
+        const phase = panelSyncPhase;
+        panelSyncPhase = 0;
+        panelSyncAttempts = 0;
+        if (!reply.ok) {
+            console.warn("Dynamic Island: could not identify its panel, leaving it untouched");
+        } else if (phase === 1) {
+            decidePanel(reply);
+        } else if (phase === 2) {
+            const cfg = Plasmoid.configuration;
+            if (panelSyncAction === "restore") {
+                if (reply.floating === (cfg.panelOrigFloating === 1) && (cfg.panelOrigThickness <= 0 || reply.height === cfg.panelOrigThickness))
+                    clearPanelOriginals();
+                else
+                    console.warn("Dynamic Island: panel restore did not fully apply; original settings kept for a retry");
+            } else if (reply.floating || reply.height !== notchPanelThickness) {
+                console.warn("Dynamic Island: panel did not accept the notch settings");
+            }
+        }
+        if (panelSyncPhase === 0 && panelSyncPending) {
+            panelSyncPending = false;
+            Qt.callLater(syncPanel);
+        }
     }
 
     function positionIslandDialog() {
@@ -1623,6 +1740,30 @@ PlasmoidItem {
 
     }
 
+    onNotchShapeChanged: Qt.callLater(syncPanel)
+
+    // Startup sync is delayed until the shell's scripting service is up, and
+    // retried a couple of times if a request never answers.
+    Timer {
+        id: panelStartTimer
+
+        interval: 2500
+        repeat: false
+        onTriggered: root.syncPanel()
+    }
+
+    Timer {
+        id: panelWatchdog
+
+        interval: 8000
+        repeat: false
+        onTriggered: {
+            root.panelSyncPhase = 0;
+            if (root.panelSyncAttempts++ < 2)
+                panelStartTimer.restart();
+        }
+    }
+
     NotificationManager.Notifications {
         id: notifications
 
@@ -1848,6 +1989,11 @@ PlasmoidItem {
         onNewData: (sourceName, data) => {
             const stdout = root.commandStdout(data);
             const out = root.cleanText(stdout);
+            if (String(stdout).trim().indexOf("DI_PANEL ") === 0) {
+                root.handlePanelReply(String(stdout).trim());
+                disconnectSource(sourceName);
+                return ;
+            }
             if (sourceName === "whoami")
                 root.systemUsername = out;
             else if (sourceName === "hostname")
@@ -1875,6 +2021,8 @@ PlasmoidItem {
     }
 
     Component.onCompleted: {
+        if (root.panelSyncWanted())
+            panelStartTimer.start();
         root.ensureControlLayout();
         root.refreshSystemState();
         root.lastUnreadNotificationsCount = notifications.unreadNotificationsCount;

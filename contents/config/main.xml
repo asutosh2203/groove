@@ -11,6 +11,15 @@
         <entry name="shellShape" type="String">
             <default>pill</default>
         </entry>
+        <entry name="panelOrigPanelId" type="Int">
+            <default>0</default>
+        </entry>
+        <entry name="panelOrigFloating" type="Int">
+            <default>-1</default>
+        </entry>
+        <entry name="panelOrigThickness" type="Int">
+            <default>0</default>
+        </entry>
         <entry name="mediaActivityEnabled" type="Bool">
             <default>true</default>
         </entry>
