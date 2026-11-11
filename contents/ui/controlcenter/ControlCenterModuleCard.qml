@@ -274,7 +274,7 @@ Rectangle {
         }
     }
     Component { id: wifiDevicesModule; NetworkListTile { app: moduleCard.app } }
-    Component { id: mediaModule; ActivitySummaryTile { app: moduleCard.app; notificationsSource: moduleCard.notificationsSource; mediaOnly: true; radius: moduleCard.radius; border.width: 0 } }
+    Component { id: mediaModule; ActivitySummaryTile { app: moduleCard.app; notificationsSource: moduleCard.notificationsSource; mediaOnly: true; radius: moduleCard.radius; border.width: 1; border.color: moduleCard.app.controlEditMode ? T.borderStrong : T.border } }
     Component { id: notificationsModule; NotificationsTile { app: moduleCard.app; notificationsSource: moduleCard.notificationsSource } }
     Component {
         id: bluetoothModule

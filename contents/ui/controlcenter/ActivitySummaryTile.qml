@@ -16,6 +16,8 @@ Rectangle {
     readonly property color activityColor: app.isPlaying || app.hasJobs || app.hasNotifications ? T.textCaption : T.textTertiary
     readonly property bool iconOnly: width < 100 || height < 62
     readonly property bool compact: width < 190 || height < 112
+    // Media card with room for artwork + controls on the left and track info on the right.
+    readonly property bool twoColumn: mediaOnly && !compact && !iconOnly
     readonly property real artSize: iconOnly ? Math.max(24, Math.min(width, height) - 18) : compact ? Math.max(36, Math.min(52, height - 22)) : Math.max(48, Math.min(72, height - 28))
 
     function previous() {
@@ -39,7 +41,7 @@ Rectangle {
     Accessible.name: activitySummary.showAnyActivity ? app.primaryText() + ". " + app.secondaryText() : i18n("No activity")
 
     RowLayout {
-        visible: !activitySummary.iconOnly
+        visible: !activitySummary.iconOnly && !activitySummary.twoColumn
         anchors.fill: parent
         anchors.margins: activitySummary.compact ? 10 : 14
         spacing: activitySummary.compact ? 9 : 13
@@ -195,6 +197,151 @@ Rectangle {
                     font.pixelSize: T.fontCaption
                     horizontalAlignment: Text.AlignRight
                     elide: Text.ElideRight
+                }
+            }
+        }
+    }
+
+    // Two-column media layout (Control Center only). The artwork is inset from the card corner and
+    // rounded concentrically with it; the transport controls sit centred under the artwork; the
+    // right column has title and artist on top and a single elapsed / progress / total row below.
+    Item {
+        id: twoColumnLayout
+
+        visible: activitySummary.twoColumn
+        anchors.fill: parent
+
+        readonly property real inset: 11
+        readonly property real art: Math.min(72, height - inset - 30 - 10 - 12)
+        readonly property real controlsTop: inset + art + 10
+        readonly property real controlsHeight: 30
+
+        Item {
+            id: leftColumn
+
+            x: twoColumnLayout.inset
+            y: twoColumnLayout.inset
+            width: twoColumnLayout.art
+            height: twoColumnLayout.art
+
+            MaskedArtworkTile {
+                anchors.fill: parent
+                artworkSource: app.hasPlayer ? app.player.artUrl : ""
+                // Card radius minus the inset: the corner continues the card's own curve.
+                cornerRadius: Math.max(6, T.radiusCard - twoColumnLayout.inset)
+                glyphSize: 36
+                mode: "media"
+                playing: app.isPlaying
+            }
+        }
+
+        // Three equal cells across the artwork width, directly below it.
+        Row {
+            x: twoColumnLayout.inset
+            y: twoColumnLayout.controlsTop
+            width: twoColumnLayout.art
+            height: twoColumnLayout.controlsHeight
+
+            IslandButton {
+                width: twoColumnLayout.art / 3
+                height: parent.height
+                iconName: "media-skip-backward"
+                flat: true
+                glyphSize: 15
+                focusColor: T.focusRing
+                tooltipText: i18n("Previous")
+                enabled: app.player && app.player.canGoPrevious
+                onClicked: activitySummary.previous()
+            }
+
+            IslandButton {
+                width: twoColumnLayout.art / 3
+                height: parent.height
+                iconName: app.isPlaying ? "media-playback-pause" : "media-playback-start"
+                flat: true
+                glyphSize: 20
+                focusColor: T.focusRing
+                tooltipText: app.isPlaying ? i18n("Pause") : i18n("Play")
+                enabled: app.player && (app.player.canPlay || app.player.canPause)
+                onClicked: activitySummary.playPause()
+            }
+
+            IslandButton {
+                width: twoColumnLayout.art / 3
+                height: parent.height
+                iconName: "media-skip-forward"
+                flat: true
+                glyphSize: 15
+                focusColor: T.focusRing
+                tooltipText: i18n("Next")
+                enabled: app.player && app.player.canGoNext
+                onClicked: activitySummary.next()
+            }
+        }
+
+        // The right column spans from the artwork's top to the bottom of the controls row, so the
+        // progress row lines up with the controls.
+        ColumnLayout {
+            x: twoColumnLayout.inset + twoColumnLayout.art + 14
+            y: twoColumnLayout.inset
+            width: parent.width - x - 14
+            height: twoColumnLayout.controlsTop + twoColumnLayout.controlsHeight - twoColumnLayout.inset
+            spacing: 0
+
+            PlasmaLabel {
+                Layout.fillWidth: true
+                text: activitySummary.showAnyActivity ? app.primaryText() : i18n("Nothing playing")
+                color: T.textPrimary
+                font.pixelSize: T.fontTitle
+                font.weight: Font.DemiBold
+                elide: Text.ElideRight
+                maximumLineCount: 1
+            }
+
+            PlasmaLabel {
+                Layout.fillWidth: true
+                Layout.topMargin: 1
+                text: activitySummary.showAnyActivity ? app.secondaryText() : ""
+                color: T.textSecondary
+                font.pixelSize: T.fontBody
+                elide: Text.ElideRight
+                maximumLineCount: 1
+            }
+
+            Item {
+                Layout.fillHeight: true
+            }
+
+            // Read-only progress (no seeking, no pointer interaction): elapsed, bar, total.
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: twoColumnLayout.controlsHeight
+                spacing: 8
+
+                PlasmaLabel {
+                    text: app.hasPlayer && app.player.length > 0 ? app.formatMediaTime(app.player.position) : ""
+                    color: T.textCaption
+                    font.pixelSize: T.fontCaption
+                    font.features: { "tnum": 1 }
+                }
+
+                ProgressBar {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 3
+                    Layout.alignment: Qt.AlignVCenter
+                    opacity: app.hasPlayer && app.player.length > 0 ? 1 : 0
+                    from: 0
+                    to: Math.max(1, app.player ? app.player.length : 1)
+                    value: app.player ? app.player.position : 0
+                    accent: T.fillSoft
+                    trackColor: T.track
+                }
+
+                PlasmaLabel {
+                    text: app.hasPlayer && app.player.length > 0 ? app.formatMediaTime(app.player.length) : ""
+                    color: T.textCaption
+                    font.pixelSize: T.fontCaption
+                    font.features: { "tnum": 1 }
                 }
             }
         }
