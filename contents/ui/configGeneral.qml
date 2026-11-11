@@ -1,10 +1,12 @@
 import QtQuick
+import QtQuick.Controls as QQC2
 import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
 
 KCM.SimpleKCM {
     id: configPage
 
+    property string cfg_shellShape
     property alias cfg_mediaActivityEnabled: mediaActivityEnabled.checked
     property alias cfg_notificationActivityEnabled: notificationActivityEnabled.checked
     property alias cfg_jobActivityEnabled: jobActivityEnabled.checked
@@ -16,6 +18,24 @@ KCM.SimpleKCM {
     property alias cfg_ongoingPopupDurationSeconds: ongoingPopupDurationSeconds.value
 
     Kirigami.FormLayout {
+        QQC2.ComboBox {
+            id: shellShape
+
+            Kirigami.FormData.label: i18n("Appearance:")
+            textRole: "text"
+            valueRole: "value"
+            model: [
+                { "text": i18n("Dynamic Pill"), "value": "pill" },
+                { "text": i18n("Dynamic Notch"), "value": "notch" }
+            ]
+            currentIndex: Math.max(0, indexOfValue(configPage.cfg_shellShape))
+            onActivated: configPage.cfg_shellShape = currentValue
+        }
+
+        Kirigami.Separator {
+            Kirigami.FormData.isSection: true
+        }
+
         PlasmaCheckBox {
             id: mediaActivityEnabled
 

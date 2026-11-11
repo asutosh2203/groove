@@ -48,12 +48,13 @@ PlasmoidItem {
     readonly property string keyboardLayoutLongName: keyboardLayoutNames ? keyboardLayoutNames.longName || keyboardLayoutDisplayName : keyboardLayoutDisplayName
     readonly property int notificationUnreadCount: notifications.unreadNotificationsCount
     readonly property bool hasActivity: keyboardAnnouncementActive || jobActivityEnabled && hasJobs || mediaActivityEnabled && hasPlayer || noticeActivityActive
-    readonly property int panelSlot: inPanel && parent ? Math.max(24, Math.min(36, (verticalPanel ? parent.width : parent.height) - 6)) : 30
-    readonly property int islandHeight: Math.max(24, Math.min(36, panelSlot))
-    readonly property int idleIslandWidth: Math.round(islandHeight * 2.7)
-    readonly property int liveIslandWidth: Math.round(islandHeight * 4.7)
-    readonly property int islandWidth: liveIslandWidth
-    readonly property real compactArtworkSize: Math.max(18, islandHeight - 8)
+    // Fixed allocation: the panel never resizes for visual transitions. The
+    // visible shape is drawn inside whatever slot the panel actually gives us.
+    readonly property int islandWidth: 180
+    readonly property int islandHeight: 40
+    readonly property bool notchShape: Plasmoid.configuration.shellShape === "notch"
+    readonly property real notchBottomRadius: Math.round(Math.min(realIslandHeight, islandHeight) * 0.35)
+    readonly property real compactArtworkSize: Math.max(18, realIslandHeight - 8)
     readonly property real realIslandWidth: compactRepresentationItem && compactRepresentationItem.width > 0 ? compactRepresentationItem.width : islandWidth
     readonly property real realIslandHeight: compactRepresentationItem && compactRepresentationItem.height > 0 ? compactRepresentationItem.height : islandHeight
     readonly property int mediaPopupWidth: 340
@@ -1607,6 +1608,7 @@ PlasmoidItem {
     switchWidth: islandWidth
     switchHeight: islandHeight
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
+    Plasmoid.constraintHints: Plasmoid.CanFillArea
     Plasmoid.status: hasActivity ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.PassiveStatus
     Plasmoid.title: i18n("Dynamic Island")
     toolTipMainText: primaryText()
@@ -2158,8 +2160,7 @@ PlasmoidItem {
     Component {
         id: idleVisualComponent
 
-        MaskedArtwork {
-            mode: "idle"
+        Item {
         }
     }
 
@@ -2306,24 +2307,34 @@ PlasmoidItem {
                 }
             }
 
-            Rectangle {
-                id: capsule
-
+            // Clip so the notch can reuse a fully rounded rectangle pushed up by its
+            // radius: the cut-off top gives square top corners on every Qt 6 version.
+            Item {
                 anchors.fill: parent
-                radius: height / 2
-                color: "#030304"
-                border.color: "#16161b"
-                border.width: 1
+                clip: true
 
                 Rectangle {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 1
-                    height: Math.max(1, parent.height * 0.38)
-                    radius: capsule.radius
-                    color: "#22222a"
-                    opacity: 0.12
+                    id: capsule
+
+                    width: parent.width
+                    y: root.notchShape ? -radius : 0
+                    height: parent.height + (root.notchShape ? radius : 0)
+                    radius: root.notchShape ? root.notchBottomRadius : parent.height / 2
+                    color: "#030304"
+                    border.color: "#16161b"
+                    border.width: 1
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 1
+                        height: Math.max(1, parent.height * 0.38)
+                        radius: capsule.radius
+                        color: "#22222a"
+                        opacity: 0.12
+                    }
+
                 }
 
             }
@@ -2361,15 +2372,6 @@ PlasmoidItem {
 
                 }
 
-                Rectangle {
-                    visible: !root.hasActivity
-                    Layout.preferredWidth: 5
-                    Layout.preferredHeight: 5
-                    radius: 3
-                    color: root.hasJobs ? "#42d77d" : root.isPlaying ? "#5ac8fa" : root.hasNotifications ? "#ff9f0a" : "#27272d"
-                    opacity: 0.95
-                }
-
             }
 
         }
@@ -2402,7 +2404,8 @@ PlasmoidItem {
             readonly property real collapsedHeight: root.realIslandHeight
             readonly property real panelWidth: collapsedWidth + (root.popupWidth - collapsedWidth) * morph
             readonly property real panelHeight: collapsedHeight + (root.popupHeight - collapsedHeight) * morph
-            readonly property real panelRadius: collapsedHeight / 2 + (root.popupRadius - collapsedHeight / 2) * morph
+            readonly property real collapsedRadius: root.notchShape ? root.notchBottomRadius : collapsedHeight / 2
+            readonly property real panelRadius: collapsedRadius + (root.popupRadius - collapsedRadius) * morph
             readonly property real panelX: root.popupCollapsedX * (1 - morph)
             readonly property real panelY: root.popupCollapsedY * (1 - morph)
 
@@ -2527,14 +2530,6 @@ PlasmoidItem {
                             sourceComponent: activityController.compactComponentFor(root.popupActivityMode())
                         }
 
-                    }
-
-                    Rectangle {
-                        visible: !root.hasActivity
-                        Layout.preferredWidth: 5
-                        Layout.preferredHeight: 5
-                        radius: 3
-                        color: "#27272d"
                     }
 
                 }

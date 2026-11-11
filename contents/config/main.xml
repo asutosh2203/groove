@@ -8,6 +8,9 @@
         <entry name="controlCenterLayoutJson" type="String">
             <default></default>
         </entry>
+        <entry name="shellShape" type="String">
+            <default>pill</default>
+        </entry>
         <entry name="mediaActivityEnabled" type="Bool">
             <default>true</default>
         </entry>
