@@ -13,7 +13,7 @@ Item {
 
     required property var app
     required property var notificationsSource
-    readonly property int notificationTotal: app.notificationCount()
+    readonly property int notificationTotal: app.notifications.count()
     readonly property bool iconOnly: width < 100 || height < 62
     readonly property bool compact: width < 170 || height < 118
     readonly property bool detailed: width >= 230 && height >= 150
@@ -21,11 +21,11 @@ Item {
     // One shared clock for every row's relative timestamp (refreshed once a minute).
     property real nowMs: Date.now()
     readonly property int rowLimit: compact ? 1 : Math.max(1, Math.floor((height - 56) / rowHeight))
-    readonly property int overflowCount: app.notificationOverflowCount(rowLimit)
+    readonly property int overflowCount: app.notifications.overflowCount(rowLimit)
 
     // "now", "5m ago", "3h ago", "Yesterday", then a localised date. Empty when the creation time is unknown.
     function ageText(row, now) {
-        const created = app.notificationCreatedMs(row);
+        const created = app.notifications.createdMs(row);
         if (created <= 0)
             return "";
         const minutes = Math.floor(Math.max(0, now - created) / 60000);
@@ -55,7 +55,7 @@ Item {
         if (row < 0 || row >= notificationsSource.count)
             return;
 
-        if (!app.rowValue(row, NotificationManager.Notifications.ClosableRole, true))
+        if (!app.notifications.rowValue(row, NotificationManager.Notifications.ClosableRole, true))
             return;
 
         notificationsSource.close(notificationsSource.index(row, 0));
@@ -121,7 +121,7 @@ Item {
                 focusColor: T.focusRing
                 flatHoverColor: T.raised
                 flatPressedColor: T.chip
-                onClicked: app.clearNotifications()
+                onClicked: app.notifications.clearAll()
             }
 
             IslandButton {
@@ -180,19 +180,19 @@ Item {
                 spacing: 7
 
                 Repeater {
-                    model: app.notificationRows(notificationsContent.compact ? notificationsContent.rowLimit : 0)
+                    model: app.notifications.rows(notificationsContent.compact ? notificationsContent.rowLimit : 0)
 
                     delegate: MouseArea {
                         id: rowArea
                         objectName: "notificationRow"
 
                         // Rows with nothing to open (no live action, URL or app) get no hover, cursor or glyph.
-                        readonly property bool clickable: app.notificationClickable(modelData)
+                        readonly property bool clickable: app.notifications.clickable(modelData)
                         // Hover (passive, so labels and icons above the row can't steal it) or keyboard focus swaps the
                         // right-hand slot from the age to the actions.
                         readonly property bool revealed: enabled && (rowHover.hovered || activeFocus || detailedSlot.dismissFocused || titleSlot.dismissFocused)
                         readonly property bool revealOpen: clickable && revealed
-                        readonly property bool dismissible: !notificationsContent.compact && app.rowValue(modelData, NotificationManager.Notifications.ClosableRole, true)
+                        readonly property bool dismissible: !notificationsContent.compact && app.notifications.rowValue(modelData, NotificationManager.Notifications.ClosableRole, true)
                         readonly property string ageLabel: notificationsContent.ageText(modelData, notificationsContent.nowMs)
 
                         width: listColumn.width
@@ -201,14 +201,14 @@ Item {
                         enabled: !app.layoutService.editMode
                         activeFocusOnTab: enabled && clickable
                         Accessible.role: clickable ? Accessible.Button : Accessible.StaticText
-                        Accessible.name: app.notificationTitle(modelData)
-                        Accessible.description: app.notificationAppName(modelData)
-                        Accessible.onPressAction: app.openNotification(modelData)
-                        Keys.onSpacePressed: app.openNotification(modelData)
-                        Keys.onReturnPressed: app.openNotification(modelData)
-                        Keys.onEnterPressed: app.openNotification(modelData)
+                        Accessible.name: app.notifications.title(modelData)
+                        Accessible.description: app.notifications.appName(modelData)
+                        Accessible.onPressAction: app.notifications.open(modelData)
+                        Keys.onSpacePressed: app.notifications.open(modelData)
+                        Keys.onReturnPressed: app.notifications.open(modelData)
+                        Keys.onEnterPressed: app.notifications.open(modelData)
                         onPressed: rowArea.forceActiveFocus()
-                        onClicked: app.openNotification(modelData)
+                        onClicked: app.notifications.open(modelData)
 
                         Rectangle {
                             anchors.fill: parent
@@ -240,8 +240,8 @@ Item {
 
                                 Activities.NotificationVisual {
                                     anchors.fill: parent
-                                    source: notificationsContent.detailed && app.notificationImagesEnabled ? app.notificationMainImage(modelData) : app.notificationAppIcon(modelData)
-                                    fallbackSource: app.notificationMainIcon(modelData)
+                                    source: notificationsContent.detailed && app.notificationImagesEnabled ? app.notifications.mainImage(modelData) : app.notifications.appIcon(modelData)
+                                    fallbackSource: app.notifications.mainIcon(modelData)
                                     fallbackColor: T.textCaption
                                     cornerRadius: Math.min(10, width / 2)
                                 }
@@ -259,7 +259,7 @@ Item {
 
                                     PlasmaLabel {
                                         Layout.fillWidth: true
-                                        text: app.notificationAppName(modelData)
+                                        text: app.notifications.appName(modelData)
                                         color: T.textTertiary
                                         font.pixelSize: T.fontCaption
                                         elide: Text.ElideRight
@@ -284,7 +284,7 @@ Item {
 
                                     PlasmaLabel {
                                         Layout.fillWidth: true
-                                        text: app.notificationTitle(modelData)
+                                        text: app.notifications.title(modelData)
                                         color: T.textPrimary
                                         font.pixelSize: notificationsContent.detailed ? T.fontBody : T.fontCaption
                                         font.weight: Font.DemiBold
@@ -294,7 +294,7 @@ Item {
 
                                     Rectangle {
                                         // Only urgent notifications get a coloured marker.
-                                        visible: notificationsContent.detailed && app.notificationUrgency(modelData) >= NotificationManager.Notifications.CriticalUrgency
+                                        visible: notificationsContent.detailed && app.notifications.urgency(modelData) >= NotificationManager.Notifications.CriticalUrgency
                                         Layout.preferredWidth: 6
                                         Layout.preferredHeight: 6
                                         radius: 3
@@ -317,7 +317,7 @@ Item {
                                 PlasmaLabel {
                                     visible: !notificationsContent.detailed || text.length > 0
                                     Layout.fillWidth: true
-                                    text: notificationsContent.detailed ? app.notificationBody(modelData) : app.notificationAppName(modelData)
+                                    text: notificationsContent.detailed ? app.notifications.body(modelData) : app.notifications.appName(modelData)
                                     textFormat: Text.PlainText
                                     color: T.textSecondary
                                     font.pixelSize: T.fontCaption

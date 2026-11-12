@@ -12,22 +12,25 @@ Item {
         readonly property var layoutService: QtObject { property bool editMode: false }
         property bool notificationImagesEnabled: false
         property var opened: []
-        // Row 0 is clickable (live action or fallback), row 1 has nothing to open.
-        function notificationCount() { return 2; }
-        function notificationRows(limit) { return [0, 1]; }
-        function notificationOverflowCount(limit) { return 0; }
         function notificationStatusText() { return "2 notifications"; }
-        function notificationClickable(row) { return row === 0; }
-        function openNotification(row) { opened = opened.concat([row]); return row === 0; }
-        function rowValue(row, role, fallbackValue) { return fallbackValue; }
-        function notificationTitle(row) { return "Title " + row; }
-        function notificationAppName(row) { return "App " + row; }
-        function notificationBody(row) { return "Body " + row; }
-        function notificationCreatedMs(row) { return 0; }
-        function notificationAppIcon(row) { return ""; }
-        function notificationMainIcon(row) { return "notifications"; }
-        function notificationMainImage(row) { return null; }
-        function notificationUrgency(row) { return 1; }
+        // Row 0 is clickable (live action or fallback), row 1 has nothing to open.
+        readonly property var notifications: QtObject {
+            function count() { return 2; }
+            function rows(limit) { return [0, 1]; }
+            function overflowCount(limit) { return 0; }
+            function clickable(row) { return row === 0; }
+            function open(row) { app.opened = app.opened.concat([row]); return row === 0; }
+            function rowValue(row, role, fallbackValue) { return fallbackValue; }
+            function title(row) { return "Title " + row; }
+            function appName(row) { return "App " + row; }
+            function body(row) { return "Body " + row; }
+            function createdMs(row) { return 0; }
+            function appIcon(row) { return ""; }
+            function mainIcon(row) { return "notifications"; }
+            function mainImage(row) { return null; }
+            function urgency(row) { return 1; }
+            function clearAll() {}
+        }
     }
 
     QtObject {

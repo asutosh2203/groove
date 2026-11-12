@@ -12,16 +12,16 @@ Item {
     id: notificationPage
 
     property var app: null
-    readonly property int notificationRow: app ? app.notificationLatestRow() : -1
+    readonly property int notificationRow: app ? app.notifications.latestRow() : -1
     readonly property bool hasNotification: notificationRow >= 0
-    readonly property var mainImage: hasNotification && app.notificationImagesEnabled ? app.notificationMainImage(notificationRow) : null
+    readonly property var mainImage: hasNotification && app.notificationImagesEnabled ? app.notifications.mainImage(notificationRow) : null
     readonly property bool hasImage: mainImage !== null && mainImage !== undefined && (typeof mainImage !== "string" || mainImage.length > 0)
-    readonly property var iconName: hasNotification ? app.notificationMainIcon(notificationRow) : "notifications"
+    readonly property var iconName: hasNotification ? app.notifications.mainIcon(notificationRow) : "notifications"
     // No real application icon: show the generic notification glyph, muted.
     readonly property bool genericIcon: !hasImage && (typeof iconName !== "string" || iconName.length === 0 || iconName === "notifications")
-    readonly property string bodyText: hasNotification ? app.notificationBody(notificationRow) : ""
+    readonly property string bodyText: hasNotification ? app.notifications.body(notificationRow) : ""
     readonly property real artSize: 44
-    readonly property real createdMs: hasNotification ? app.notificationCreatedMs(notificationRow) : 0
+    readonly property real createdMs: hasNotification ? app.notifications.createdMs(notificationRow) : 0
     property real nowMs: Date.now()
     // "now", then "Nm ago" up to 59 minutes, then the clock time the notification arrived.
     readonly property string ageText: {
@@ -37,7 +37,7 @@ Item {
     onCreatedMsChanged: nowMs = Date.now()
 
     // Clickable (D-31) is decided and handled for the whole island in main.qml; the glyph follows its hover state.
-    readonly property bool clickable: hasNotification && app.notificationClickable(notificationRow)
+    readonly property bool clickable: hasNotification && app.notifications.clickable(notificationRow)
 
     Timer {
         interval: 30000
@@ -46,7 +46,7 @@ Item {
         onTriggered: notificationPage.nowMs = Date.now()
     }
     readonly property real textWidth: Math.max(0, width - artSize - 12)
-    readonly property string titleText: hasNotification ? app.notificationTitle(notificationRow) : i18n("Notification")
+    readonly property string titleText: hasNotification ? app.notifications.title(notificationRow) : i18n("Notification")
     // Density is chosen from the content measured at the roomy (short) sizes, so it depends only on the
     // text and cannot flip while the notification is shown: one-line title and at most a one-line body.
     readonly property bool shortLayout: titleMetrics.advanceWidth(titleText) <= textWidth && (bodyText.length === 0 || bodyText.indexOf("\n") < 0 && bodyMetrics.advanceWidth(bodyText) <= textWidth)
@@ -153,7 +153,7 @@ Item {
 
                 PlasmaLabel {
                     Layout.fillWidth: true
-                    text: notificationPage.hasNotification ? notificationPage.app.notificationAppName(notificationPage.notificationRow) : i18n("Notification")
+                    text: notificationPage.hasNotification ? notificationPage.app.notifications.appName(notificationPage.notificationRow) : i18n("Notification")
                     color: "#8d8f99"
                     font.pixelSize: 10
                     elide: Text.ElideRight
@@ -174,7 +174,7 @@ Item {
                     Layout.preferredWidth: 5
                     Layout.preferredHeight: 5
                     radius: 2.5
-                    color: notificationPage.hasNotification ? notificationPage.app.notificationUrgencyColor(notificationPage.notificationRow) : "#D1D3D8"
+                    color: notificationPage.hasNotification ? notificationPage.app.notifications.urgencyColor(notificationPage.notificationRow) : "#D1D3D8"
                 }
             }
 

@@ -14,7 +14,7 @@ Rectangle {
     readonly property bool showMedia: app.media.hasPlayer
     readonly property bool showAnyActivity: mediaOnly ? showMedia : app.hasActivity
     readonly property string summaryMode: mediaOnly ? app.media.hasPlayer ? "media" : "idle" : app.activityMode()
-    readonly property color activityColor: app.media.isPlaying || app.hasJobs || app.hasNotifications ? T.textCaption : T.textTertiary
+    readonly property color activityColor: app.media.isPlaying || app.hasJobs || app.notifications.hasNotifications ? T.textCaption : T.textTertiary
     readonly property bool iconOnly: width < 100 || height < 62
     readonly property bool compact: width < 190 || height < 112
     // Media card with room for artwork + controls on the left and track info on the right.
@@ -103,7 +103,7 @@ Rectangle {
                     Layout.preferredWidth: 36
                     Layout.preferredHeight: 28
                     color: activitySummary.activityColor
-                    playing: app.media.isPlaying || app.hasJobs || app.hasNotifications
+                    playing: app.media.isPlaying || app.hasJobs || app.notifications.hasNotifications
                 }
             }
 
@@ -195,7 +195,7 @@ Rectangle {
                 }
                 PlasmaLabel {
                     Layout.fillWidth: true
-                    text: activitySummary.mediaOnly ? app.media.hasPlayer ? app.media.player.identity || i18n("Media player") : "" : app.hasJobs ? i18n("Download active") : app.hasNotifications ? i18np("%1 unread", "%1 unread", notificationsSource.unreadNotificationsCount) : i18n("No activity")
+                    text: activitySummary.mediaOnly ? app.media.hasPlayer ? app.media.player.identity || i18n("Media player") : "" : app.hasJobs ? i18n("Download active") : app.notifications.hasNotifications ? i18np("%1 unread", "%1 unread", notificationsSource.unreadNotificationsCount) : i18n("No activity")
                     color: T.textSecondary
                     font.pixelSize: T.fontCaption
                     horizontalAlignment: Text.AlignRight
@@ -365,7 +365,7 @@ Rectangle {
 
     IslandBars {
         clock: app.decorClock
-        visible: activitySummary.iconOnly && (activitySummary.mediaOnly ? app.media.isPlaying : app.media.isPlaying || app.hasJobs || app.hasNotifications) && width >= 58
+        visible: activitySummary.iconOnly && (activitySummary.mediaOnly ? app.media.isPlaying : app.media.isPlaying || app.hasJobs || app.notifications.hasNotifications) && width >= 58
         anchors.right: parent.right
         anchors.rightMargin: 8
         anchors.verticalCenter: parent.verticalCenter

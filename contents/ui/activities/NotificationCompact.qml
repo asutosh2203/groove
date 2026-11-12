@@ -6,8 +6,8 @@ Item {
     id: notificationCompact
 
     property var app: null
-    readonly property int row: app ? app.notificationLatestRow() : -1
-    readonly property int unreadCount: app ? app.notificationUnreadCount : 0
+    readonly property int row: app ? app.notifications.latestRow() : -1
+    readonly property int unreadCount: app ? app.notifications.unreadCount : 0
 
     RowLayout {
         anchors.fill: parent
@@ -17,7 +17,7 @@ Item {
 
         PlasmaLabel {
             Layout.fillWidth: true
-            text: notificationCompact.row >= 0 ? notificationCompact.app.notificationTitle(notificationCompact.row) : i18n("Notification")
+            text: notificationCompact.row >= 0 ? notificationCompact.app.notifications.title(notificationCompact.row) : i18n("Notification")
             color: "#f2f2f7"
             font.pixelSize: 9
             font.weight: Font.DemiBold
