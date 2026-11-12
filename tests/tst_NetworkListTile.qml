@@ -10,7 +10,7 @@ Item {
 
     QtObject {
         id: testApp
-        property bool controlEditMode: false
+        readonly property var layoutService: QtObject { property bool editMode: false }
         property bool networkingEnabled: true
         property int settingsOpened: 0
         property int refreshes: 0
@@ -43,7 +43,7 @@ Item {
         }
 
         function init() {
-            testApp.controlEditMode = false;
+            testApp.layoutService.editMode = false;
             testApp.networkingEnabled = true;
             testApp.settingsOpened = 0;
             testApp.refreshes = 0;
@@ -124,7 +124,7 @@ Item {
             compare(testApp.settingsOpened, 1);
             mouseClick(settings, settings.width / 2, settings.height / 2);
             compare(testApp.settingsOpened, 2);
-            testApp.controlEditMode = true;
+            testApp.layoutService.editMode = true;
             mouseClick(tile, 30, tile.height - 20);
             mouseClick(refresh, refresh.width / 2, refresh.height / 2);
             compare(testApp.settingsOpened, 2);

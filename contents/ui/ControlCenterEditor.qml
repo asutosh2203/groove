@@ -15,13 +15,13 @@ Item {
 
     Component.onCompleted: {
         if (app)
-            app.activeControlPage = editor;
+            app.layoutService.activePage = editor;
 
     }
 
     Component.onDestruction: {
-        if (app && app.activeControlPage === editor)
-            app.activeControlPage = null;
+        if (app && app.layoutService.activePage === editor)
+            app.layoutService.activePage = null;
 
     }
 
@@ -43,74 +43,74 @@ Item {
         const maxOffsetCol = Math.max(0, gridUnitWidth(size) - 1);
         const maxOffsetRow = Math.max(0, gridUnitHeight(size) - 1);
         return {
-            "col": Math.max(0, Math.min(moduleGrid.columns - 1, Math.floor(p.x / pitch) - Math.max(0, Math.min(maxOffsetCol, app.controlDragOffsetCol)))),
-            "row": Math.max(0, Math.floor(p.y / pitch) - Math.max(0, Math.min(maxOffsetRow, app.controlDragOffsetRow)))
+            "col": Math.max(0, Math.min(moduleGrid.columns - 1, Math.floor(p.x / pitch) - Math.max(0, Math.min(maxOffsetCol, app.layoutService.dragOffsetCol)))),
+            "row": Math.max(0, Math.floor(p.y / pitch) - Math.max(0, Math.min(maxOffsetRow, app.layoutService.dragOffsetRow)))
         };
     }
 
     function draggedSize() {
-        if (!app || !app.controlDragSource)
+        if (!app || !app.layoutService.dragSource)
             return { "w": 1, "h": 1 };
 
-        if (app.controlDragSource.fromPalette) {
-            const size = defaultModuleSize(app.controlDragSource.moduleId);
+        if (app.layoutService.dragSource.fromPalette) {
+            const size = defaultModuleSize(app.layoutService.dragSource.moduleId);
             return { "w": size.w, "h": size.h };
         }
 
         return {
-            "w": app.controlDragSource.moduleWidthUnits,
-            "h": app.controlDragSource.moduleHeightUnits
+            "w": app.layoutService.dragSource.moduleWidthUnits,
+            "h": app.layoutService.dragSource.moduleHeightUnits
         };
     }
 
     function defaultModuleSize(id) {
-        return app.controlModuleDefaultSize(id);
+        return app.layoutService.defaultSize(id);
     }
 
     function visualLayout() {
-        const layout = app.controlLayout().slice();
-        const hasCellTarget = app.controlDropCol >= 0 && app.controlDropRow >= 0;
-        if (app.controlResizeActive && app.controlResizeSource && app.controlResizeIndex >= 0 && app.controlResizeIndex < layout.length) {
-            const resized = layout.splice(app.controlResizeIndex, 1)[0];
+        const layout = app.layoutService.currentLayout().slice();
+        const hasCellTarget = app.layoutService.dropCol >= 0 && app.layoutService.dropRow >= 0;
+        if (app.layoutService.resizeActive && app.layoutService.resizeSource && app.layoutService.resizeIndex >= 0 && app.layoutService.resizeIndex < layout.length) {
+            const resized = layout.splice(app.layoutService.resizeIndex, 1)[0];
             const basePlaced = packLayout([resized].concat(layout));
             const basePlacement = basePlaced[resized.id] || {
                 "col": Utils.finiteNumber(resized.col, 0),
                 "row": Utils.finiteNumber(resized.row, 0)
             };
-            resized.w = app.controlResizeWidthUnits;
-            resized.h = app.controlResizeHeightUnits;
+            resized.w = app.layoutService.resizeWidthUnits;
+            resized.h = app.layoutService.resizeHeightUnits;
             resized.col = Math.max(0, Math.min(moduleGrid.columns - gridUnitWidth(resized), Math.round(Utils.finiteNumber(basePlacement.col, 0))));
             resized.row = Math.max(0, Math.round(Utils.finiteNumber(basePlacement.row, 0)));
             layout.unshift(resized);
             return layout;
         }
 
-        if (!app.controlDragActive || !app.controlDragSource || app.controlDropOnPalette || !hasCellTarget)
+        if (!app.layoutService.dragActive || !app.layoutService.dragSource || app.layoutService.dropOnPalette || !hasCellTarget)
             return layout;
 
-        let placeholder = app.controlDragSource.fromPalette
-            ? cloneLayoutItem(defaultModuleSize(app.controlDragSource.moduleId))
+        let placeholder = app.layoutService.dragSource.fromPalette
+            ? cloneLayoutItem(defaultModuleSize(app.layoutService.dragSource.moduleId))
             : cloneLayoutItem({
                 "id": "__dropPlaceholder",
-                "w": app.controlDragSource.moduleWidthUnits,
-                "h": app.controlDragSource.moduleHeightUnits,
+                "w": app.layoutService.dragSource.moduleWidthUnits,
+                "h": app.layoutService.dragSource.moduleHeightUnits,
                 "v": 2
             });
         placeholder.id = "__dropPlaceholder";
-        placeholder.col = app.controlDropCol;
-        placeholder.row = app.controlDropRow;
+        placeholder.col = app.layoutService.dropCol;
+        placeholder.row = app.layoutService.dropRow;
 
-        if (app.controlDragSource.fromPalette) {
-            const existing = layout.findIndex(item => item.id === app.controlDragSource.moduleId);
+        if (app.layoutService.dragSource.fromPalette) {
+            const existing = layout.findIndex(item => item.id === app.layoutService.dragSource.moduleId);
             if (existing >= 0)
                 return layout;
         } else {
-            const from = app.controlDragSource.moduleIndex;
+            const from = app.layoutService.dragSource.moduleIndex;
             if (from >= 0 && from < layout.length)
                 layout.splice(from, 1);
         }
 
-        return insertItemAtRowMajorTarget(layout, placeholder, app.controlDropCol, app.controlDropRow);
+        return insertItemAtRowMajorTarget(layout, placeholder, app.layoutService.dropCol, app.layoutService.dropRow);
     }
 
     function cloneLayoutItem(item) {
@@ -225,11 +225,11 @@ Item {
                 "v": 2
             });
         }
-        app.updateControlLayout(saved);
+        app.layoutService.updateLayout(saved);
     }
 
     function canDropAtCell(col, row) {
-        if (!app.controlDragSource || col < 0 || row < 0)
+        if (!app.layoutService.dragSource || col < 0 || row < 0)
             return false;
 
         const size = draggedSize();
@@ -287,15 +287,15 @@ Item {
     }
 
     function packedLayout() {
-        app.controlLayoutRevision;
-        app.controlDragActive;
-        app.controlDropOnPalette;
-        app.controlDropCol;
-        app.controlDropRow;
-        app.controlResizeActive;
-        app.controlResizeIndex;
-        app.controlResizeWidthUnits;
-        app.controlResizeHeightUnits;
+        app.layoutService.revision;
+        app.layoutService.dragActive;
+        app.layoutService.dropOnPalette;
+        app.layoutService.dropCol;
+        app.layoutService.dropRow;
+        app.layoutService.resizeActive;
+        app.layoutService.resizeIndex;
+        app.layoutService.resizeWidthUnits;
+        app.layoutService.resizeHeightUnits;
         return packLayout(visualLayout());
     }
 
@@ -305,8 +305,8 @@ Item {
     }
 
     function dropPlaceholderPlacement(placedLayout) {
-        if (!app.controlEditMode || !app.controlDragActive || app.controlDropOnPalette || app.controlDropCol < 0 || app.controlDropRow < 0) {
-            if (app.controlDropInvalid) {
+        if (!app.layoutService.editMode || !app.layoutService.dragActive || app.layoutService.dropOnPalette || app.layoutService.dropCol < 0 || app.layoutService.dropRow < 0) {
+            if (app.layoutService.dropInvalid) {
                 const size = draggedSize();
                 return {
                     "visible": true,
@@ -361,25 +361,25 @@ Item {
     }
 
     function previewControlDrop(x, y) {
-        app.controlDropOnPalette = containsPoint(palette, x, y);
-        if (app.controlDropOnPalette || !containsPoint(moduleFlickable, x, y)) {
-            app.controlDropCol = -1;
-            app.controlDropRow = -1;
-            app.controlDropInvalid = false;
+        app.layoutService.dropOnPalette = containsPoint(palette, x, y);
+        if (app.layoutService.dropOnPalette || !containsPoint(moduleFlickable, x, y)) {
+            app.layoutService.dropCol = -1;
+            app.layoutService.dropRow = -1;
+            app.layoutService.dropInvalid = false;
             return ;
         }
 
         const cell = cellAtPoint(x, y);
         if (canDropAtCell(cell.col, cell.row)) {
-            app.controlDropCol = cell.col;
-            app.controlDropRow = cell.row;
-            app.controlDropInvalid = false;
+            app.layoutService.dropCol = cell.col;
+            app.layoutService.dropRow = cell.row;
+            app.layoutService.dropInvalid = false;
             return ;
         }
 
-        app.controlDropCol = -1;
-        app.controlDropRow = -1;
-        app.controlDropInvalid = true;
+        app.layoutService.dropCol = -1;
+        app.layoutService.dropRow = -1;
+        app.layoutService.dropInvalid = true;
     }
 
     function finishControlDrop(source, x, y) {
@@ -388,15 +388,15 @@ Item {
 
         previewControlDrop(x, y);
 
-        if (app.controlDropOnPalette) {
+        if (app.layoutService.dropOnPalette) {
             if (!source.fromPalette)
-                app.removeControlModule(source.moduleIndex);
+                app.layoutService.removeModule(source.moduleIndex);
 
             return ;
         }
 
-        if (app.controlDropCol >= 0 && app.controlDropRow >= 0) {
-            commitControlDropAtCell(source, app.controlDropCol, app.controlDropRow);
+        if (app.layoutService.dropCol >= 0 && app.layoutService.dropRow >= 0) {
+            commitControlDropAtCell(source, app.layoutService.dropCol, app.layoutService.dropRow);
 
             return ;
         }
@@ -406,7 +406,7 @@ Item {
     }
 
     function addModuleAtFirstAvailableCell(id) {
-        const layout = app.controlLayout();
+        const layout = app.layoutService.currentLayout();
         if (layoutHasModule(layout, id))
             return ;
 
@@ -416,7 +416,7 @@ Item {
     }
 
     function commitControlDropAtCell(source, col, row) {
-        const layout = app.controlLayout();
+        const layout = app.layoutService.currentLayout();
         let item = null;
 
         if (source.fromPalette) {
@@ -438,7 +438,7 @@ Item {
     }
 
     function commitControlResize(source, widthUnits, heightUnits) {
-        const layout = app.controlLayout();
+        const layout = app.layoutService.currentLayout();
         if (!source || source.moduleIndex < 0 || source.moduleIndex >= layout.length)
             return ;
 
@@ -448,7 +448,7 @@ Item {
             "col": Utils.finiteNumber(item.col, 0),
             "row": Utils.finiteNumber(item.row, 0)
         };
-        const size = app.clampedControlModule(item.id, widthUnits, heightUnits);
+        const size = app.layoutService.clampedModule(item.id, widthUnits, heightUnits);
         item.w = size.w;
         item.h = size.h;
         item.col = Math.max(0, Math.min(moduleGrid.columns - item.w, Math.round(Utils.finiteNumber(basePlacement.col, 0))));
@@ -469,7 +469,7 @@ Item {
 
         PlasmaLabel {
             Layout.fillWidth: true
-            text: app.controlEditMode ? app.controlLayoutDirty ? i18n("Edit control center *") : i18n("Edit control center") : i18n("Control center")
+            text: app.layoutService.editMode ? app.layoutService.dirty ? i18n("Edit control center *") : i18n("Edit control center") : i18n("Control center")
             color: T.textPrimary
             font.pixelSize: T.fontHeader
             font.weight: Font.DemiBold
@@ -478,17 +478,17 @@ Item {
         }
 
         PlasmaLabel {
-            visible: app.controlEditMode
+            visible: app.layoutService.editMode
             Layout.maximumWidth: 150
-            text: app.controlLayoutDirty ? i18n("Unsaved") : i18n("Saved")
-            color: app.controlLayoutDirty ? T.textPrimary : T.textSecondary
+            text: app.layoutService.dirty ? i18n("Unsaved") : i18n("Saved")
+            color: app.layoutService.dirty ? T.textPrimary : T.textSecondary
             font.pixelSize: T.fontCaption
             font.weight: Font.DemiBold
             elide: Text.ElideRight
         }
 
         IslandButton {
-            visible: !app.controlEditMode
+            visible: !app.layoutService.editMode
             iconName: "document-edit"
             compact: true
             restColor: T.raised
@@ -497,11 +497,11 @@ Item {
             outlineColor: T.border
             focusColor: T.focusRing
             tooltipText: i18n("Edit layout")
-            onClicked: app.beginControlEdit()
+            onClicked: app.layoutService.beginEdit()
         }
 
         IslandButton {
-            visible: app.controlEditMode
+            visible: app.layoutService.editMode
             iconName: "dialog-cancel"
             compact: true
             restColor: T.raised
@@ -509,13 +509,13 @@ Item {
             pressedColor: T.cardPressed
             outlineColor: T.border
             focusColor: T.focusRing
-            emphasized: app.controlLayoutDirty
-            tooltipText: app.controlLayoutDirty ? i18n("Cancel changes") : i18n("Exit edit mode")
-            onClicked: app.cancelControlEdit()
+            emphasized: app.layoutService.dirty
+            tooltipText: app.layoutService.dirty ? i18n("Cancel changes") : i18n("Exit edit mode")
+            onClicked: app.layoutService.cancelEdit()
         }
 
         IslandButton {
-            visible: app.controlEditMode
+            visible: app.layoutService.editMode
             iconName: "restore-defaults"
             compact: true
             restColor: T.raised
@@ -524,11 +524,11 @@ Item {
             outlineColor: T.border
             focusColor: T.focusRing
             tooltipText: i18n("Reset draft to default")
-            onClicked: app.resetControlLayout()
+            onClicked: app.layoutService.resetLayout()
         }
 
         IslandButton {
-            visible: app.controlEditMode
+            visible: app.layoutService.editMode
             iconName: "dialog-ok-apply"
             compact: true
             restColor: T.raised
@@ -536,10 +536,10 @@ Item {
             pressedColor: T.cardPressed
             outlineColor: T.border
             focusColor: T.focusRing
-            enabled: app.controlLayoutDirty
-            emphasized: app.controlLayoutDirty
-            tooltipText: app.controlLayoutDirty ? i18n("Save layout") : i18n("No changes")
-            onClicked: app.saveControlEdit()
+            enabled: app.layoutService.dirty
+            emphasized: app.layoutService.dirty
+            tooltipText: app.layoutService.dirty ? i18n("Save layout") : i18n("No changes")
+            onClicked: app.layoutService.saveEdit()
         }
     }
 
@@ -547,13 +547,13 @@ Item {
         id: moduleFlickable
 
         anchors.left: parent.left
-        anchors.right: app.controlEditMode ? palette.left : parent.right
-        anchors.rightMargin: app.controlEditMode ? 10 : 0
+        anchors.right: app.layoutService.editMode ? palette.left : parent.right
+        anchors.rightMargin: app.layoutService.editMode ? 10 : 0
         anchors.top: editBar.bottom
         anchors.topMargin: 8
         anchors.bottom: parent.bottom
         clip: true
-        interactive: !app.controlDragActive && !app.controlResizeActive
+        interactive: !app.layoutService.dragActive && !app.layoutService.resizeActive
         contentWidth: width
         contentHeight: moduleGrid.height
 
@@ -578,12 +578,12 @@ Item {
                 height: editor.gridHeight(moduleGrid.dropPreview.h)
                 opacity: visible ? 0.92 : 0
                 z: 0
-                iconName: app.controlDragIcon
+                iconName: app.layoutService.dragIcon
                 invalid: moduleGrid.dropPreview.invalid || false
             }
 
             Repeater {
-                model: app.controlLayout()
+                model: app.layoutService.currentLayout()
 
                 Loader {
                     required property var modelData
@@ -623,15 +623,15 @@ Item {
     Rectangle {
         id: palette
 
-        visible: app.controlEditMode
+        visible: app.layoutService.editMode
         anchors.right: parent.right
         anchors.top: editBar.bottom
         anchors.topMargin: 8
         anchors.bottom: parent.bottom
-        width: app.controlEditMode ? 150 : 0
+        width: app.layoutService.editMode ? 150 : 0
         radius: T.radiusCard
-        color: app.controlDropOnPalette ? T.raised : T.card
-        border.color: app.controlDropOnPalette ? T.textCaption : T.border
+        color: app.layoutService.dropOnPalette ? T.raised : T.card
+        border.color: app.layoutService.dropOnPalette ? T.textCaption : T.border
         border.width: 1
         clip: true
 
@@ -654,8 +654,8 @@ Item {
 
             PlasmaLabel {
                 Layout.fillWidth: true
-                text: app.controlDropOnPalette ? i18n("Release to hide this tile.") : i18n("Drag into the grid. Drop here to hide.")
-                color: app.controlDropOnPalette ? T.textPrimary : T.textSecondary
+                text: app.layoutService.dropOnPalette ? i18n("Release to hide this tile.") : i18n("Drag into the grid. Drop here to hide.")
+                color: app.layoutService.dropOnPalette ? T.textPrimary : T.textSecondary
                 font.pixelSize: T.fontCaption
                 wrapMode: Text.WordWrap
             }
@@ -664,7 +664,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                interactive: !app.controlDragActive && !app.controlResizeActive
+                interactive: !app.layoutService.dragActive && !app.layoutService.resizeActive
                 contentWidth: width
                 contentHeight: paletteColumn.implicitHeight
 
@@ -675,7 +675,7 @@ Item {
                     spacing: 6
 
                     Repeater {
-                        model: app.controlModules
+                        model: app.layoutService.modules
 
                         PaletteModule {
                             Layout.fillWidth: true
@@ -750,10 +750,10 @@ Item {
 
         implicitHeight: 42
         radius: T.radiusInner
-        color: paletteDrag.pressed ? T.chip : app.controlDropOnPalette ? T.rowHover : T.row
-        border.color: paletteDrag.activeFocus ? T.focusRing : app.controlDropOnPalette ? T.borderStrong : T.border
+        color: paletteDrag.pressed ? T.chip : app.layoutService.dropOnPalette ? T.rowHover : T.row
+        border.color: paletteDrag.activeFocus ? T.focusRing : app.layoutService.dropOnPalette ? T.borderStrong : T.border
         border.width: 1
-        opacity: app.controlDragActive && app.controlDragSource === paletteModule ? 0.48 : 1
+        opacity: app.layoutService.dragActive && app.layoutService.dragSource === paletteModule ? 0.48 : 1
 
         RowLayout {
             anchors.fill: parent
@@ -764,7 +764,7 @@ Item {
             Kirigami.Icon {
                 Layout.preferredWidth: 18
                 Layout.preferredHeight: 18
-                source: T.symbolic(app.moduleIcon(paletteModule.moduleId))
+                source: T.symbolic(app.layoutService.moduleIcon(paletteModule.moduleId))
                 isMask: true
                 color: T.iconIdle
             }
@@ -807,22 +807,22 @@ Item {
                 pressX = mouse.x;
                 pressY = mouse.y;
                 movedEnough = false;
-                app.controlDragOffsetCol = 0;
-                app.controlDragOffsetRow = 0;
-                app.beginControlDrag(paletteModule, paletteDrag, mouse, 48);
+                app.layoutService.dragOffsetCol = 0;
+                app.layoutService.dragOffsetRow = 0;
+                app.layoutService.beginDrag(paletteModule, paletteDrag, mouse, 48);
             }
             onPositionChanged: (mouse) => {
                 if (Math.abs(mouse.x - pressX) > 8 || Math.abs(mouse.y - pressY) > 8)
                     movedEnough = true;
 
                 mouse.accepted = true;
-                app.updateControlDrag(paletteDrag, mouse);
+                app.layoutService.updateDrag(paletteDrag, mouse);
             }
             onReleased: (mouse) => {
                 mouse.accepted = true;
-                app.endControlDrag(paletteDrag, mouse, movedEnough);
+                app.layoutService.endDrag(paletteDrag, mouse, movedEnough);
             }
-            onCanceled: app.endControlDrag(null, null, false)
+            onCanceled: app.layoutService.endDrag(null, null, false)
         }
     }
 }

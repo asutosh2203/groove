@@ -10,7 +10,7 @@ Item {
 
     QtObject {
         id: app
-        property bool controlEditMode: false
+        readonly property var layoutService: QtObject { property bool editMode: false }
         property var paired: []
         property var connected: []
         property string lastAction: ""

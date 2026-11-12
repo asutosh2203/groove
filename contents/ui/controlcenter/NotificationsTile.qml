@@ -198,7 +198,7 @@ Item {
                         width: listColumn.width
                         height: notificationsContent.rowHeight
                         hoverEnabled: true
-                        enabled: !app.controlEditMode
+                        enabled: !app.layoutService.editMode
                         activeFocusOnTab: enabled && clickable
                         Accessible.role: clickable ? Accessible.Button : Accessible.StaticText
                         Accessible.name: app.notificationTitle(modelData)
@@ -223,7 +223,7 @@ Item {
                         HoverHandler {
                             id: rowHover
 
-                            enabled: !app.controlEditMode
+                            enabled: !app.layoutService.editMode
                             cursorShape: rowArea.clickable ? Qt.PointingHandCursor : Qt.ArrowCursor
                         }
 

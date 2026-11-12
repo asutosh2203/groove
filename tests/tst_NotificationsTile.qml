@@ -9,7 +9,7 @@ Item {
 
     QtObject {
         id: app
-        property bool controlEditMode: false
+        readonly property var layoutService: QtObject { property bool editMode: false }
         property bool notificationImagesEnabled: false
         property var opened: []
         // Row 0 is clickable (live action or fallback), row 1 has nothing to open.

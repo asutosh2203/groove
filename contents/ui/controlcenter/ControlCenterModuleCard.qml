@@ -24,23 +24,23 @@ Rectangle {
 
     radius: T.radiusCard
     color: T.card
-    border.color: app.controlEditMode ? T.borderStrong : T.border
+    border.color: app.layoutService.editMode ? T.borderStrong : T.border
     border.width: 1
     clip: true
-    opacity: app.controlDragActive && app.controlDragSource === moduleCard ? 0 : 1
+    opacity: app.layoutService.dragActive && app.layoutService.dragSource === moduleCard ? 0 : 1
     z: 2
     scale: 1
 
     Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
     Behavior on opacity { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
-    Behavior on x { enabled: app.controlEditMode; NumberAnimation { duration: 105; easing.type: Easing.OutCubic } }
-    Behavior on y { enabled: app.controlEditMode; NumberAnimation { duration: 105; easing.type: Easing.OutCubic } }
+    Behavior on x { enabled: app.layoutService.editMode; NumberAnimation { duration: 105; easing.type: Easing.OutCubic } }
+    Behavior on y { enabled: app.layoutService.editMode; NumberAnimation { duration: 105; easing.type: Easing.OutCubic } }
     Behavior on width { NumberAnimation { duration: 105; easing.type: Easing.OutCubic } }
     Behavior on height { NumberAnimation { duration: 105; easing.type: Easing.OutCubic } }
 
     Loader {
         anchors.fill: parent
-        anchors.margins: app.controlEditMode ? Math.min(8, Math.max(4, Math.min(moduleCard.width, moduleCard.height) * 0.1)) : 0
+        anchors.margins: app.layoutService.editMode ? Math.min(8, Math.max(4, Math.min(moduleCard.width, moduleCard.height) * 0.1)) : 0
         sourceComponent: {
             if (moduleCard.moduleId === "userPower")
                 return userPowerModule;
@@ -80,7 +80,7 @@ Rectangle {
 
     Rectangle {
         anchors.fill: parent
-        visible: app.controlEditMode
+        visible: app.layoutService.editMode
         color: "transparent"
         border.color: T.borderStrong
         border.width: 1
@@ -89,7 +89,7 @@ Rectangle {
 
     MouseArea {
         id: dragArea
-        visible: app.controlEditMode
+        visible: app.layoutService.editMode
         anchors.fill: parent
         anchors.margins: 2
         hoverEnabled: true
@@ -100,23 +100,23 @@ Rectangle {
             mouse.accepted = true;
             const local = dragArea.mapToItem(moduleCard, mouse.x, mouse.y);
             const pitch = Math.max(1, moduleCard.gridUnitSize + moduleCard.gridGap);
-            app.controlDragOffsetCol = Math.max(0, Math.min(moduleCard.moduleWidthUnits - 1, Math.floor(local.x / pitch)));
-            app.controlDragOffsetRow = Math.max(0, Math.min(moduleCard.moduleHeightUnits - 1, Math.floor(local.y / pitch)));
-            app.beginControlDrag(moduleCard, dragArea, mouse, 54);
+            app.layoutService.dragOffsetCol = Math.max(0, Math.min(moduleCard.moduleWidthUnits - 1, Math.floor(local.x / pitch)));
+            app.layoutService.dragOffsetRow = Math.max(0, Math.min(moduleCard.moduleHeightUnits - 1, Math.floor(local.y / pitch)));
+            app.layoutService.beginDrag(moduleCard, dragArea, mouse, 54);
         }
         onPositionChanged: (mouse) => {
             mouse.accepted = true;
-            app.updateControlDrag(dragArea, mouse);
+            app.layoutService.updateDrag(dragArea, mouse);
         }
         onReleased: (mouse) => {
             mouse.accepted = true;
-            app.endControlDrag(dragArea, mouse, true);
+            app.layoutService.endDrag(dragArea, mouse, true);
         }
-        onCanceled: app.endControlDrag(null, null, false)
+        onCanceled: app.layoutService.endDrag(null, null, false)
     }
 
     Rectangle {
-        visible: app.controlEditMode
+        visible: app.layoutService.editMode
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.margins: 7
@@ -130,7 +130,7 @@ Rectangle {
         PlasmaLabel {
             id: moduleLabel
             anchors.centerIn: parent
-            text: app.moduleInfo(moduleCard.moduleId).name
+            text: app.layoutService.moduleInfo(moduleCard.moduleId).name
             color: T.textCaption
             font.pixelSize: T.fontCaption
             font.weight: Font.DemiBold
@@ -144,7 +144,7 @@ Rectangle {
         property int startW: 1
         property int startH: 1
 
-        visible: app.controlEditMode
+        visible: app.layoutService.editMode
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         width: Math.min(34, Math.max(24, Math.min(moduleCard.width, moduleCard.height) * 0.55))
@@ -164,10 +164,10 @@ Rectangle {
             startPointerY = p.y;
             startW = moduleCard.moduleWidthUnits;
             startH = moduleCard.moduleHeightUnits;
-            app.beginControlResize(moduleCard);
+            app.layoutService.beginResize(moduleCard);
         }
         onPositionChanged: (mouse) => {
-            if (!pressed || !app.controlResizeActive || !moduleCard.hostItem || !resizeHandle.mapToItem)
+            if (!pressed || !app.layoutService.resizeActive || !moduleCard.hostItem || !resizeHandle.mapToItem)
                 return;
 
             mouse.accepted = true;
@@ -175,13 +175,13 @@ Rectangle {
             const step = Math.max(1, moduleCard.gridUnitSize + moduleCard.gridGap);
             const newW = startW + Math.round((p.x - startPointerX) / step);
             const newH = startH + Math.round((p.y - startPointerY) / step);
-            app.updateControlResize(moduleCard, newW, newH);
+            app.layoutService.updateResize(moduleCard, newW, newH);
         }
         onReleased: (mouse) => {
             mouse.accepted = true;
-            app.endControlResize(moduleCard, true);
+            app.layoutService.endResize(moduleCard, true);
         }
-        onCanceled: app.endControlResize(moduleCard, false)
+        onCanceled: app.layoutService.endResize(moduleCard, false)
 
         Canvas {
             anchors.right: parent.right
@@ -274,7 +274,7 @@ Rectangle {
         }
     }
     Component { id: wifiDevicesModule; NetworkListTile { app: moduleCard.app } }
-    Component { id: mediaModule; ActivitySummaryTile { app: moduleCard.app; notificationsSource: moduleCard.notificationsSource; mediaOnly: true; radius: moduleCard.radius; border.width: 1; border.color: moduleCard.app.controlEditMode ? T.borderStrong : T.border } }
+    Component { id: mediaModule; ActivitySummaryTile { app: moduleCard.app; notificationsSource: moduleCard.notificationsSource; mediaOnly: true; radius: moduleCard.radius; border.width: 1; border.color: moduleCard.app.layoutService.editMode ? T.borderStrong : T.border } }
     Component { id: notificationsModule; NotificationsTile { app: moduleCard.app; notificationsSource: moduleCard.notificationsSource } }
     Component {
         id: bluetoothModule

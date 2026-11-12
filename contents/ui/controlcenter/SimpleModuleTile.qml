@@ -36,7 +36,7 @@ MouseArea {
 
     anchors.fill: parent
     hoverEnabled: true
-    enabled: !app.controlEditMode
+    enabled: !app.layoutService.editMode
     activeFocusOnTab: enabled
     Accessible.role: Accessible.Button
     Accessible.name: simpleTile.title.length > 0 ? simpleTile.title : simpleTile.iconName

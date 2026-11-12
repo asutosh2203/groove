@@ -138,9 +138,9 @@ PlasmoidItem {
     readonly property real realIslandWidth: compactRepresentationItem && compactRepresentationItem.width > 0 ? compactRepresentationItem.width : islandWidth
     readonly property real realIslandHeight: compactRepresentationItem && compactRepresentationItem.height > 0 ? compactRepresentationItem.height : islandHeight
     readonly property int mediaPopupWidth: 340
-    readonly property int popupWidth: popupMode === "control" ? (controlEditMode ? 620 : 430) : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupWidth : 294)
+    readonly property int popupWidth: popupMode === "control" ? (controlLayoutService.editMode ? 620 : 430) : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupWidth : 294)
     readonly property int mediaPopupHeight: 120
-    readonly property int popupHeight: popupMode === "control" ? (controlEditMode ? 570 : 540) : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupHeight : 104)
+    readonly property int popupHeight: popupMode === "control" ? (controlLayoutService.editMode ? 570 : 540) : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupHeight : 104)
     readonly property int popupRadius: popupMode === "control" ? 28 : 26
     readonly property bool islandExpandsUp: Plasmoid.location === PlasmaCore.Types.BottomEdge
     readonly property bool islandExpandsDown: Plasmoid.location === PlasmaCore.Types.TopEdge
@@ -152,9 +152,6 @@ PlasmoidItem {
     property bool dialogActive: false
     property real popupCollapsedX: (popupWidth - realIslandWidth) / 2
     property real popupCollapsedY: islandExpandsUp ? popupHeight - realIslandHeight : islandExpandsDown ? 0 : (popupHeight - realIslandHeight) / 2
-    property bool controlEditMode: false
-    property int controlLayoutRevision: 0
-    property var controlLayoutDraft: []
     property string systemUsername: ""
     property string systemHostname: ""
     property string profileImageUrl: ""
@@ -186,37 +183,11 @@ PlasmoidItem {
     property int screenBrightnessMax: 100
     property int screenBrightnessVisualPercent: 0
     property bool screenBrightnessVisualPinned: false
-    property bool controlDragActive: false
-    property var controlDragSource: null
-    property string controlDragIcon: ""
-    property real controlDragX: 0
-    property real controlDragY: 0
-    property int controlDragSize: 54
-    property int controlDragOffsetCol: 0
-    property int controlDragOffsetRow: 0
-    property var activeControlPage: null
-    property int controlDropCol: -1
-    property int controlDropRow: -1
-    property bool controlDropOnPalette: false
-    property bool controlDropInvalid: false
-    property bool controlResizeActive: false
-    property var controlResizeSource: null
-    property int controlResizeIndex: -1
-    property int controlResizeWidthUnits: 1
-    property int controlResizeHeightUnits: 1
-    readonly property bool controlLayoutDirty: controlEditMode && controlLayoutRevision >= 0 && !sameControlLayout(controlLayoutDraft, committedControlLayout())
     readonly property string accountIconCommand: "sh -c 'user=$(id -un); path=$(qdbus6 org.freedesktop.Accounts /org/freedesktop/Accounts org.freedesktop.Accounts.FindUserByName \"$user\" 2>/dev/null); test -n \"$path\" && qdbus6 org.freedesktop.Accounts \"$path\" org.freedesktop.Accounts.User.IconFile 2>/dev/null'"
     readonly property string wifiScanCommand: "env LC_ALL=C nmcli --colors no -t -f IN-USE,SSID,SIGNAL,DEVICE device wifi list --rescan no"
     readonly property string networkStatusCommand: "env LC_ALL=C nmcli --colors no -t -f TYPE,DEVICE,STATE,CONNECTION device status"
     readonly property string networkIpCommand: "env LC_ALL=C nmcli --colors no -t -f GENERAL.DEVICE,IP4.ADDRESS,IP6.ADDRESS device show"
 
-    onControlEditModeChanged: {
-        if (!controlEditMode)
-            resetControlInteractionState();
-
-    }
-
-    readonly property var controlModules: ModuleRegistry.allModules()
 
     function screenForPoint(pointX, pointY) {
         const screens = Application.screens;
@@ -418,14 +389,14 @@ PlasmoidItem {
         if (!dialogVisible)
             return ;
 
-        if (popupMode === "control" && controlEditMode)
-            cancelControlEdit();
+        if (popupMode === "control" && controlLayoutService.editMode)
+            controlLayoutService.cancelEdit();
 
         activityPopupTimer.stop();
         openHandoffTimer.stop();
         popupAcceptsFocus = false;
         popupMenuOpen = false;
-        resetControlInteractionState();
+        controlLayoutService.resetInteraction();
         if (!panelHidden && !islandOpen) {
             dialogVisible = false;
             return ;
@@ -464,7 +435,7 @@ PlasmoidItem {
         keyboardAnnouncementLifetimeTimer.stop();
         keyboardAnnouncementActive = false;
         root.refreshSystemState();
-        root.ensureControlLayout();
+        controlLayoutService.ensureLayout();
         openIsland("control", false);
         Qt.callLater(root.focusIslandDialog);
     }
@@ -768,22 +739,6 @@ PlasmoidItem {
 
     function notificationPlainText(text) {
         return TextUtils.plainText(text);
-    }
-
-    function resetControlInteractionState() {
-        controlDragActive = false;
-        controlResizeActive = false;
-        controlDropCol = -1;
-        controlDropRow = -1;
-        controlDropOnPalette = false;
-        controlDropInvalid = false;
-        controlDragSource = null;
-        controlDragOffsetCol = 0;
-        controlDragOffsetRow = 0;
-        controlResizeSource = null;
-        controlResizeIndex = -1;
-        controlResizeWidthUnits = 1;
-        controlResizeHeightUnits = 1;
     }
 
     function mediaText(value) {
@@ -1147,6 +1102,7 @@ PlasmoidItem {
     property string idleClickTarget: ""
     readonly property alias weather: weatherService
     readonly property alias launcher: appLauncher
+    readonly property alias layoutService: controlLayoutService
 
     WeatherService {
         id: weatherService
@@ -1251,182 +1207,6 @@ PlasmoidItem {
     function refreshKdeConnectState() {
         commands.run(KdeConnectState.pairedCommand, stdout => kdeConnectPaired = KdeConnectState.parseNames(stdout));
         commands.run(KdeConnectState.connectedCommand, stdout => kdeConnectConnected = KdeConnectState.parseNames(stdout));
-    }
-
-    function defaultControlLayout() {
-        return ModuleRegistry.defaultLayout();
-    }
-
-    function controlModuleMinSize(id) {
-        return ModuleRegistry.minSize(id);
-    }
-
-    function controlModuleMaxSize(id) {
-        return ModuleRegistry.maxSize(id);
-    }
-
-    function controlModuleDefaultSize(id) {
-        return ModuleRegistry.defaultSize(id);
-    }
-
-    function clampedControlModule(id, widthUnits, heightUnits) {
-        const minSize = controlModuleMinSize(id);
-        const maxSize = controlModuleMaxSize(id);
-        return {
-            "w": Math.round(Utils.clampNumber(widthUnits, minSize.w, maxSize.w)),
-            "h": Math.round(Utils.clampNumber(heightUnits, minSize.h, maxSize.h))
-        };
-    }
-
-    function committedControlLayout() {
-        const raw = Plasmoid.configuration.controlCenterLayoutJson || "";
-        if (raw.length > 0) {
-            try {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed) && parsed.length > 0)
-                    return sanitizeControlLayout(parsed);
-
-            } catch (e) {
-                console.warn("Dynamic Island: invalid control center layout JSON", e);
-            }
-        }
-        return defaultControlLayout();
-    }
-
-    function controlLayout() {
-        controlLayoutRevision;
-        if (controlEditMode && Array.isArray(controlLayoutDraft))
-            return sanitizeControlLayout(controlLayoutDraft);
-
-        return committedControlLayout();
-    }
-
-    function sanitizeControlLayout(layout) {
-        const maxRows = 64;
-        const known = {};
-        for (let i = 0; i < controlModules.length; ++i)
-            known[controlModules[i].id] = true;
-
-        const out = [];
-        const seen = {};
-        for (let j = 0; j < layout.length; ++j) {
-            const item = layout[j] || {};
-            if (!known[item.id] || seen[item.id])
-                continue;
-
-            const migrated = item.v === 2;
-            const size = clampedControlModule(item.id, Utils.finiteNumber(item.w, 1) * (migrated ? 1 : 2), Utils.finiteNumber(item.h, 1) * (migrated ? 1 : 2));
-            const col = isFinite(Number(item.col)) ? Math.round(Utils.clampNumber(item.col, 0, 7)) : -1;
-            const row = isFinite(Number(item.row)) ? Math.max(0, Math.round(Utils.finiteNumber(item.row, 0))) : -1;
-            const saved = {
-                "id": item.id,
-                "w": size.w,
-                "h": size.h,
-                "v": 2
-            };
-            if (col >= 0 && row >= 0) {
-                saved.col = Math.min(8 - size.w, col);
-                saved.row = Math.min(maxRows - size.h, row);
-            }
-            seen[item.id] = true;
-            out.push(saved);
-        }
-        return out.length > 0 ? out : defaultControlLayout();
-    }
-
-    function sameControlLayout(left, right) {
-        return JSON.stringify(sanitizeControlLayout(left || [])) === JSON.stringify(sanitizeControlLayout(right || []));
-    }
-
-    function saveControlLayout(layout) {
-        Plasmoid.configuration.controlCenterLayoutJson = JSON.stringify(sanitizeControlLayout(layout));
-        controlLayoutRevision++;
-    }
-
-    function updateControlLayout(layout) {
-        if (controlEditMode) {
-            controlLayoutDraft = sanitizeControlLayout(layout);
-            controlLayoutRevision++;
-        } else {
-            saveControlLayout(layout);
-        }
-    }
-
-    function ensureControlLayout() {
-        if (!Plasmoid.configuration.controlCenterLayoutJson || Plasmoid.configuration.controlCenterLayoutJson.length === 0)
-            saveControlLayout(defaultControlLayout());
-
-    }
-
-    function beginControlEdit() {
-        controlLayoutDraft = committedControlLayout();
-        controlEditMode = true;
-        controlLayoutRevision++;
-    }
-
-    function saveControlEdit() {
-        if (!controlEditMode)
-            return ;
-
-        if (controlLayoutDirty)
-            saveControlLayout(controlLayoutDraft);
-
-        controlLayoutDraft = [];
-        controlEditMode = false;
-    }
-
-    function cancelControlEdit() {
-        if (!controlEditMode)
-            return ;
-
-        controlLayoutDraft = [];
-        controlEditMode = false;
-        controlLayoutRevision++;
-    }
-
-    function resetControlLayout() {
-        updateControlLayout(defaultControlLayout());
-    }
-
-    function removeControlModule(index) {
-        const layout = controlLayout();
-        if (index < 0 || index >= layout.length)
-            return ;
-
-        layout.splice(index, 1);
-        updateControlLayout(layout);
-    }
-
-    function addControlModule(id) {
-        insertControlModule(id, -1);
-    }
-
-    function insertControlModule(id, target) {
-        const layout = controlLayout();
-        for (let i = 0; i < layout.length; ++i) {
-            if (layout[i].id === id)
-                return ;
-
-        }
-        const item = controlModuleDefaultSize(id);
-        if (target >= 0 && target <= layout.length)
-            layout.splice(target, 0, item);
-        else
-            layout.push(item);
-
-        updateControlLayout(layout);
-    }
-
-    function moduleInfo(id) {
-        return ModuleRegistry.info(id);
-    }
-
-    function moduleIcon(id) {
-        return ModuleRegistry.icon(id, {
-            "wifiEnabled": enabledConnections.wirelessEnabled,
-            "batteryCharging": batteryControl.pluggedIn,
-            "powerProfileIcon": powerProfileIcon()
-        });
     }
 
     function toggleWifi() {
@@ -1546,83 +1326,6 @@ PlasmoidItem {
             commands.run("kdeconnect-cli --device " + Utils.shellQuote(id) + " --ring");
         else if (action === "browse")
             commands.run("qdbus6 org.kde.kdeconnect /modules/kdeconnect/devices/" + id + "/sftp org.kde.kdeconnect.device.sftp.startBrowsing");
-    }
-
-    function beginControlDrag(source, item, mouse, size) {
-        if (!root.controlEditMode || !dialogHost || !source || !item || !mouse || !item.mapToItem)
-            return ;
-
-        const pos = item.mapToItem(dialogHost, mouse.x, mouse.y);
-        controlDragSource = source;
-        controlDragIcon = moduleIcon(source.moduleId);
-        controlDragSize = Math.max(32, Math.min(96, Utils.finiteNumber(size, 54)));
-        controlDragX = pos.x - controlDragSize / 2;
-        controlDragY = pos.y - controlDragSize / 2;
-        controlDragActive = true;
-    }
-
-    function updateControlDrag(item, mouse) {
-        if (!controlDragActive || !dialogHost || !item || !mouse || !item.mapToItem)
-            return ;
-
-        const pos = item.mapToItem(dialogHost, mouse.x, mouse.y);
-        controlDragX = pos.x - controlDragSize / 2;
-        controlDragY = pos.y - controlDragSize / 2;
-        if (activeControlPage)
-            activeControlPage.previewControlDrop(pos.x, pos.y);
-    }
-
-    function endControlDrag(item, mouse, commit) {
-        if (commit && controlDragActive && activeControlPage && dialogHost && item && mouse && item.mapToItem) {
-            const pos = item.mapToItem(dialogHost, mouse.x, mouse.y);
-            activeControlPage.finishControlDrop(controlDragSource, pos.x, pos.y);
-        }
-
-        controlDragActive = false;
-        controlDropCol = -1;
-        controlDropRow = -1;
-        controlDropOnPalette = false;
-        controlDragOffsetCol = 0;
-        controlDragOffsetRow = 0;
-        Qt.callLater(function() {
-            if (!controlDragActive)
-                controlDragSource = null;
-
-        });
-    }
-
-    function beginControlResize(source) {
-        if (!root.controlEditMode || !source || !activeControlPage)
-            return ;
-
-        if (source.moduleIndex < 0)
-            return ;
-
-        controlResizeSource = source;
-        controlResizeIndex = source.moduleIndex;
-        controlResizeWidthUnits = source.moduleWidthUnits;
-        controlResizeHeightUnits = source.moduleHeightUnits;
-        controlResizeActive = true;
-    }
-
-    function updateControlResize(source, widthUnits, heightUnits) {
-        if (!controlResizeActive || !source || source !== controlResizeSource)
-            return ;
-
-        const size = clampedControlModule(source.moduleId, widthUnits, heightUnits);
-        controlResizeWidthUnits = size.w;
-        controlResizeHeightUnits = size.h;
-    }
-
-    function endControlResize(source, commit) {
-        if (commit && controlResizeActive && activeControlPage && source && source === controlResizeSource)
-            activeControlPage.commitControlResize(source, controlResizeWidthUnits, controlResizeHeightUnits);
-
-        controlResizeActive = false;
-        controlResizeSource = null;
-        controlResizeIndex = -1;
-        controlResizeWidthUnits = 1;
-        controlResizeHeightUnits = 1;
     }
 
     // Close every closable notification currently in the model window. Returns
@@ -1952,6 +1655,19 @@ PlasmoidItem {
         id: commands
     }
 
+    ControlLayout {
+        id: controlLayoutService
+
+        storedJson: String(Plasmoid.configuration.controlCenterLayoutJson || "")
+        dragHost: dialogHost
+        iconState: ({
+            "wifiEnabled": enabledConnections.wirelessEnabled,
+            "batteryCharging": batteryControl.pluggedIn,
+            "powerProfileIcon": powerProfileIcon()
+        })
+        onSaveRequested: json => Plasmoid.configuration.controlCenterLayoutJson = json
+    }
+
     AppLauncher {
         id: appLauncher
 
@@ -1966,7 +1682,7 @@ PlasmoidItem {
         root.syncMediaIdle();
         if (root.panelSyncWanted())
             panelStartTimer.start();
-        root.ensureControlLayout();
+        controlLayoutService.ensureLayout();
         root.refreshSystemState();
         appLauncher.discoverCalendarApp();
         root.lastUnreadNotificationsCount = notifications.unreadNotificationsCount;
@@ -2249,20 +1965,20 @@ PlasmoidItem {
             Rectangle {
                 id: controlDragPreview
 
-                width: root.controlDragSize
-                height: root.controlDragSize
-                x: root.controlDragX
-                y: root.controlDragY
+                width: controlLayoutService.dragSize
+                height: controlLayoutService.dragSize
+                x: controlLayoutService.dragX
+                y: controlLayoutService.dragY
                 radius: 17
-                visible: root.controlEditMode && (root.controlDragActive || opacity > 0)
-                opacity: root.controlDragActive ? 0.92 : 0
+                visible: controlLayoutService.editMode && (controlLayoutService.dragActive || opacity > 0)
+                opacity: controlLayoutService.dragActive ? 0.92 : 0
                 color: "#20212a"
                 border.color: "#8e8eff"
                 border.width: 1
                 z: 1000
 
-                Drag.active: root.controlDragActive
-                Drag.source: root.controlDragSource
+                Drag.active: controlLayoutService.dragActive
+                Drag.source: controlLayoutService.dragSource
                 Drag.hotSpot.x: width / 2
                 Drag.hotSpot.y: height / 2
 
@@ -2274,7 +1990,7 @@ PlasmoidItem {
                     anchors.centerIn: parent
                     width: Math.min(30, parent.width - 18)
                     height: width
-                    source: root.controlDragIcon
+                    source: controlLayoutService.dragIcon
                     color: "#f8f8fb"
                 }
             }
@@ -2569,10 +2285,10 @@ PlasmoidItem {
                 if (event.key !== Qt.Key_Escape)
                     return ;
 
-                if (root.controlDragActive || root.controlResizeActive)
-                    root.resetControlInteractionState();
-                else if (root.controlEditMode)
-                    root.cancelControlEdit();
+                if (controlLayoutService.dragActive || controlLayoutService.resizeActive)
+                    controlLayoutService.resetInteraction();
+                else if (controlLayoutService.editMode)
+                    controlLayoutService.cancelEdit();
                 else
                     root.closeIsland();
 

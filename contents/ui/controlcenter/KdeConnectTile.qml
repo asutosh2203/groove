@@ -32,7 +32,7 @@ MouseArea {
 
     anchors.fill: parent
     hoverEnabled: true
-    enabled: !app.controlEditMode
+    enabled: !app.layoutService.editMode
     activeFocusOnTab: enabled
     Accessible.role: Accessible.Button
     Accessible.name: "KDE Connect"

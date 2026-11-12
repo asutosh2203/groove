@@ -76,7 +76,7 @@ Item {
             height: controlSlider.vertical ? controlSlider.fillExtent : parent.height
             radius: controlSlider.cornerRadius
             color: T.fill
-            opacity: controlSlider.sliderAvailable ? (app.controlEditMode ? 0.7 : 1) : 0.16
+            opacity: controlSlider.sliderAvailable ? (app.layoutService.editMode ? 0.7 : 1) : 0.16
 
             Behavior on width { NumberAnimation { duration: T.motionSlider; easing.type: Easing.OutCubic } }
             Behavior on height { NumberAnimation { duration: T.motionSlider; easing.type: Easing.OutCubic } }
@@ -118,7 +118,7 @@ Item {
         id: hoverArea
         anchors.fill: parent
         hoverEnabled: true
-        enabled: controlSlider.sliderAvailable && !app.controlEditMode
+        enabled: controlSlider.sliderAvailable && !app.layoutService.editMode
         preventStealing: true
 
         function valueFromMouse(mouse) {
