@@ -1,26 +1,17 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Effects
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.notificationmanager as NotificationManager
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
-import org.kde.taskmanager as TaskManager
-import "controlcenter"
 import "services"
-import "logic/ModuleRegistry.js" as ModuleRegistry
-import "logic/NetworkState.js" as NetworkState
 import "logic/KdeConnectState.js" as KdeConnectState
-import "logic/TextUtils.js" as TextUtils
 import "logic/Utils.js" as Utils
-import "logic/NotificationOpen.js" as NotificationOpen
 import "logic/ActivityResolver.js" as ActivityResolver
-import "logic/AppMatch.js" as AppMatch
-import "logic/FullscreenState.js" as FullscreenState
-import "logic/NoticeDuration.js" as NoticeDuration
 import "activities" as Activities
+import "shell"
 import "weather"
 
 PlasmoidItem {
@@ -269,6 +260,9 @@ PlasmoidItem {
     readonly property alias connectivity: connectivityService
     readonly property alias system: systemControls
     readonly property alias strings: translations
+    readonly property alias activities: activityController
+    // The item the popup content is laid out in (the dialog's main item).
+    readonly property alias hostItem: dialogHost
 
     WeatherService {
         id: weatherService
@@ -564,6 +558,16 @@ PlasmoidItem {
         }
     }
 
+    // A click is decided after the double-click window, so a double click always wins.
+    function scheduleClick(intervalMs) {
+        clickTimer.interval = intervalMs;
+        clickTimer.restart();
+    }
+
+    function cancelClick() {
+        clickTimer.stop();
+    }
+
     Timer {
         id: clickTimer
 
@@ -681,51 +685,32 @@ PlasmoidItem {
     Component {
         id: mediaVisualComponent
 
-        MaskedArtwork {
-            artworkSource: mediaService.hasPlayer ? mediaService.player.artUrl : ""
-            cornerRadius: root.notchShape ? Math.round(Math.min(width, height) * 0.3) : Math.min(width, height) / 2 // notch: rounded square like expanded; pill: circle
-            mode: "media"
-            progress: activityController.progressValueFor("media") / Math.max(1, activityController.progressToFor("media"))
-            playing: mediaService.isPlaying
+        MediaVisual {
+            app: root
         }
     }
 
     Component {
         id: jobVisualComponent
 
-        MaskedArtwork {
-            mode: "job"
-            progress: activityController.progressValueFor("job") / Math.max(1, activityController.progressToFor("job"))
-            playing: !jobService.isSuspended(jobService.activeRow())
+        JobVisual {
+            app: root
         }
     }
 
     Component {
         id: keyboardVisualComponent
 
-        Rectangle {
-            radius: Math.min(width, height) / 2
-            color: "#1b1b25"
-            border.color: "#3d3d50"
-            border.width: 1
-
-            PlasmaLabel {
-                anchors.centerIn: parent
-                text: systemControls.layoutShortName.toUpperCase()
-                color: "#e2e2ed"
-                font.pixelSize: Math.max(8, Math.min(11, parent.height * 0.42))
-                font.weight: Font.Bold
-            }
+        KeyboardVisual {
+            app: root
         }
     }
 
     Component {
         id: noticeVisualComponent
 
-        Activities.NotificationVisual {
-            source: notificationService.appIcon(notificationService.latestRow())
-            fallbackSource: "notifications"
-            fallbackColor: notificationService.accent(notificationService.latestRow())
+        NoticeVisual {
+            app: root
         }
     }
 
@@ -788,604 +773,50 @@ PlasmoidItem {
     Component {
         id: islandComponent
 
-        Item {
-            id: island
-
-            width: root.islandWidth
-            height: root.islandHeight
-            scale: 1
-            opacity: root.panelHidden ? 0 : 1
-
-            MouseArea {
-                id: mouseArea
-
-                anchors.fill: parent
-                hoverEnabled: true
-                acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-                Accessible.role: Accessible.Button
-                Accessible.name: translations.appTitle
-                Accessible.description: root.primaryText() + ". " + root.secondaryText()
-                Accessible.onPressAction: root.toggleControlCenter()
-                onClicked: (mouse) => {
-                    root.clickButton = mouse.button;
-                    root.idleClickTarget = !root.hasActivity && mouse.button === Qt.LeftButton ? idleFace.targetAt(mouse.x, mouse.y) : "";
-                    // Time/weather launch only after the double-click window, so a double click always wins.
-                    clickTimer.interval = root.idleClickTarget !== "" ? Application.styleHints.mouseDoubleClickInterval : 210;
-                    clickTimer.restart();
-                }
-                onDoubleClicked: (mouse) => {
-                    clickTimer.stop();
-                    root.toggleControlCenter();
-                }
-                onWheel: (wheel) => {
-                    if (mediaService.player && mediaService.player.changeVolume)
-                        mediaService.player.changeVolume(wheel.angleDelta.y > 0 ? 0.04 : -0.04, true);
-                    else
-                        systemControls.adjustVolume(wheel.angleDelta.y > 0);
-                }
-            }
-
-            NotchShape {
-                anchors.fill: parent
-                visible: root.notchShape
-                shoulder: root.notchShoulder
-                bottomRadius: root.notchBottomRadius
-            }
-
-            RoundShape {
-                id: capsule
-
-                visible: !root.notchShape
-                anchors.fill: parent
-                rimOpacity: root.rimLight
-            }
-
-            IdleContent {
-                id: idleFace
-
-                anchors.fill: parent
-                app: root
-                sideMargin: root.notchShape ? 18 : 16
-                animate: !root.hasActivity && !root.islandOpen && !root.panelHidden
-                opacity: root.hasActivity ? 0 : 1
-                visible: opacity > 0
-
-                Behavior on opacity {
-                    NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                }
-            }
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: root.notchShape ? root.notchSideMargin + 2 : (root.activityMode() === "media" ? 4 : 6)
-                anchors.rightMargin: root.notchShape ? root.notchSideMargin : 6
-                anchors.topMargin: 4
-                anchors.bottomMargin: root.notchShape ? 6 : 4
-                spacing: 5
-
-                Rectangle {
-                    Layout.preferredWidth: root.compactArtworkSize
-                    Layout.preferredHeight: root.compactArtworkSize
-                    color: "transparent"
-
-                    Loader {
-                        anchors.fill: parent
-                        sourceComponent: activityController.visualComponentFor(root.activityMode())
-                    }
-
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-
-                    Loader {
-                        anchors.fill: parent
-                        active: root.hasActivity
-                        sourceComponent: activityController.compactComponentFor(root.activityMode())
-                    }
-
-                }
-
-            }
-
+        IslandCompact {
+            app: root
         }
-
     }
 
     Component {
         id: emptyFullRepresentation
 
-        Item {
-            implicitWidth: root.islandWidth
-            implicitHeight: root.islandHeight
-            width: implicitWidth
-            height: implicitHeight
-            visible: false
+        EmptyRepresentation {
+            app: root
         }
-
     }
 
     Component {
         id: popupComponent
 
-        MouseArea {
-            id: popupRoot
-
-            property real morph: root.islandOpen ? 1 : 0
-            readonly property real contentOpacity: Math.max(0, Math.min(1, (morph - 0.42) / 0.58))
-            readonly property real compactOpacity: Math.max(0, Math.min(1, (0.34 - morph) / 0.34))
-            readonly property real collapsedWidth: root.realIslandWidth
-            readonly property real collapsedHeight: root.realIslandHeight
-            readonly property real panelWidth: collapsedWidth + (root.popupWidth - collapsedWidth) * morph
-            readonly property real panelHeight: collapsedHeight + (root.popupHeight - collapsedHeight) * morph
-            readonly property real collapsedRadius: root.notchShape ? root.notchBottomRadius : collapsedHeight / 2
-            readonly property real panelRadius: collapsedRadius + (root.popupRadius - collapsedRadius) * morph
-            readonly property real panelX: root.popupCollapsedX * (1 - morph)
-            readonly property real panelY: root.popupCollapsedY * (1 - morph)
-
-            implicitWidth: root.popupWidth
-            implicitHeight: root.popupHeight
-            width: root.popupWidth
-            height: root.popupHeight
-            Layout.minimumWidth: root.popupWidth
-            Layout.maximumWidth: root.popupWidth
-            Layout.preferredWidth: root.popupWidth
-            Layout.minimumHeight: root.popupHeight
-            Layout.maximumHeight: root.popupHeight
-            Layout.preferredHeight: root.popupHeight
-            hoverEnabled: true
-            focus: root.popupAcceptsFocus
-            acceptedButtons: Qt.LeftButton
-            Accessible.role: Accessible.Grouping
-            Accessible.name: translations.appTitle
-            Accessible.description: root.primaryText() + ". " + root.secondaryText()
-            Keys.onPressed: (event) => {
-                if (event.key !== Qt.Key_Escape)
-                    return ;
-
-                if (controlLayoutService.dragActive || controlLayoutService.resizeActive)
-                    controlLayoutService.resetInteraction();
-                else if (controlLayoutService.editMode)
-                    controlLayoutService.cancelEdit();
-                else
-                    root.closeIsland();
-
-                event.accepted = true;
-            }
-            onClicked: (mouse) => {
-                root.closeIsland();
-                mouse.accepted = true;
-            }
-            opacity: 1
-
-            Rectangle {
-                id: popupShadow
-
-                x: popupRoot.panelX
-                y: popupRoot.panelY
-                width: popupRoot.panelWidth
-                height: popupRoot.panelHeight
-                radius: popupRoot.panelRadius
-                color: "#050507"
-                opacity: 0
-            }
-
-            Rectangle {
-                id: contentPanel
-
-                x: popupShadow.x
-                y: popupShadow.y
-                width: popupShadow.width
-                height: popupShadow.height
-                radius: popupShadow.radius
-                color: "transparent"
-                clip: true
-
-                RoundShape {
-                    anchors.fill: parent
-                    visible: !root.notchShape
-                    radius: popupRoot.panelRadius
-                    fillTop: root.popupMode === "control" ? "#141419" : "#121216"
-                    fillBottom: root.popupMode === "control" ? "#09090c" : "#060608"
-                    strokeColor: root.popupMode === "control" ? "#25252b" : "#202027"
-                    rimOpacity: root.rimLight
-                }
-
-                // Notch mode: the same silhouette as the collapsed shell, grown downward.
-                NotchShape {
-                    anchors.fill: parent
-                    visible: root.notchShape
-                    shoulder: root.notchShoulder
-                    bottomRadius: popupRoot.panelRadius
-                    fillTop: root.popupMode === "control" ? "#141419" : "#121216"
-                    fillBottom: root.popupMode === "control" ? "#09090c" : "#060608"
-                    strokeColor: root.popupMode === "control" ? "#25252b" : "#202027"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.LeftButton
-                    enabled: root.islandOpen
-                    propagateComposedEvents: true
-                    onClicked: (mouse) => {
-                        root.closeIsland();
-                        mouse.accepted = false;
-                    }
-                }
-
-                // Clickable notice popup (D-31): the whole island is the target, so the highlight and hit area
-                // follow the shell silhouette instead of the inset content area.
-                RoundShape {
-                    anchors.fill: parent
-                    visible: !root.notchShape && opacity > 0
-                    opacity: noticeHover.hovered && noticeOpenArea.noticeClickable ? 1 : 0
-                    radius: popupRoot.panelRadius
-                    fillTop: "#14ffffff"
-                    fillBottom: "#0cffffff"
-                    strokeColor: "transparent"
-
-                    Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-                }
-
-                NotchShape {
-                    anchors.fill: parent
-                    visible: root.notchShape && opacity > 0
-                    opacity: noticeHover.hovered && noticeOpenArea.noticeClickable ? 1 : 0
-                    shoulder: root.notchShoulder
-                    bottomRadius: popupRoot.panelRadius
-                    fillTop: "#14ffffff"
-                    fillBottom: "#0cffffff"
-                    strokeColor: "transparent"
-
-                    Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-                }
-
-                // A HoverHandler is passive, so items above the popup (labels, icons) can't take the hover away
-                // the way they did from a MouseArea's containsMouse, which made the highlight flicker.
-                HoverHandler {
-                    id: noticeHover
-
-                    enabled: root.islandOpen && root.popupMode === "activity"
-                    cursorShape: noticeOpenArea.noticeClickable ? Qt.PointingHandCursor : Qt.ArrowCursor
-                }
-
-                Binding {
-                    target: root
-                    property: "noticeHovered"
-                    value: noticeHover.enabled && noticeHover.hovered && noticeOpenArea.noticeClickable
-                }
-
-                Binding {
-                    target: root
-                    property: "popupHovered"
-                    value: noticeHover.enabled && noticeHover.hovered
-                }
-
-                MouseArea {
-                    id: noticeOpenArea
-
-                    readonly property int noticeRow: root.popupMode === "activity" && root.popupActivityMode() === "notice" ? notificationService.latestRow() : -1
-                    readonly property bool noticeClickable: noticeRow >= 0 && notificationService.clickable(noticeRow)
-
-                    anchors.fill: parent
-                    enabled: root.islandOpen && noticeClickable
-                    // Single click opens immediately; the notice popup has no double-click behaviour.
-                    onClicked: notificationService.openById(notificationService.rowValue(noticeRow, NotificationManager.Notifications.IdRole, null))
-                }
-
-                Loader {
-                    // The notch body is narrower than the window by its shoulders, so it
-                    // needs extra side padding (and a bit more top/bottom) to breathe.
-                    anchors.fill: parent
-                    anchors.leftMargin: (root.popupMode === "control" ? 14 : 12) + (root.notchShape ? root.notchShoulder + 2 : 0)
-                    anchors.rightMargin: root.popupMode === "control" ? (root.notchShape ? 22 : anchors.leftMargin) : (anchors.leftMargin + (root.notchShape ? 0 : 3))
-                    anchors.topMargin: root.popupMode === "control" ? 12 : (root.notchShape ? 14 : 10)
-                    anchors.bottomMargin: root.popupMode === "control" ? 16 : anchors.topMargin - 2
-                    opacity: popupRoot.contentOpacity
-                    visible: opacity > 0
-                    sourceComponent: root.popupMode === "control" ? controlCenterPage : activityController.expandedComponentFor(root.popupActivityMode())
-                }
-
-                IdleContent {
-                    anchors.fill: parent
-                    app: root
-                    primary: false
-                    sideMargin: root.notchShape ? 18 : 16
-                    animate: false
-                    opacity: root.hasActivity ? 0 : popupRoot.compactOpacity
-                    visible: opacity > 0
-                }
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: root.notchShape ? root.notchSideMargin + 2 : (root.popupActivityMode() === "media" ? 4 : 6)
-                    anchors.rightMargin: root.notchShape ? root.notchSideMargin : 6
-                    anchors.topMargin: 4
-                    anchors.bottomMargin: root.notchShape ? 6 : 4
-                    spacing: 5
-                    opacity: popupRoot.compactOpacity
-                    visible: opacity > 0
-
-                    Rectangle {
-                        Layout.preferredWidth: root.compactArtworkSize
-                        Layout.preferredHeight: root.compactArtworkSize
-                        color: "transparent"
-
-                        Loader {
-                            anchors.fill: parent
-                            sourceComponent: activityController.visualComponentFor(root.popupActivityMode())
-                        }
-
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        clip: true
-
-                        Loader {
-                            anchors.fill: parent
-                            active: root.hasActivity
-                            sourceComponent: activityController.compactComponentFor(root.popupActivityMode())
-                        }
-
-                    }
-
-                }
-
-                // The popup only takes keyboard focus after an explicit press inside it (never on hover: changing
-                // the window flags re-configures the surface). The press is passed on to whatever is underneath.
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.LeftButton
-                    onPressed: (mouse) => {
-                        if (!root.dialogActive)
-                            root.focusIslandDialog();
-                        mouse.accepted = false;
-                    }
-                }
-
-            }
-
-            Behavior on morph {
-                NumberAnimation {
-                    duration: 340
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: [0.2, 0.82, 0.18, 1, 1, 1]
-                }
-
-            }
-
+        PopupContent {
+            app: root
+            controlPage: controlCenterPage
         }
-
     }
 
     Component {
         id: activityPage
 
-        RowLayout {
-            anchors.fill: parent
-            spacing: 10
-
-            Rectangle {
-                Layout.preferredWidth: 58
-                Layout.preferredHeight: 58
-                radius: 16
-                color: "transparent"
-
-                MaskedArtwork {
-                    anchors.fill: parent
-                    artworkSource: activityController.artworkFor(root.popupActivityMode())
-                    cornerRadius: 16
-                    glyphSize: 32
-                    mode: root.popupActivityMode()
-                    progress: activityController.progressValueFor(root.popupActivityMode()) / Math.max(1, activityController.progressToFor(root.popupActivityMode()))
-                    playing: root.popupActivityMode() === "media" ? mediaService.isPlaying : root.popupActivityMode() === "job" ? !jobService.isSuspended(jobService.activeRow()) : false
-                }
-
-            }
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 5
-
-                PlasmaLabel {
-                    Layout.fillWidth: true
-                    text: root.primaryTextFor(root.popupActivityMode())
-                    color: "#ffffff"
-                    font.pixelSize: 13
-                    font.weight: Font.Bold
-                    elide: Text.ElideRight
-                    maximumLineCount: 1
-                }
-
-                PlasmaLabel {
-                    Layout.fillWidth: true
-                    text: root.secondaryTextFor(root.popupActivityMode())
-                    color: "#9d9da7"
-                    font.pixelSize: 10
-                    elide: Text.ElideRight
-                    maximumLineCount: 1
-                }
-
-                ProgressBar {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 6
-                    visible: activityController.progressVisibleFor(root.popupActivityMode())
-                    from: 0
-                    to: activityController.progressToFor(root.popupActivityMode())
-                    value: activityController.progressValueFor(root.popupActivityMode())
-                    accent: activityController.progressAccentFor(root.popupActivityMode())
-                }
-
-            }
-
-            RowLayout {
-                visible: activityController.mediaControlsFor(root.popupActivityMode())
-                spacing: 6
-
-                IslandButton {
-                    iconName: "media-skip-backward"
-                    compact: true
-                    tooltipText: translations.previous
-                    enabled: mediaService.player && mediaService.player.canGoPrevious
-                    onClicked: mediaService.previous()
-                }
-
-                IslandButton {
-                    iconName: mediaService.isPlaying ? "media-playback-pause" : "media-playback-start"
-                    compact: true
-                    emphasized: true
-                    tooltipText: mediaService.isPlaying ? translations.pause : translations.play
-                    enabled: mediaService.player && (mediaService.player.canPlay || mediaService.player.canPause)
-                    onClicked: mediaService.playPause()
-                }
-
-                IslandButton {
-                    iconName: "media-skip-forward"
-                    compact: true
-                    tooltipText: translations.next
-                    enabled: mediaService.player && mediaService.player.canGoNext
-                    onClicked: mediaService.next()
-                }
-
-            }
-
+        ActivityPage {
+            app: root
         }
-
     }
 
     Component {
         id: controlModuleCardDelegate
 
-        ControlCenterModuleCard {
-            anchors.fill: parent
+        ControlCenterCard {
             app: root
-            hostItem: dialogHost
-            notificationsSource: notificationService.model
-            batterySource: systemControls.battery
-            connectionsSource: connectivityService.connections
-            screenBrightnessSource: systemControls.screenBrightness
-            keyboardBrightnessSource: systemControls.keyboardBrightness
-            powerProfilesSource: systemControls.powerProfiles
         }
     }
 
     Component {
         id: controlCenterPage
 
-        ControlCenterEditor {
+        ControlCenterPage {
             app: root
-            hostItem: dialogHost
-            moduleCardDelegate: controlModuleCardDelegate
+            cardDelegate: controlModuleCardDelegate
         }
     }
-
-    component MaskedArtwork: Item {
-        id: maskedArtwork
-
-        property var artworkSource: ""
-        property real cornerRadius: height / 2
-        property string mode: "idle"
-        property real progress: 0
-        property bool playing: false
-        property real glyphSize: width * 0.74
-        readonly property bool hasArtworkSource: artworkSource && artworkSource.toString().length > 0
-        readonly property bool hasArtwork: hasArtworkSource && maskedImage.status === Image.Ready
-
-        Rectangle {
-            anchors.fill: parent
-            radius: maskedArtwork.cornerRadius
-            color: "#101015"
-        }
-
-        Image {
-            id: maskedImage
-
-            anchors.fill: parent
-            source: maskedArtwork.hasArtworkSource ? maskedArtwork.artworkSource : ""
-            fillMode: Image.PreserveAspectCrop
-            visible: maskedArtwork.hasArtwork
-            layer.enabled: visible
-
-            layer.effect: MultiEffect {
-                maskEnabled: true
-                maskSpreadAtMax: 1
-                maskSpreadAtMin: 1
-                maskThresholdMin: 0.5
-
-                maskSource: ShaderEffectSource {
-
-                    sourceItem: Rectangle {
-                        width: maskedImage.width
-                        height: maskedImage.height
-                        radius: maskedArtwork.cornerRadius
-                        color: "#ffffff"
-                    }
-
-                }
-
-            }
-
-        }
-
-        IslandGlyph {
-            anchors.centerIn: parent
-            width: maskedArtwork.glyphSize
-            height: width
-            mode: maskedArtwork.mode
-            progress: maskedArtwork.progress
-            playing: maskedArtwork.playing
-            visible: !maskedArtwork.hasArtwork
-        }
-
-    }
-
-    component StatusChip: MouseArea {
-        id: chip
-
-        property string label: ""
-        property bool active: false
-        property color dotColor: "#777781"
-
-        implicitHeight: 28
-        hoverEnabled: true
-
-        Rectangle {
-            anchors.fill: parent
-            radius: height / 2
-            color: chip.pressed ? "#303039" : chip.containsMouse ? "#24242b" : "#16161d"
-            border.color: chip.active ? "#3a3a44" : "#202027"
-            border.width: 1
-        }
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 9
-            anchors.rightMargin: 9
-            spacing: 6
-
-            Rectangle {
-                Layout.preferredWidth: 6
-                Layout.preferredHeight: 6
-                radius: 3
-                color: chip.dotColor
-            }
-
-            PlasmaLabel {
-                Layout.fillWidth: true
-                text: chip.label
-                color: "#f4f4f8"
-                font.pixelSize: 9
-                font.weight: Font.DemiBold
-                elide: Text.ElideRight
-                maximumLineCount: 1
-            }
-
-        }
-
-    }
-
 }
