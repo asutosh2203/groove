@@ -30,3 +30,6 @@ Thumbs.db
 # Local-only Claude Code context
 CLAUDE.md
 CLAUDE.local.md
+
+# Performance measurements (scripts/perf-baseline.sh)
+perf/results/
