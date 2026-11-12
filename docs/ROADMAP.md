@@ -18,6 +18,7 @@ Last updated: 12 November 2026. Decisions referenced as D-xx live in [DECISIONS.
 | CC5 | KDE Connect card: D-Bus state, empty/connected/not-nearby states, theme phone glyph, notification card action icons | `cac7071` |
 | — | CI on Node 26, all Node tests auto-run | `2c58eb0`, `a9fc274` |
 | CC7 | Notification click-through: open the live action, URL or app (D-31), TasksModel window activation (D-32), whole-island hover target, single right-hand slot, popup timers hold on hover | `fd8d57b` |
+| D-33 | Notification popup duration: app timeout shortens the setting (2 s floor), critical at least 6 s | `63eb31f` |
 
 CC6 (notification list density/scrolling) was dropped.
 
