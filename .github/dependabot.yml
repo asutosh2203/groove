@@ -1,0 +1,8 @@
+version: 2
+updates:
+  # Keeps the action versions in .github/workflows current. It does not touch the pinned Arch container image or
+  # the Arch Linux Archive date in ci.yml; those are bumped together by hand (see CLAUDE.md).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
