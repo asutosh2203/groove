@@ -56,6 +56,25 @@ Item {
             compare(clock.running, false);
         }
 
+        function test_pausing_stops_the_ticks_and_resuming_restarts_them() {
+            leaseA.active = true;
+            wait(300);
+            clock.paused = true;
+            compare(clock.running, false);
+            wait(100);
+            const frozen = testRoot.ticks;
+            wait(500);
+            compare(testRoot.ticks, frozen);
+            clock.paused = false;
+            compare(clock.running, true);
+            wait(500);
+            verify(testRoot.ticks > frozen, "ticks resumed");
+        }
+
+        function cleanup() {
+            clock.paused = false;
+        }
+
         function test_time_advances_with_the_wall_clock() {
             leaseA.active = true;
             const t0 = clock.time;

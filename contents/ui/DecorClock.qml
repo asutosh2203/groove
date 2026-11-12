@@ -12,7 +12,10 @@ Item {
     // Rates currently requested by lease holders; the clock runs at the highest one.
     property var rates: []
     readonly property int fps: rates.length > 0 ? Math.max.apply(null, rates) : 8
-    readonly property bool running: rates.length > 0
+    readonly property bool running: rates.length > 0 && !paused
+    // True while something hides the island (a fullscreen window on top): the clock stands still, so the
+    // decorative loops cost nothing, and picks up again when it goes false.
+    property bool paused: false
 
     function acquire(rate) {
         const next = rates.slice();

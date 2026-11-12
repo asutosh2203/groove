@@ -21,6 +21,7 @@ import "controlcenter/KdeConnectState.js" as KdeConnectState
 import "TextUtils.js" as TextUtils
 import "NotificationOpen.js" as NotificationOpen
 import "AppMatch.js" as AppMatch
+import "FullscreenState.js" as FullscreenState
 import "NoticeDuration.js" as NoticeDuration
 import "activities" as Activities
 import "weather"
@@ -64,7 +65,7 @@ PlasmoidItem {
     // True while the pointer is over a clickable notice popup (drives the whole-island highlight and the open glyph).
     // The playback position is only drawn by the compact media pill, the expanded media popup and the Control
     // Center's media card, so it is only polled while one of them can be seen.
-    readonly property bool mediaPositionVisible: hasPlayer && isPlaying && (popupMode === "control" ? dialogVisible : islandOpen ? popupMode === "activity" && popupActivityMode() === "media" : !panelHidden && activityMode() === "media")
+    readonly property bool mediaPositionVisible: hasPlayer && isPlaying && !fullscreenCovering && (popupMode === "control" ? dialogVisible : islandOpen ? popupMode === "activity" && popupActivityMode() === "media" : !panelHidden && activityMode() === "media")
     onMediaPositionVisibleChanged: {
         // Refresh right away so the bar is current the moment it appears.
         if (mediaPositionVisible && player && player.updatePosition)
@@ -2247,6 +2248,42 @@ PlasmoidItem {
 
     DecorClock {
         id: decorClockItem
+
+        paused: root.fullscreenCovering
+    }
+
+    // A fullscreen window on top of the island's screen hides it, so decorative loops and the position poll stop.
+    // Event-driven: the task model reports windows as they open, close, minimize or change fullscreen.
+    property bool fullscreenCovering: false
+
+    function updateFullscreen() {
+        const tasks = [];
+        for (let i = 0; i < fullscreenModel.count; ++i) {
+            const idx = fullscreenModel.index(i, 0);
+            tasks.push({
+                "isWindow": fullscreenModel.data(idx, TaskManager.AbstractTasksModel.IsWindow),
+                "fullScreen": fullscreenModel.data(idx, TaskManager.AbstractTasksModel.IsFullScreen),
+                "minimized": fullscreenModel.data(idx, TaskManager.AbstractTasksModel.IsMinimized)
+            });
+        }
+        fullscreenCovering = FullscreenState.covering(tasks);
+    }
+
+    TaskManager.VirtualDesktopInfo {
+        id: virtualDesktopInfo
+    }
+
+    TaskManager.TasksModel {
+        id: fullscreenModel
+
+        filterByVirtualDesktop: true
+        virtualDesktop: virtualDesktopInfo.currentDesktop
+        filterByScreen: true
+        screenGeometry: Plasmoid.containment ? Plasmoid.containment.screenGeometry : Qt.rect(0, 0, 0, 0)
+        groupMode: TaskManager.TasksModel.GroupDisabled
+        onCountChanged: root.updateFullscreen()
+        onDataChanged: root.updateFullscreen()
+        Component.onCompleted: root.updateFullscreen()
     }
 
     PausableTimer {
