@@ -32,9 +32,9 @@ Item {
             ProgressBar {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 3
-                visible: musicCompact.hasPlayer && musicCompact.app.player.length > 0
+                visible: musicCompact.hasPlayer && musicCompact.app.mediaLength > 0
                 from: 0
-                to: Math.max(1, musicCompact.hasPlayer ? musicCompact.app.player.length : 1)
+                to: Math.max(1, musicCompact.hasPlayer ? musicCompact.app.mediaLength : 1)
                 value: musicCompact.hasPlayer ? musicCompact.app.player.position : 0
                 accent: "#b4b6bf"
                 trackColor: "#25252b"

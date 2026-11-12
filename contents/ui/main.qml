@@ -23,6 +23,7 @@ import "NotificationOpen.js" as NotificationOpen
 import "AppMatch.js" as AppMatch
 import "FullscreenState.js" as FullscreenState
 import "MediaIdle.js" as MediaIdle
+import "MediaLength.js" as MediaLength
 import "NoticeDuration.js" as NoticeDuration
 import "activities" as Activities
 import "weather"
@@ -37,6 +38,14 @@ PlasmoidItem {
         mediaPlayerRevision;
         return bestMediaPlayer();
     }
+    // Last known track length, held across metadata updates that omit it (see MediaLength.js).
+    property real mediaLength: 0
+    property var heldLength: null
+    function refreshMediaLength() {
+        heldLength = MediaLength.hold(heldLength, player ? mediaText(player.identity) + "|" + mediaText(player.track) + "|" + mediaText(player.artist) : "", player ? finiteNumber(player.length, 0) : 0);
+        mediaLength = heldLength.length;
+    }
+    onMediaPlayerRevisionChanged: refreshMediaLength()
     readonly property bool hasPlayer: player !== null && player !== undefined
     readonly property bool isPlaying: hasPlayer && player.playbackStatus === Mpris.PlaybackStatus.Playing
     readonly property bool hasJobs: notifications.activeJobsCount > 0
@@ -1975,8 +1984,8 @@ PlasmoidItem {
                 title: root.hasPlayer ? root.player.track || root.player.identity || "Media" : "Media"
                 subtitle: root.hasPlayer ? root.player.artist || root.player.album || root.player.identity || "" : ""
                 artwork: root.hasPlayer ? root.player.artUrl : ""
-                progressVisible: root.hasPlayer && root.player.length > 0
-                progressTo: Math.max(1, root.hasPlayer ? root.player.length : 1)
+                progressVisible: root.hasPlayer && root.mediaLength > 0
+                progressTo: Math.max(1, root.hasPlayer ? root.mediaLength : 1)
                 progressValue: root.hasPlayer ? root.player.position : 0
                 progressAccent: "#5ac8fa"
                 mediaControlsVisible: root.hasPlayer

@@ -7,7 +7,7 @@ Item {
 
     property var app: null
     readonly property bool hasPlayer: app && app.hasPlayer
-    readonly property bool hasLength: hasPlayer && app.player.length > 0
+    readonly property bool hasLength: hasPlayer && app.mediaLength > 0
     readonly property bool playing: hasPlayer && app.isPlaying
 
     RowLayout {
@@ -30,7 +30,7 @@ Item {
             source: musicPage.hasPlayer ? musicPage.app.player.artUrl : ""
             cornerRadius: 26 - contentRow.inset
             fallbackMode: "media"
-            progress: musicPage.hasPlayer ? musicPage.app.player.position / Math.max(1, musicPage.app.player.length) : 0
+            progress: musicPage.hasPlayer ? musicPage.app.player.position / Math.max(1, musicPage.app.mediaLength) : 0
             playing: musicPage.playing
         }
 
@@ -88,7 +88,7 @@ Item {
                 Layout.preferredHeight: 3
                 opacity: musicPage.hasLength ? 1 : 0
                 from: 0
-                to: Math.max(1, musicPage.hasPlayer ? musicPage.app.player.length : 1)
+                to: Math.max(1, musicPage.hasPlayer ? musicPage.app.mediaLength : 1)
                 value: musicPage.hasPlayer ? musicPage.app.player.position : 0
                 accent: "#b4b6bf"
                 trackColor: "#25252b"
@@ -150,7 +150,7 @@ Item {
 
                 PlasmaLabel {
                     Layout.preferredWidth: 36
-                    text: musicPage.hasLength ? musicPage.app.formatMediaTime(musicPage.app.player.length) : ""
+                    text: musicPage.hasLength ? musicPage.app.formatMediaTime(musicPage.app.mediaLength) : ""
                     color: "#9a9ca6"
                     font.pixelSize: 10
                     font.features: { "tnum": 1 }

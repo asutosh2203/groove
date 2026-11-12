@@ -114,9 +114,9 @@ Rectangle {
             ProgressBar {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 3
-                visible: !activitySummary.compact && ((!activitySummary.mediaOnly && app.hasJobs) || (app.hasPlayer && app.player.length > 0))
+                visible: !activitySummary.compact && ((!activitySummary.mediaOnly && app.hasJobs) || (app.hasPlayer && app.mediaLength > 0))
                 from: 0
-                to: !activitySummary.mediaOnly && app.hasJobs ? 100 : Math.max(1, app.player ? app.player.length : 1)
+                to: !activitySummary.mediaOnly && app.hasJobs ? 100 : Math.max(1, app.player ? app.mediaLength : 1)
                 value: !activitySummary.mediaOnly && app.hasJobs ? Math.max(0, notificationsSource.jobsPercentage) : app.player ? app.player.position : 0
                 accent: T.fillSoft
                 trackColor: T.track
@@ -132,7 +132,7 @@ Rectangle {
 
                 PlasmaLabel {
                     Layout.preferredWidth: 36
-                    text: app.hasPlayer && app.player.length > 0 ? app.formatMediaTime(app.player.position) : ""
+                    text: app.hasPlayer && app.mediaLength > 0 ? app.formatMediaTime(app.player.position) : ""
                     color: T.textCaption
                     font.pixelSize: T.fontCaption
                     font.features: { "tnum": 1 }
@@ -173,7 +173,7 @@ Rectangle {
                 Item { Layout.fillWidth: true }
                 PlasmaLabel {
                     Layout.preferredWidth: 36
-                    text: app.hasPlayer && app.player.length > 0 ? app.formatMediaTime(app.player.length) : ""
+                    text: app.hasPlayer && app.mediaLength > 0 ? app.formatMediaTime(app.mediaLength) : ""
                     color: T.textCaption
                     font.pixelSize: T.fontCaption
                     font.features: { "tnum": 1 }
@@ -321,7 +321,7 @@ Rectangle {
                 spacing: 8
 
                 PlasmaLabel {
-                    text: app.hasPlayer && app.player.length > 0 ? app.formatMediaTime(app.player.position) : ""
+                    text: app.hasPlayer && app.mediaLength > 0 ? app.formatMediaTime(app.player.position) : ""
                     color: T.textCaption
                     font.pixelSize: T.fontCaption
                     font.features: { "tnum": 1 }
@@ -331,16 +331,16 @@ Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 3
                     Layout.alignment: Qt.AlignVCenter
-                    opacity: app.hasPlayer && app.player.length > 0 ? 1 : 0
+                    opacity: app.hasPlayer && app.mediaLength > 0 ? 1 : 0
                     from: 0
-                    to: Math.max(1, app.player ? app.player.length : 1)
+                    to: Math.max(1, app.player ? app.mediaLength : 1)
                     value: app.player ? app.player.position : 0
                     accent: T.fillSoft
                     trackColor: T.track
                 }
 
                 PlasmaLabel {
-                    text: app.hasPlayer && app.player.length > 0 ? app.formatMediaTime(app.player.length) : ""
+                    text: app.hasPlayer && app.mediaLength > 0 ? app.formatMediaTime(app.mediaLength) : ""
                     color: T.textCaption
                     font.pixelSize: T.fontCaption
                     font.features: { "tnum": 1 }
