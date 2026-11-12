@@ -16,6 +16,7 @@ import "logic/KdeConnectState.js" as KdeConnectState
 import "logic/TextUtils.js" as TextUtils
 import "logic/Utils.js" as Utils
 import "logic/NotificationOpen.js" as NotificationOpen
+import "logic/ActivityResolver.js" as ActivityResolver
 import "logic/AppMatch.js" as AppMatch
 import "logic/FullscreenState.js" as FullscreenState
 import "logic/NoticeDuration.js" as NoticeDuration
@@ -312,21 +313,24 @@ PlasmoidItem {
 
     function bump(kind) {
         const requestedProvider = kind && kind !== "auto" ? activityController.providerByKey(kind) : null;
-        if (requestedProvider && !requestedProvider.active)
-            return ;
-        if (!hasActivity)
-            return ;
-
-        const nextMode = resolvedActivityMode(kind || "auto");
-        if (islandOpen && popupMode === "activity" && activityPopupTimer.running && activityPriority(nextMode) < activityPriority(resolvedActivityMode(activityPopupMode))) {
+        const nextMode = activityController.keyFor(kind || "auto");
+        const decision = ActivityResolver.bumpDecision({
+            "requestedExists": requestedProvider !== null,
+            "requestedActive": requestedProvider !== null && requestedProvider.active,
+            "hasActivity": hasActivity,
+            "activityPopupOpen": islandOpen && popupMode === "activity",
+            "popupTimerRunning": activityPopupTimer.running,
+            "nextPriority": activityController.priorityFor(nextMode),
+            "shownPriority": activityController.priorityFor(activityPopupMode)
+        });
+        if (decision === "extend")
             activityPopupTimer.restart();
-            return ;
-        }
-        showActivityPopup(true, nextMode);
+        else if (decision === "show")
+            showActivityPopup(true, nextMode);
     }
 
     function showActivityPopup(autoClose, kind) {
-        activityPopupMode = resolvedActivityMode(kind || "auto");
+        activityPopupMode = activityController.keyFor(kind || "auto");
         openIsland("activity", autoClose);
     }
 
@@ -364,25 +368,7 @@ PlasmoidItem {
     }
 
     function activeRowFor(kind) {
-        const mode = resolvedActivityMode(kind || "auto");
-        if (mode === "notice") {
-            const noticeRow = notificationService.firstRowOfType(NotificationManager.Notifications.NotificationType);
-            if (noticeRow >= 0)
-                return noticeRow;
-        }
-
-        if (mode === "job") {
-            const jobRow = notificationService.firstRowOfType(NotificationManager.Notifications.JobType);
-            if (jobRow >= 0)
-                return jobRow;
-        }
-
-        const job = notificationService.firstRowOfType(NotificationManager.Notifications.JobType);
-        if (job >= 0)
-            return job;
-
-        const notice = notificationService.firstRowOfType(NotificationManager.Notifications.NotificationType);
-        return notice >= 0 ? notice : 0;
+        return ActivityResolver.rowFor(activityController.keyFor(kind || "auto"), notificationService.firstRowOfType(NotificationManager.Notifications.NotificationType), notificationService.firstRowOfType(NotificationManager.Notifications.JobType));
     }
 
     function activeRow() {
@@ -412,8 +398,7 @@ PlasmoidItem {
     }
 
     function primaryTextFor(kind) {
-        const provider = activityController.providerFor(kind || "auto");
-        return provider && provider.title.length > 0 ? provider.title : i18n("Control Center");
+        return activityController.titleFor(kind, i18n("Control Center"));
     }
 
     function primaryText() {
@@ -421,20 +406,11 @@ PlasmoidItem {
     }
 
     function secondaryTextFor(kind) {
-        const provider = activityController.providerFor(kind || "auto");
-        return provider ? provider.subtitle : i18n("Brightness, audio, network, power");
+        return activityController.subtitleFor(kind, i18n("Brightness, audio, network, power"));
     }
 
     function secondaryText() {
         return secondaryTextFor("auto");
-    }
-
-    function resolvedActivityMode(kind) {
-        return activityController.keyFor(kind || "auto");
-    }
-
-    function activityPriority(kind) {
-        return activityController.priorityFor(kind || "auto");
     }
 
     function activityMode() {
@@ -442,37 +418,7 @@ PlasmoidItem {
     }
 
     function popupActivityMode() {
-        return popupMode === "activity" ? resolvedActivityMode(activityPopupMode) : activityMode();
-    }
-
-    function activityArtworkFor(kind) {
-        const provider = activityController.providerFor(kind || "auto");
-        return provider ? provider.artwork : null;
-    }
-
-    function activityProgressVisible(kind) {
-        const provider = activityController.providerFor(kind || "auto");
-        return provider ? provider.progressVisible : false;
-    }
-
-    function activityProgressTo(kind) {
-        const provider = activityController.providerFor(kind || "auto");
-        return provider ? provider.progressTo : 1;
-    }
-
-    function activityProgressValue(kind) {
-        const provider = activityController.providerFor(kind || "auto");
-        return provider ? provider.progressValue : 0;
-    }
-
-    function activityProgressAccent(kind) {
-        const provider = activityController.providerFor(kind || "auto");
-        return provider ? provider.progressAccent : "#5ac8fa";
-    }
-
-    function activityShowsMediaControls(kind) {
-        const provider = activityController.providerFor(kind || "auto");
-        return provider ? provider.mediaControlsVisible : false;
+        return popupMode === "activity" ? activityController.keyFor(activityPopupMode) : activityMode();
     }
 
     // Faint 1px top highlight on the Pill surfaces (the Notch has none); set to 0 to disable.
@@ -622,7 +568,7 @@ PlasmoidItem {
             Activities.ActivityProvider {
                 key: "keyboard"
                 active: systemControls.announcementActive
-                priority: 350
+                priority: ActivityResolver.priority.keyboard
                 title: systemControls.layoutLongName
                 subtitle: systemControls.layoutDisplayName
                 autoCloseMs: root.ongoingPopupDurationMs
@@ -632,7 +578,7 @@ PlasmoidItem {
             Activities.ActivityProvider {
                 key: "job"
                 active: root.jobActivityEnabled && jobService.hasJobs
-                priority: 300
+                priority: ActivityResolver.priority.job
                 title: root.jobTitle(jobService.activeRow())
                 subtitle: jobService.text(jobService.activeRow())
                 progressVisible: jobService.percentage(jobService.activeRow()) >= 0
@@ -647,7 +593,7 @@ PlasmoidItem {
             Activities.ActivityProvider {
                 key: "notice"
                 active: notificationService.activityActive
-                priority: notificationService.urgency(notificationService.latestRow()) >= 2 ? 400 : 200
+                priority: ActivityResolver.noticePriority(notificationService.urgency(notificationService.latestRow()))
                 title: notificationService.title(notificationService.latestRow())
                 subtitle: notificationService.body(notificationService.latestRow())
                 artwork: notificationService.mainImage(notificationService.latestRow())
@@ -659,7 +605,7 @@ PlasmoidItem {
             Activities.ActivityProvider {
                 key: "media"
                 active: root.mediaActivityEnabled && mediaService.shown
-                priority: 100
+                priority: ActivityResolver.priority.media
                 title: mediaService.hasPlayer ? mediaService.player.track || mediaService.player.identity || "Media" : "Media"
                 subtitle: mediaService.hasPlayer ? mediaService.player.artist || mediaService.player.album || mediaService.player.identity || "" : ""
                 artwork: mediaService.hasPlayer ? mediaService.player.artUrl : ""
@@ -676,7 +622,7 @@ PlasmoidItem {
             Activities.ActivityProvider {
                 key: "idle"
                 active: true
-                priority: 0
+                priority: ActivityResolver.priority.idle
                 title: i18n("Control Center")
                 subtitle: i18n("Brightness, audio, network, power")
                 autoCloseMs: root.ongoingPopupDurationMs
@@ -977,7 +923,7 @@ PlasmoidItem {
             artworkSource: mediaService.hasPlayer ? mediaService.player.artUrl : ""
             cornerRadius: root.notchShape ? Math.round(Math.min(width, height) * 0.3) : Math.min(width, height) / 2 // notch: rounded square like expanded; pill: circle
             mode: "media"
-            progress: root.activityProgressValue("media") / Math.max(1, root.activityProgressTo("media"))
+            progress: activityController.progressValueFor("media") / Math.max(1, activityController.progressToFor("media"))
             playing: mediaService.isPlaying
         }
     }
@@ -987,7 +933,7 @@ PlasmoidItem {
 
         MaskedArtwork {
             mode: "job"
-            progress: root.activityProgressValue("job") / Math.max(1, root.activityProgressTo("job"))
+            progress: activityController.progressValueFor("job") / Math.max(1, activityController.progressToFor("job"))
             playing: !jobService.isSuspended(jobService.activeRow())
         }
     }
@@ -1469,11 +1415,11 @@ PlasmoidItem {
 
                 MaskedArtwork {
                     anchors.fill: parent
-                    artworkSource: root.activityArtworkFor(root.popupActivityMode())
+                    artworkSource: activityController.artworkFor(root.popupActivityMode())
                     cornerRadius: 16
                     glyphSize: 32
                     mode: root.popupActivityMode()
-                    progress: root.activityProgressValue(root.popupActivityMode()) / Math.max(1, root.activityProgressTo(root.popupActivityMode()))
+                    progress: activityController.progressValueFor(root.popupActivityMode()) / Math.max(1, activityController.progressToFor(root.popupActivityMode()))
                     playing: root.popupActivityMode() === "media" ? mediaService.isPlaying : root.popupActivityMode() === "job" ? !jobService.isSuspended(jobService.activeRow()) : false
                 }
 
@@ -1505,17 +1451,17 @@ PlasmoidItem {
                 ProgressBar {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 6
-                    visible: root.activityProgressVisible(root.popupActivityMode())
+                    visible: activityController.progressVisibleFor(root.popupActivityMode())
                     from: 0
-                    to: root.activityProgressTo(root.popupActivityMode())
-                    value: root.activityProgressValue(root.popupActivityMode())
-                    accent: root.activityProgressAccent(root.popupActivityMode())
+                    to: activityController.progressToFor(root.popupActivityMode())
+                    value: activityController.progressValueFor(root.popupActivityMode())
+                    accent: activityController.progressAccentFor(root.popupActivityMode())
                 }
 
             }
 
             RowLayout {
-                visible: root.activityShowsMediaControls(root.popupActivityMode())
+                visible: activityController.mediaControlsFor(root.popupActivityMode())
                 spacing: 6
 
                 IslandButton {

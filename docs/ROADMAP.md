@@ -44,6 +44,9 @@ Found while moving code in Q2; behaviour was kept during the moves.
    `globalMuteSinks` and `globalMuteSources`. Today the branch throws and does nothing.
 4. **Volume display above 100 %.** The slider reads at most 100 although setting accepts up to 150 (`percentFromRatio`
    clamps at the sink's normal volume).
+5. **Normal notifications get the urgent priority.** `noticePriority` gives priority 400 when KDE urgency >= 2, and KDE's
+   enum is Low 1, Normal 2, Critical 4, so Normal and Critical both pre-empt jobs and keyboard announcements; only Low
+   gets 200 (below a job). Seen live. Decide whether Normal was meant to sit below a job (D-13, D-18).
 
 ## Next
 1. **Quality pass**

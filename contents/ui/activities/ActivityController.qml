@@ -1,71 +1,81 @@
-import QtQuick
+pragma ComponentBehavior: Bound
 
+import QtQuick
+import "../logic/ActivityResolver.js" as Resolver
+
+// Holds the island's activity providers and answers "which one, and what does it say". The decisions are pure
+// (logic/ActivityResolver.js, D-13 and D-35); this object feeds them the live providers.
 QtObject {
     id: controller
 
     property list<ActivityProvider> providers
 
-    readonly property var currentProvider: highestPriorityProvider()
-    readonly property string currentKey: currentProvider ? currentProvider.key : "idle"
+    readonly property var currentProvider: Resolver.highest(providers)
+    readonly property string currentKey: Resolver.keyOf(currentProvider)
 
     function providerByKey(key) {
-        for (let i = 0; i < providers.length; ++i) {
-            const provider = providers[i];
-            if (provider && provider.key === key)
-                return provider;
-        }
-        return null;
-    }
-
-    function highestPriorityProvider() {
-        let selected = null;
-        for (let i = 0; i < providers.length; ++i) {
-            const candidate = providers[i];
-            if (!candidate || !candidate.active)
-                continue;
-            if (!selected || candidate.priority > selected.priority)
-                selected = candidate;
-        }
-        return selected;
+        return Resolver.byKey(providers, key);
     }
 
     function providerFor(requestedKey) {
-        if (requestedKey && requestedKey !== "auto") {
-            const requested = providerByKey(requestedKey);
-            if (requested && requested.active)
-                return requested;
-        }
-        return currentProvider;
+        return Resolver.pick(providers, currentProvider, requestedKey);
     }
 
     function keyFor(requestedKey) {
-        const provider = providerFor(requestedKey);
-        return provider ? provider.key : "idle";
+        return Resolver.keyOf(providerFor(requestedKey));
     }
 
     function priorityFor(requestedKey) {
-        const provider = providerFor(requestedKey);
-        return provider ? provider.priority : 0;
+        return Resolver.priorityOf(providerFor(requestedKey));
     }
 
     function visualComponentFor(requestedKey) {
-        const provider = providerFor(requestedKey);
-        return provider ? provider.visualComponent : null;
+        return Resolver.field(providerFor(requestedKey), "visualComponent", null);
     }
 
     function compactComponentFor(requestedKey) {
-        const provider = providerFor(requestedKey);
-        return provider ? provider.compactComponent : null;
+        return Resolver.field(providerFor(requestedKey), "compactComponent", null);
     }
 
     function expandedComponentFor(requestedKey) {
-        const provider = providerFor(requestedKey);
-        return provider ? provider.expandedComponent : null;
+        return Resolver.field(providerFor(requestedKey), "expandedComponent", null);
     }
 
     function autoCloseMsFor(requestedKey) {
+        return Resolver.autoCloseMs(providerFor(requestedKey));
+    }
+
+    // The title, or `fallback` when there is no provider or it has none.
+    function titleFor(requestedKey, fallback) {
         const provider = providerFor(requestedKey);
-        const ms = provider ? Number(provider.autoCloseMs) : 3000;
-        return isFinite(ms) ? Math.max(1000, ms) : 3000;
+        return provider && provider.title.length > 0 ? provider.title : fallback;
+    }
+
+    function subtitleFor(requestedKey, fallback) {
+        return Resolver.field(providerFor(requestedKey), "subtitle", fallback);
+    }
+
+    function artworkFor(requestedKey) {
+        return Resolver.field(providerFor(requestedKey), "artwork", null);
+    }
+
+    function progressVisibleFor(requestedKey) {
+        return Resolver.field(providerFor(requestedKey), "progressVisible", false);
+    }
+
+    function progressToFor(requestedKey) {
+        return Resolver.field(providerFor(requestedKey), "progressTo", 1);
+    }
+
+    function progressValueFor(requestedKey) {
+        return Resolver.field(providerFor(requestedKey), "progressValue", 0);
+    }
+
+    function progressAccentFor(requestedKey) {
+        return Resolver.field(providerFor(requestedKey), "progressAccent", "#5ac8fa");
+    }
+
+    function mediaControlsFor(requestedKey) {
+        return Resolver.field(providerFor(requestedKey), "mediaControlsVisible", false);
     }
 }
