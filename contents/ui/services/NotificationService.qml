@@ -67,29 +67,34 @@ Item {
         return value === undefined || value === null ? fallbackValue : value;
     }
 
-    function firstRowOfType(type) {
-        for (let i = 0; i < notifications.count; ++i) {
-            if (rowValue(i, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType) === type)
-                return i;
+    // The model read into plain arrays, for the pure row decisions in Notifications.js.
+    function types() {
+        const out = [];
+        for (let i = 0; i < notifications.count; ++i)
+            out.push(rowValue(i, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType));
 
+        return out;
+    }
+
+    function items() {
+        const out = [];
+        for (let i = 0; i < notifications.count; ++i) {
+            out.push({
+                "type": rowValue(i, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType),
+                "id": rowValue(i, NotificationManager.Notifications.IdRole, ""),
+                "closable": rowValue(i, NotificationManager.Notifications.ClosableRole, true) ? true : false
+            });
         }
-        return -1;
+        return out;
+    }
+
+    function firstRowOfType(type) {
+        return Notif.firstRowOfType(types(), type);
     }
 
     // Row indexes of the notifications (not jobs), newest first; limit 0 means all.
     function rows(limit) {
-        const out = [];
-        const maxRows = Math.max(0, Math.round(Utils.finiteNumber(limit, 0)));
-        for (let i = 0; i < notifications.count; ++i) {
-            if (rowValue(i, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType) !== NotificationManager.Notifications.NotificationType)
-                continue;
-
-            out.push(i);
-            if (maxRows > 0 && out.length >= maxRows)
-                break;
-
-        }
-        return out;
+        return Notif.rowsOfType(types(), NotificationManager.Notifications.NotificationType, limit);
     }
 
     function count() {
@@ -146,29 +151,16 @@ Item {
     }
 
     function overflowCount(limit) {
-        return Math.max(0, count() - Math.max(0, Math.round(Utils.finiteNumber(limit, 0))));
+        return Notif.overflow(count(), limit);
     }
 
     function noticeRowFor(id) {
-        if (id === null || id === undefined)
-            return -1;
-        const wanted = String(id);
-        for (let i = 0; i < notifications.count; ++i) {
-            if (rowValue(i, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType) !== NotificationManager.Notifications.NotificationType)
-                continue;
-            if (String(rowValue(i, NotificationManager.Notifications.IdRole, "")) === wanted)
-                return i;
-        }
-        return -1;
+        return Notif.rowOfId(items(), id, NotificationManager.Notifications.NotificationType);
     }
 
     // The row being presented, else the newest notification, else -1.
     function latestRow() {
-        const tracked = noticeRowFor(activeNoticeId);
-        if (tracked >= 0)
-            return tracked;
-        const found = rows(1);
-        return found.length > 0 ? found[0] : -1;
+        return Notif.latestRow(noticeRowFor(activeNoticeId), rows(1));
     }
 
     function isFresh(row) {
@@ -208,13 +200,7 @@ Item {
         if (entry.length > 0 && info === undefined)
             launcher.lookupDesktopEntry(entry);
 
-        return NotificationOpen.resolve({
-            "expired": rowValue(row, NotificationManager.Notifications.ExpiredRole, false) === true,
-            "hasDefaultAction": rowValue(row, NotificationManager.Notifications.HasDefaultActionRole, false) === true,
-            "urls": rowValue(row, NotificationManager.Notifications.UrlsRole, []),
-            "desktopEntry": entry,
-            "desktopEntryLaunchable": info !== undefined && info.display === true
-        });
+        return NotificationOpen.resolve(Notif.openInput(entry, rowValue(row, NotificationManager.Notifications.ExpiredRole, false), rowValue(row, NotificationManager.Notifications.HasDefaultActionRole, false), rowValue(row, NotificationManager.Notifications.UrlsRole, []), info));
     }
 
     function clickable(row) {
@@ -237,16 +223,15 @@ Item {
             return false;
 
         const idx = notifications.index(row, 0);
-        if (target.kind === "action") {
+        const plan = Notif.openPlan(target.kind, rowValue(row, NotificationManager.Notifications.ClosableRole, true) ? true : false);
+        if (plan.invokeAction)
             notifications.invokeDefaultAction(idx, NotificationManager.Notifications.Close);
-        } else {
-            if (target.kind === "url")
-                Qt.openUrlExternally(target.target);
-            else
-                launcher.launch(target.target);
-            if (rowValue(row, NotificationManager.Notifications.ClosableRole, true))
-                notifications.close(idx);
-        }
+        if (plan.openUrl)
+            Qt.openUrlExternally(target.target);
+        if (plan.launchApp)
+            launcher.launch(target.target);
+        if (plan.close)
+            notifications.close(idx);
         // The model change also dismisses the activity; this covers the Control Center.
         opened();
         return true;
@@ -254,19 +239,13 @@ Item {
 
     // Close every closable notification currently in the model window. Returns how many were closed.
     function closeRows() {
-        let closed = 0;
-        for (let i = notifications.count - 1; i >= 0; --i) {
-            if (rowValue(i, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType) !== NotificationManager.Notifications.NotificationType)
-                continue;
+        const rowsToClose = Notif.closableRows(items(), NotificationManager.Notifications.NotificationType);
+        for (let i = 0; i < rowsToClose.length; ++i)
+            notifications.close(notifications.index(rowsToClose[i], 0));
 
-            if (rowValue(i, NotificationManager.Notifications.ClosableRole, true)) {
-                notifications.close(notifications.index(i, 0));
-                ++closed;
-            }
-        }
-        if (closed === 0)
+        if (rowsToClose.length === 0)
             clearing = false;
-        return closed;
+        return rowsToClose.length;
     }
 
     // Clear All: the model exposes a limited window of history, so keep closing until nothing closable is left, then

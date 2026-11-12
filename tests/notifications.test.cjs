@@ -77,3 +77,62 @@ test('only recent notifications are arrivals, and none while Clear All runs', ()
     assert.equal(N.isFresh('x', now, false), true);
     assert.equal(N.isFresh(new Date(now - 5000), now, true), false);
 });
+
+// --- row decisions moved out of NotificationService (characterised against it with a mock model) ---------------------
+
+const NOTICE = 1;
+const JOB = 2;
+
+test('the first row of a type, and every row of a type with a limit', () => {
+    const types = [JOB, NOTICE, NOTICE, JOB, NOTICE];
+    assert.equal(N.firstRowOfType(types, NOTICE), 1);
+    assert.equal(N.firstRowOfType(types, JOB), 0);
+    assert.equal(N.firstRowOfType(types, 9), -1);
+    assert.equal(N.firstRowOfType([], NOTICE), -1);
+    assert.deepEqual(Array.from(N.rowsOfType(types, NOTICE, 0)), [1, 2, 4]);
+    assert.deepEqual(Array.from(N.rowsOfType(types, NOTICE, 2)), [1, 2]);
+    assert.deepEqual(Array.from(N.rowsOfType(types, NOTICE, 'x')), [1, 2, 4]); // junk limit means all
+    assert.deepEqual(Array.from(N.rowsOfType(types, NOTICE, -3)), [1, 2, 4]);
+});
+
+test('the overflow is what does not fit in the limit', () => {
+    assert.equal(N.overflow(5, 3), 2);
+    assert.equal(N.overflow(2, 3), 0);
+    assert.equal(N.overflow(5, 'x'), 5);
+    assert.equal(N.overflow(5, -1), 5);
+});
+
+test('a notification is found by id as text, and jobs and nullish ids never match', () => {
+    const items = [{ type: JOB, id: 7 }, { type: NOTICE, id: 7 }, { type: NOTICE, id: '9' }];
+    assert.equal(N.rowOfId(items, 7, NOTICE), 1); // the job with the same id is skipped
+    assert.equal(N.rowOfId(items, 9, NOTICE), 2); // 9 matches '9'
+    assert.equal(N.rowOfId(items, 5, NOTICE), -1);
+    assert.equal(N.rowOfId(items, null, NOTICE), -1);
+    assert.equal(N.rowOfId(items, undefined, NOTICE), -1);
+});
+
+test('the latest row is the presented one, else the newest notification', () => {
+    assert.equal(N.latestRow(3, [0, 1]), 3);
+    assert.equal(N.latestRow(-1, [4, 5]), 4);
+    assert.equal(N.latestRow(-1, []), -1);
+});
+
+test('Clear All closes the closable notifications, last row first, and never jobs', () => {
+    const items = [{ type: NOTICE, closable: true }, { type: JOB, closable: true }, { type: NOTICE, closable: false }, { type: NOTICE, closable: true }];
+    assert.deepEqual(Array.from(N.closableRows(items, NOTICE)), [3, 0]);
+    assert.deepEqual(Array.from(N.closableRows([], NOTICE)), []);
+});
+
+test('the open input marks a desktop entry launchable only when it displays', () => {
+    assert.deepEqual(JSON.parse(JSON.stringify(N.openInput('org.app', true, false, ['u'], { display: true }))), { expired: true, hasDefaultAction: false, urls: ['u'], desktopEntry: 'org.app', desktopEntryLaunchable: true });
+    assert.equal(N.openInput('org.app', 'yes', 1, [], { display: false }).expired, false); // only a real true counts
+    assert.equal(N.openInput('org.app', false, true, [], { display: false }).desktopEntryLaunchable, false);
+    assert.equal(N.openInput('org.app', false, true, [], undefined).desktopEntryLaunchable, false); // not looked up yet
+});
+
+test('a click opens through the live action, or opens the target and then closes the notification if it can', () => {
+    assert.deepEqual(JSON.parse(JSON.stringify(N.openPlan('action', true))), { invokeAction: true, openUrl: false, launchApp: false, close: false });
+    assert.deepEqual(JSON.parse(JSON.stringify(N.openPlan('url', true))), { invokeAction: false, openUrl: true, launchApp: false, close: true });
+    assert.deepEqual(JSON.parse(JSON.stringify(N.openPlan('app', false))), { invokeAction: false, openUrl: false, launchApp: true, close: false });
+    assert.equal(N.openPlan('none', true).close, false);
+});
