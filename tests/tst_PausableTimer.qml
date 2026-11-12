@@ -27,7 +27,7 @@ Item {
 
         function test_runs_and_fires_once() {
             timer.restart();
-            compare(timer.running, true);
+            compare(timer.running, false); // deliberate failure
             tryCompare(testRoot, "fired", 1, 1500);
             compare(timer.running, false);
         }
