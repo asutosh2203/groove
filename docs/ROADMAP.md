@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated: 12 November 2026. Decisions referenced as D-xx live in [DECISIONS.md](DECISIONS.md).
+Last updated: 13 November 2026. Decisions referenced as D-xx live in [DECISIONS.md](DECISIONS.md).
 
 ## Done
 | Milestone | Scope | Commit |
@@ -26,7 +26,13 @@ Last updated: 12 November 2026. Decisions referenced as D-xx live in [DECISIONS.
 CC6 (notification list density/scrolling) was dropped.
 
 ## Now
-- Nothing scheduled; pick from Next.
+- **Q2: main.qml breakup** (services + tested logic, D-37). Done: foundation, AppLauncher, ControlLayout, MediaService,
+  NotificationService, JobService, ConnectivityService, SystemControls. To do: step 8 ActivityResolver, step 9
+  PanelController, then the final pass.
+- **Queued before the Q2 final pass: thin NotificationService.** qmllint is partly blind to any file that instantiates
+  `NotificationManager.Notifications` (an undefined call there is not flagged, see `docs/CI.md`), so move every pure
+  decision it still holds (which rows count, sorting and latest-row choice, freshness, urgency, the open target, the
+  presentation duration) into `logic/Notifications.js` with Node tests, leaving the service a thin model wrapper.
 
 ## Next
 1. **Quality pass**
