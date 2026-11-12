@@ -262,15 +262,15 @@ Rectangle {
             app: moduleCard.app
             iconName: connectionsSource.wirelessEnabled ? "network-wireless-on" : "network-wireless-off"
             title: i18n("Wi-Fi")
-            subtitle: app.wifiPrimaryNetwork()
+            subtitle: app.connectivity.wifiPrimaryNetwork()
             active: connectionsSource.wirelessEnabled
             available: connectionsSource.wirelessHwEnabled
-            progress: app.wifiSignalPercent()
+            progress: app.connectivity.wifiSignalPercent()
             detailText: app.wifiTitle()
             footerText: connectionsSource.wirelessHwEnabled ? (connectionsSource.wirelessEnabled ? i18n("Click to turn off") : i18n("Click to turn on")) : i18n("No adapter")
             actionIconName: "settings"
             onActionTriggered: app.launcher.launchNetworkSettings()
-            onTriggered: connectionsSource.wirelessHwEnabled ? app.toggleWifi() : app.launcher.launchNetworkSettings()
+            onTriggered: connectionsSource.wirelessHwEnabled ? app.connectivity.toggleWifi() : app.launcher.launchNetworkSettings()
         }
     }
     Component { id: wifiDevicesModule; NetworkListTile { app: moduleCard.app } }
@@ -283,13 +283,13 @@ Rectangle {
             iconName: "preferences-system-bluetooth"
             title: i18n("Bluetooth")
             subtitle: app.bluetoothSummary()
-            active: app.bluetoothPowered && app.bluetoothAvailable
-            available: app.bluetoothAvailable
+            active: app.connectivity.bluetoothPowered && app.connectivity.bluetoothAvailable
+            available: app.connectivity.bluetoothAvailable
             detailText: app.bluetoothDetail()
-            footerText: app.bluetoothAvailable ? (app.bluetoothPowered ? i18n("Click to turn off") : i18n("Click to turn on")) : i18n("Open settings")
+            footerText: app.connectivity.bluetoothAvailable ? (app.connectivity.bluetoothPowered ? i18n("Click to turn off") : i18n("Click to turn on")) : i18n("Open settings")
             actionIconName: "settings"
             onActionTriggered: app.launcher.launchBluetoothSettings()
-            onTriggered: app.bluetoothAvailable ? app.toggleBluetoothPower() : app.launcher.launchBluetoothSettings()
+            onTriggered: app.connectivity.bluetoothAvailable ? app.connectivity.toggleBluetoothPower() : app.launcher.launchBluetoothSettings()
         }
     }
     Component {
@@ -297,12 +297,12 @@ Rectangle {
         SimpleModuleTile {
             app: moduleCard.app
             iconName: "preferences-system-bluetooth"
-            title: app.bluetoothDeviceCount() > 0 ? i18n("Connected") : i18n("Discover")
-            subtitle: app.bluetoothAvailable ? app.bluetoothSummary() : i18n("No adapter")
-            active: app.bluetoothPowered && app.bluetoothAvailable
-            available: app.bluetoothAvailable
+            title: app.connectivity.bluetoothDeviceCount() > 0 ? i18n("Connected") : i18n("Discover")
+            subtitle: app.connectivity.bluetoothAvailable ? app.bluetoothSummary() : i18n("No adapter")
+            active: app.connectivity.bluetoothPowered && app.connectivity.bluetoothAvailable
+            available: app.connectivity.bluetoothAvailable
             detailText: app.bluetoothDetail()
-            footerText: app.bluetoothAvailable ? i18n("Open Bluetooth") : i18n("Open settings")
+            footerText: app.connectivity.bluetoothAvailable ? i18n("Open Bluetooth") : i18n("Open settings")
             onTriggered: app.launcher.launchBluetoothDiscovery()
         }
     }

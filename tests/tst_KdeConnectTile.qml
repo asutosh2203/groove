@@ -14,15 +14,17 @@ Item {
         property var paired: []
         property var connected: []
         property string lastAction: ""
-        function kdeConnectDevices(limit) {
-            const all = K.buildDevices(paired, connected);
-            return limit > 0 ? all.slice(0, limit) : all;
+        readonly property var connectivity: QtObject {
+            function kdeConnectDevices(limit) {
+                const all = K.buildDevices(app.paired, app.connected);
+                return limit > 0 ? all.slice(0, limit) : all;
+            }
+            function kdeConnectReachableCount() { return K.connectedCount(kdeConnectDevices(0)); }
+            function refreshKdeConnectDevices() {}
+            function runKdeConnectDeviceAction(id, action) { app.lastAction = action + ":" + id; }
         }
-        function kdeConnectReachableCount() { return K.connectedCount(kdeConnectDevices(0)); }
-        function kdeConnectSummary() { return K.summaryKind(kdeConnectDevices(0)); }
+        function kdeConnectSummary() { return K.summaryKind(connectivity.kdeConnectDevices(0)); }
         readonly property var launcher: QtObject { function launchKdeConnectSettings() { app.lastAction = "open"; } }
-        function refreshKdeConnectDevices() {}
-        function runKdeConnectDeviceAction(id, action) { lastAction = action + ":" + id; }
     }
 
     Item {

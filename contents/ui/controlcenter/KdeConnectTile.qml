@@ -9,9 +9,9 @@ MouseArea {
     id: kdeTile
 
     required property var app
-    readonly property var devices: app.kdeConnectDevices(rowLimit)
-    readonly property int totalDevices: app.kdeConnectDevices(0).length
-    readonly property int reachableDevices: app.kdeConnectReachableCount()
+    readonly property var devices: app.connectivity.kdeConnectDevices(rowLimit)
+    readonly property int totalDevices: app.connectivity.kdeConnectDevices(0).length
+    readonly property int reachableDevices: app.connectivity.kdeConnectReachableCount()
     readonly property bool hasDevices: totalDevices > 0
     readonly property bool iconOnly: width < 92 || height < 54
     readonly property bool compact: width < 160 || height < 110
@@ -104,7 +104,7 @@ MouseArea {
                 focusColor: T.focusRing
                 flatHoverColor: T.raised
                 flatPressedColor: T.chip
-                onClicked: app.refreshKdeConnectDevices()
+                onClicked: app.connectivity.refreshKdeConnectDevices()
             }
 
             IslandButton {
@@ -198,7 +198,7 @@ MouseArea {
                             focusColor: T.focusRing
                             flatHoverColor: T.raised
                             flatPressedColor: T.chip
-                            onClicked: app.runKdeConnectDeviceAction(deviceRow.deviceId, "ring")
+                            onClicked: app.connectivity.runKdeConnectDeviceAction(deviceRow.deviceId, "ring")
                         }
 
                         IslandButton {
@@ -212,7 +212,7 @@ MouseArea {
                             focusColor: T.focusRing
                             flatHoverColor: T.raised
                             flatPressedColor: T.chip
-                            onClicked: app.runKdeConnectDeviceAction(deviceRow.deviceId, "browse")
+                            onClicked: app.connectivity.runKdeConnectDeviceAction(deviceRow.deviceId, "browse")
                         }
                     }
                 }

@@ -96,16 +96,6 @@ PlasmoidItem {
     property string systemUsername: ""
     property string systemHostname: ""
     property string profileImageUrl: ""
-    property bool bluetoothPowered: false
-    property bool bluetoothAvailable: false
-    property string bluetoothAdapterName: ""
-    property string bluetoothDevicesText: ""
-    property var wifiNetworks: []
-    property var networkDevices: []
-    property var networkAddresses: []
-    readonly property var networkState: NetworkState.summarize(networkDevices, networkAddresses, wifiNetworks, enabledConnections.networkingEnabled, enabledConnections.wirelessEnabled && enabledConnections.wirelessHwEnabled)
-    property var kdeConnectPaired: []
-    property var kdeConnectConnected: []
     property string popupMode: "control"
     property string activityPopupMode: "auto"
     property int clickButton: Qt.NoButton
@@ -116,9 +106,6 @@ PlasmoidItem {
     property int screenBrightnessVisualPercent: 0
     property bool screenBrightnessVisualPinned: false
     readonly property string accountIconCommand: "sh -c 'user=$(id -un); path=$(qdbus6 org.freedesktop.Accounts /org/freedesktop/Accounts org.freedesktop.Accounts.FindUserByName \"$user\" 2>/dev/null); test -n \"$path\" && qdbus6 org.freedesktop.Accounts \"$path\" org.freedesktop.Accounts.User.IconFile 2>/dev/null'"
-    readonly property string wifiScanCommand: "env LC_ALL=C nmcli --colors no -t -f IN-USE,SSID,SIGNAL,DEVICE device wifi list --rescan no"
-    readonly property string networkStatusCommand: "env LC_ALL=C nmcli --colors no -t -f TYPE,DEVICE,STATE,CONNECTION device status"
-    readonly property string networkIpCommand: "env LC_ALL=C nmcli --colors no -t -f GENERAL.DEVICE,IP4.ADDRESS,IP6.ADDRESS device show"
 
 
     function screenForPoint(pointX, pointY) {
@@ -608,6 +595,7 @@ PlasmoidItem {
     readonly property alias media: mediaService
     readonly property alias notifications: notificationService
     readonly property alias jobs: jobService
+    readonly property alias connectivity: connectivityService
 
     WeatherService {
         id: weatherService
@@ -665,11 +653,6 @@ PlasmoidItem {
         closeIsland();
     }
 
-    function toggleBluetoothPower() {
-        commands.run(bluetoothPowered ? "bluetoothctl power off" : "bluetoothctl power on");
-        bluetoothRefreshTimer.restart();
-    }
-
     function toggleAppearanceMode() {
         Brightness.DarkModeControl.darkMode = !Brightness.DarkModeControl.darkMode;
     }
@@ -686,7 +669,7 @@ PlasmoidItem {
         commands.run("whoami", stdout => systemUsername = TextUtils.cleanText(stdout));
         commands.run("hostname", stdout => systemHostname = TextUtils.cleanText(stdout));
         commands.run(accountIconCommand, applyAccountIcon);
-        refreshConnectivityState();
+        connectivityService.refreshAll();
     }
 
     function applyAccountIcon(stdout) {
@@ -694,143 +677,49 @@ PlasmoidItem {
         profileImageUrl = out.length > 0 ? (out.indexOf("file:") === 0 ? out : "file://" + out) : "";
     }
 
-    function refreshConnectivityState() {
-        refreshBluetoothState();
-        refreshWifiNetworks();
-        refreshKdeConnectState();
-    }
-
-    function refreshBluetoothState() {
-        commands.run("bluetoothctl show", stdout => {
-            bluetoothAvailable = parseBluetoothAvailable(stdout);
-            bluetoothAdapterName = parseBluetoothAdapterName(stdout);
-            bluetoothPowered = TextUtils.cleanText(stdout).indexOf("Powered: yes") !== -1;
-        });
-        commands.run("bluetoothctl devices Connected", stdout => bluetoothDevicesText = parseBluetoothDevices(stdout));
-    }
-
-    function refreshKdeConnectState() {
-        commands.run(KdeConnectState.pairedCommand, stdout => kdeConnectPaired = KdeConnectState.parseNames(stdout));
-        commands.run(KdeConnectState.connectedCommand, stdout => kdeConnectConnected = KdeConnectState.parseNames(stdout));
-    }
-
-    function toggleWifi() {
-        networkHandler.enableWireless(!enabledConnections.wirelessEnabled);
-        wifiRefreshTimer.restart();
-    }
-
-    function refreshWifiNetworks() {
-        commands.run(wifiScanCommand, stdout => wifiNetworks = NetworkState.parseWifi(stdout));
-        commands.run(networkStatusCommand, stdout => networkDevices = NetworkState.parseDevices(stdout));
-        commands.run(networkIpCommand, stdout => networkAddresses = NetworkState.parseAddresses(stdout));
-    }
-
     function wifiTitle() {
-        if (!enabledConnections.wirelessHwEnabled)
+        if (!connectivityService.connections.wirelessHwEnabled)
             return i18n("Unavailable");
-        return enabledConnections.wirelessEnabled ? i18n("On") : i18n("Off");
-    }
-
-    function wifiPrimaryNetwork() {
-        return networkState.wifiSummary;
-    }
-
-    function wifiSignalPercent() {
-        return Math.max(0, networkState.wifiSignal);
-    }
-
-    function parseBluetoothDevices(text) {
-        const lines = String(text || "").split("\n");
-        const out = [];
-        for (let i = 0; i < lines.length; ++i) {
-            const line = String(lines[i] || "").trim();
-            if (line.length <= 0)
-                continue;
-
-            const parts = line.split(/\s+/);
-            out.push(parts.length > 2 ? parts.slice(2).join(" ") : line);
-        }
-        return out.join("\n");
-    }
-
-    function parseBluetoothAvailable(text) {
-        const out = String(text || "");
-        return out.indexOf("Controller ") !== -1 || out.indexOf("Powered:") !== -1 || out.indexOf("Alias:") !== -1;
-    }
-
-    function parseBluetoothAdapterName(text) {
-        const lines = String(text || "").split("\n");
-        for (let i = 0; i < lines.length; ++i) {
-            const line = String(lines[i] || "").trim();
-            if (line.indexOf("Alias:") === 0)
-                return TextUtils.cleanText(line.slice(6));
-            if (line.indexOf("Name:") === 0)
-                return TextUtils.cleanText(line.slice(5));
-        }
-        return "";
-    }
-
-    function bluetoothDeviceCount() {
-        if (bluetoothDevicesText.length <= 0)
-            return 0;
-        return bluetoothDevicesText.split("\n").filter(function(line) {
-            return String(line || "").trim().length > 0;
-        }).length;
+        return connectivityService.connections.wirelessEnabled ? i18n("On") : i18n("Off");
     }
 
     function bluetoothSummary() {
-        if (!bluetoothAvailable)
+        const summary = connectivityService.bluetoothSummary();
+        switch (summary.kind) {
+        case "noAdapter":
             return i18n("No adapter");
-        if (!bluetoothPowered)
+        case "off":
             return i18n("Off");
-        const count = bluetoothDeviceCount();
-        if (count <= 0)
+        case "on":
             return i18n("On");
-        return count === 1 ? bluetoothDevicesText.split("\n")[0] : i18np("%1 device", "%1 devices", count);
+        case "device":
+            return summary.text;
+        default:
+            return i18np("%1 device", "%1 devices", summary.count);
+        }
     }
 
     function bluetoothDetail() {
-        if (!bluetoothAvailable)
+        const detail = connectivityService.bluetoothDetail();
+        switch (detail.kind) {
+        case "unavailable":
             return i18n("Bluetooth adapter unavailable");
-        if (!bluetoothPowered)
+        case "radioOff":
             return i18n("Radio disabled");
-        if (bluetoothDevicesText.length > 0)
-            return bluetoothDevicesText;
-        return bluetoothAdapterName.length > 0 ? bluetoothAdapterName : i18n("No connected devices");
-    }
-
-    function kdeConnectDevices(limit) {
-        const all = KdeConnectState.buildDevices(kdeConnectPaired, kdeConnectConnected);
-        const maxRows = Math.max(0, Math.round(Utils.finiteNumber(limit, 0)));
-        return maxRows > 0 ? all.slice(0, maxRows) : all;
-    }
-
-    function kdeConnectReachableCount() {
-        return KdeConnectState.connectedCount(kdeConnectDevices(0));
+        case "devices":
+        case "adapter":
+            return detail.text;
+        default:
+            return i18n("No connected devices");
+        }
     }
 
     function kdeConnectSummary() {
-        const devices = kdeConnectDevices(0);
+        const devices = connectivityService.kdeConnectDevices(0);
         const kind = KdeConnectState.summaryKind(devices);
         if (kind === "connected")
             return i18np("%1 connected", "%1 connected", KdeConnectState.connectedCount(devices));
         return kind === "away" ? i18n("Not nearby") : i18n("No devices");
-    }
-
-    function refreshKdeConnectDevices() {
-        commands.run("kdeconnect-cli --refresh");
-        refreshKdeConnectState();
-    }
-
-    function runKdeConnectDeviceAction(deviceId, action) {
-        const id = TextUtils.cleanText(deviceId);
-        if (id.length <= 0)
-            return ;
-
-        if (action === "ring")
-            commands.run("kdeconnect-cli --device " + Utils.shellQuote(id) + " --ring");
-        else if (action === "browse")
-            commands.run("qdbus6 org.kde.kdeconnect /modules/kdeconnect/devices/" + id + "/sftp org.kde.kdeconnect.device.sftp.startBrowsing");
     }
 
     function cyclePowerProfile() {
@@ -1056,18 +945,6 @@ PlasmoidItem {
         id: batteryControl
     }
 
-    PlasmaNM.EnabledConnections {
-        id: enabledConnections
-    }
-
-    PlasmaNM.WirelessStatus {
-        id: wirelessStatus
-    }
-
-    PlasmaNM.Handler {
-        id: networkHandler
-    }
-
     CommandRunner {
         id: commands
     }
@@ -1094,6 +971,13 @@ PlasmoidItem {
         }
     }
 
+    ConnectivityService {
+        id: connectivityService
+
+        runner: commands
+        polling: root.dialogVisible && root.popupMode === "control"
+    }
+
     JobService {
         id: jobService
 
@@ -1114,7 +998,7 @@ PlasmoidItem {
         storedJson: String(root.settings.controlCenterLayoutJson || "")
         dragHost: dialogHost
         iconState: ({
-            "wifiEnabled": enabledConnections.wirelessEnabled,
+            "wifiEnabled": connectivityService.connections.wirelessEnabled,
             "batteryCharging": batteryControl.pluggedIn,
             "powerProfileIcon": root.powerProfileIcon()
         })
@@ -1253,34 +1137,6 @@ PlasmoidItem {
                 root.showControlCenter();
             }
         }
-    }
-
-    Timer {
-        id: bluetoothRefreshTimer
-
-        interval: 900
-        repeat: false
-        onTriggered: {
-            root.refreshBluetoothState();
-        }
-    }
-
-    Timer {
-        // Connectivity is only shown in the control center. Avoid running
-        // subprocesses in the background while the island is idle.
-        interval: 30000
-        repeat: true
-        running: root.dialogVisible && root.popupMode === "control"
-        triggeredOnStart: false
-        onTriggered: root.refreshConnectivityState()
-    }
-
-    Timer {
-        id: wifiRefreshTimer
-
-        interval: 900
-        repeat: false
-        onTriggered: root.refreshWifiNetworks()
     }
 
     PlasmaCore.Dialog {
@@ -1960,7 +1816,7 @@ PlasmoidItem {
             hostItem: dialogHost
             notificationsSource: notificationService.model
             batterySource: batteryControl
-            connectionsSource: enabledConnections
+            connectionsSource: connectivityService.connections
             screenBrightnessSource: screenBrightness
             keyboardBrightnessSource: keyboardBrightness
             powerProfilesSource: powerProfiles

@@ -14,12 +14,14 @@ Item {
         property bool networkingEnabled: true
         property int settingsOpened: 0
         property int refreshes: 0
-        readonly property var networkState: NetworkState.summarize(
-            NetworkState.parseDevices("wifi:wlan0:connected:<b>A very long network name</b>"),
-            NetworkState.parseAddresses("GENERAL.DEVICE:wlan0\nIP4.ADDRESS[1]:192.0.2.1/24"),
-            NetworkState.parseWifi("*:Example:100:wlan0"), networkingEnabled, true)
         readonly property var launcher: QtObject { function launchNetworkSettings() { testApp.settingsOpened++; } }
-        function refreshWifiNetworks() { refreshes++; }
+        readonly property var connectivity: QtObject {
+            readonly property var networkState: NetworkState.summarize(
+                NetworkState.parseDevices("wifi:wlan0:connected:<b>A very long network name</b>"),
+                NetworkState.parseAddresses("GENERAL.DEVICE:wlan0\nIP4.ADDRESS[1]:192.0.2.1/24"),
+                NetworkState.parseWifi("*:Example:100:wlan0"), testApp.networkingEnabled, true)
+            function refreshWifi() { testApp.refreshes++; }
+        }
     }
 
     Component {

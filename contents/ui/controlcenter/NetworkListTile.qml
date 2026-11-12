@@ -9,7 +9,7 @@ MouseArea {
     id: networkList
 
     required property var app
-    readonly property var networkStatus: app.networkState
+    readonly property var networkStatus: app.connectivity.networkState
     readonly property bool compact: width < 150 || height < 86
     readonly property bool iconOnly: width < 96 || height < 58
     readonly property bool detailed: width >= 190 && height >= 112
@@ -83,7 +83,7 @@ MouseArea {
                 focusColor: T.focusRing
                 flatHoverColor: T.raised
                 flatPressedColor: T.chip
-                onClicked: networkList.app.refreshWifiNetworks()
+                onClicked: networkList.app.connectivity.refreshWifi()
             }
             IslandButton {
                 visible: !networkList.compact && networkList.width >= 230
