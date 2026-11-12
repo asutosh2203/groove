@@ -30,19 +30,19 @@ PlasmoidItem {
     readonly property var settings: Plasmoid.configuration
     readonly property bool inPanel: [PlasmaCore.Types.TopEdge, PlasmaCore.Types.RightEdge, PlasmaCore.Types.BottomEdge, PlasmaCore.Types.LeftEdge].includes(Plasmoid.location)
     readonly property bool verticalPanel: [PlasmaCore.Types.LeftEdge, PlasmaCore.Types.RightEdge].includes(Plasmoid.location)
-    readonly property bool mediaActivityEnabled: Plasmoid.configuration.mediaActivityEnabled !== false
-    readonly property bool notificationActivityEnabled: Plasmoid.configuration.notificationActivityEnabled !== false
-    readonly property bool jobActivityEnabled: Plasmoid.configuration.jobActivityEnabled !== false
-    readonly property bool keyboardLayoutActivityEnabled: Plasmoid.configuration.keyboardLayoutActivityEnabled !== false
-    readonly property bool notificationImagesEnabled: Plasmoid.configuration.notificationShowImages !== false
-    readonly property int notificationBodyCharacters: Math.max(40, Math.min(1000, Math.round(Utils.finiteNumber(Plasmoid.configuration.notificationBodyCharacterLimit, 240))))
-    readonly property int notificationBodyLines: Math.max(1, Math.min(6, Math.round(Utils.finiteNumber(Plasmoid.configuration.notificationBodyLineLimit, 3))))
-    readonly property int notificationPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(Utils.finiteNumber(Plasmoid.configuration.notificationPopupDurationSeconds, 4)) * 1000))
-    readonly property int ongoingPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(Utils.finiteNumber(Plasmoid.configuration.ongoingPopupDurationSeconds, 3)) * 1000))
+    readonly property bool mediaActivityEnabled: root.settings.mediaActivityEnabled !== false
+    readonly property bool notificationActivityEnabled: root.settings.notificationActivityEnabled !== false
+    readonly property bool jobActivityEnabled: root.settings.jobActivityEnabled !== false
+    readonly property bool keyboardLayoutActivityEnabled: root.settings.keyboardLayoutActivityEnabled !== false
+    readonly property bool notificationImagesEnabled: root.settings.notificationShowImages !== false
+    readonly property int notificationBodyCharacters: Math.max(40, Math.min(1000, Math.round(Utils.finiteNumber(root.settings.notificationBodyCharacterLimit, 240))))
+    readonly property int notificationBodyLines: Math.max(1, Math.min(6, Math.round(Utils.finiteNumber(root.settings.notificationBodyLineLimit, 3))))
+    readonly property int notificationPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(Utils.finiteNumber(root.settings.notificationPopupDurationSeconds, 4)) * 1000))
+    readonly property int ongoingPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(Utils.finiteNumber(root.settings.ongoingPopupDurationSeconds, 3)) * 1000))
     // True while the pointer is over a clickable notice popup (drives the whole-island highlight and the open glyph).
     // The playback position is only drawn by the compact media pill, the expanded media popup and the Control
     // Center's media card, so it is only polled while one of them can be seen.
-    readonly property bool mediaPositionVisible: mediaService.hasPlayer && mediaService.isPlaying && !fullscreenCovering && (popupMode === "control" ? dialogVisible : islandOpen ? popupMode === "activity" && popupActivityMode() === "media" : !panelHidden && activityMode() === "media")
+    readonly property bool mediaPositionVisible: mediaService.hasPlayer && mediaService.isPlaying && !panelController.fullscreenCovering && (popupMode === "control" ? dialogVisible : islandOpen ? popupMode === "activity" && popupActivityMode() === "media" : !panelHidden && activityMode() === "media")
     property bool noticeHovered: false
     // True while the pointer is over an activity popup (notice, media, job...), clickable or not. Together with the
     // dialog holding keyboard focus it freezes the popup's timers, which finish with the time left once the pointer
@@ -55,14 +55,10 @@ PlasmoidItem {
     // visible shape is drawn inside whatever slot the panel actually gives us.
     readonly property int islandWidth: 180
     readonly property int islandHeight: 40
-    readonly property bool notchShape: Plasmoid.configuration.shellShape === "notch"
+    readonly property bool notchShape: root.settings.shellShape === "notch"
     // Notch mode attaches the containing panel to the screen edge (not floating,
     // thickness = shell height) and Pill mode restores the panel's saved settings.
     readonly property int notchPanelThickness: islandHeight
-    property int panelSyncPhase: 0 // 0 idle, 1 reading, 2 applying
-    property bool panelSyncPending: false
-    property int panelSyncAttempts: 0
-    property string panelSyncAction: ""
     readonly property real notchShoulder: 8
     readonly property real notchSideMargin: notchShoulder + 4
     readonly property real notchBottomRadius: Math.round(Math.min(realIslandHeight, islandHeight) * 0.35)
@@ -89,149 +85,6 @@ PlasmoidItem {
     property int clickButton: Qt.NoButton
 
 
-    function screenForPoint(pointX, pointY) {
-        const screens = Application.screens;
-        let nearestScreen = null;
-        let nearestDistance = Number.POSITIVE_INFINITY;
-        for (let i = 0; i < screens.length; ++i) {
-            const screen = screens[i];
-            const left = Utils.finiteNumber(screen.virtualX, 0);
-            const top = Utils.finiteNumber(screen.virtualY, 0);
-            const width = Math.max(0, Utils.finiteNumber(screen.width, 0));
-            const height = Math.max(0, Utils.finiteNumber(screen.height, 0));
-            if (width <= 0 || height <= 0)
-                continue;
-
-            const right = left + width;
-            const bottom = top + height;
-            const dx = pointX < left ? left - pointX : pointX > right ? pointX - right : 0;
-            const dy = pointY < top ? top - pointY : pointY > bottom ? pointY - bottom : 0;
-            const distance = dx * dx + dy * dy;
-            if (distance < nearestDistance) {
-                nearestScreen = screen;
-                nearestDistance = distance;
-            }
-        }
-
-        return nearestScreen;
-    }
-
-    // ---- Containing-panel integration -------------------------------------
-    // The panel is found through Plasmoid.containment.id (the scripting panel id)
-    // and confirmed by checking that the panel's widget list contains this
-    // applet, so a stale or wrong id never touches another panel.
-    function panelCommand(applyFloating, applyThickness) {
-        const panelId = Math.floor(Number(Plasmoid.containment.id));
-        const appletId = Math.floor(Number(Plasmoid.id));
-        let apply = "";
-        if (applyFloating !== null)
-            apply += "p.floating = " + (applyFloating ? "true" : "false") + ";";
-        if (applyThickness > 0)
-            apply += "p.height = " + Math.floor(applyThickness) + ";";
-        const script = "var r = {ok: false}; var p = panelById(" + panelId + "); "
-            + "if (p && p.widgetIds.indexOf(" + appletId + ") >= 0) { " + apply
-            + " r = {ok: true, id: " + panelId + ", location: p.location, floating: p.floating, height: p.height}; } "
-            + "print('DI_PANEL ' + JSON.stringify(r));";
-        return "qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript " + Utils.shellQuote(script);
-    }
-
-    function onPanelReply(stdout) {
-        const text = String(stdout).trim();
-        if (text.indexOf("DI_PANEL ") === 0)
-            handlePanelReply(text);
-    }
-
-    function panelSyncWanted() {
-        return notchShape || Plasmoid.configuration.panelOrigPanelId > 0;
-    }
-
-    function syncPanel() {
-        if (!panelSyncWanted())
-            return ;
-        if (panelSyncPhase !== 0) {
-            panelSyncPending = true;
-            return ;
-        }
-        if (!Plasmoid.containment || !(Plasmoid.containment.id > 0))
-            return ;
-        panelSyncPhase = 1;
-        commands.run(panelCommand(null, 0), onPanelReply);
-        panelWatchdog.restart();
-    }
-
-    function applyPanel(action, floating, thickness) {
-        panelSyncAction = action;
-        panelSyncPhase = 2;
-        commands.run(panelCommand(floating, thickness), onPanelReply);
-        panelWatchdog.restart();
-    }
-
-    function clearPanelOriginals() {
-        Plasmoid.configuration.panelOrigPanelId = 0;
-        Plasmoid.configuration.panelOrigFloating = -1;
-        Plasmoid.configuration.panelOrigThickness = 0;
-    }
-
-    function decidePanel(state) {
-        const cfg = Plasmoid.configuration;
-        if (state.location !== "top") {
-            console.warn("Dynamic Island: panel is not on the top edge, leaving it untouched");
-            return ;
-        }
-        // Originals only count for the panel they were captured from.
-        const stored = cfg.panelOrigPanelId === state.id && cfg.panelOrigFloating >= 0;
-        if (notchShape) {
-            const attached = !state.floating && state.height === notchPanelThickness;
-            if (!stored) {
-                // Capture once, before the first change. An already attached panel with
-                // no record has an unknown thickness: remember only that it floated.
-                cfg.panelOrigPanelId = state.id;
-                cfg.panelOrigFloating = attached ? 1 : (state.floating ? 1 : 0);
-                cfg.panelOrigThickness = attached ? 0 : state.height;
-            }
-            if (!attached)
-                applyPanel("notch", false, notchPanelThickness);
-        } else if (stored) {
-            const wantFloating = cfg.panelOrigFloating === 1;
-            const wantThickness = cfg.panelOrigThickness;
-            if (state.floating === wantFloating && (wantThickness <= 0 || state.height === wantThickness))
-                clearPanelOriginals();
-            else
-                applyPanel("restore", wantFloating, wantThickness);
-        }
-    }
-
-    function handlePanelReply(out) {
-        panelWatchdog.stop();
-        let reply = { "ok": false };
-        try {
-            reply = JSON.parse(out.substring("DI_PANEL ".length));
-        } catch (e) {
-        }
-        const phase = panelSyncPhase;
-        panelSyncPhase = 0;
-        panelSyncAttempts = 0;
-        if (!reply.ok) {
-            console.warn("Dynamic Island: could not identify its panel, leaving it untouched");
-        } else if (phase === 1) {
-            decidePanel(reply);
-        } else if (phase === 2) {
-            const cfg = Plasmoid.configuration;
-            if (panelSyncAction === "restore") {
-                if (reply.floating === (cfg.panelOrigFloating === 1) && (cfg.panelOrigThickness <= 0 || reply.height === cfg.panelOrigThickness))
-                    clearPanelOriginals();
-                else
-                    console.warn("Dynamic Island: panel restore did not fully apply; original settings kept for a retry");
-            } else if (reply.floating || reply.height !== notchPanelThickness) {
-                console.warn("Dynamic Island: panel did not accept the notch settings");
-            }
-        }
-        if (panelSyncPhase === 0 && panelSyncPending) {
-            panelSyncPending = false;
-            Qt.callLater(syncPanel);
-        }
-    }
-
     function positionIslandDialog() {
         const item = root.compactRepresentationItem || root;
         if (!item || !item.mapToGlobal)
@@ -247,7 +100,7 @@ PlasmoidItem {
         else if (Plasmoid.location === PlasmaCore.Types.TopEdge)
             dialogY = collapsedY;
 
-        const popupScreen = screenForPoint(collapsedX + realIslandWidth / 2, collapsedY + realIslandHeight / 2);
+        const popupScreen = panelController.screenForPoint(collapsedX + realIslandWidth / 2, collapsedY + realIslandHeight / 2);
         if (popupScreen) {
             dialogX = Utils.clampNumber(dialogX, popupScreen.virtualX, popupScreen.virtualX + popupScreen.width - popupWidth);
             dialogY = Utils.clampNumber(dialogY, popupScreen.virtualY, popupScreen.virtualY + popupScreen.height - popupHeight);
@@ -537,30 +390,6 @@ PlasmoidItem {
 
     }
 
-    onNotchShapeChanged: Qt.callLater(syncPanel)
-
-    // Startup sync is delayed until the shell's scripting service is up, and
-    // retried a couple of times if a request never answers.
-    Timer {
-        id: panelStartTimer
-
-        interval: 2500
-        repeat: false
-        onTriggered: root.syncPanel()
-    }
-
-    Timer {
-        id: panelWatchdog
-
-        interval: 8000
-        repeat: false
-        onTriggered: {
-            root.panelSyncPhase = 0;
-            if (root.panelSyncAttempts++ < 2)
-                panelStartTimer.restart();
-        }
-    }
-
     Activities.ActivityController {
         id: activityController
 
@@ -658,6 +487,30 @@ PlasmoidItem {
         }
     }
 
+    PanelController {
+        id: panelController
+
+        runner: commands
+        containmentId: Plasmoid.containment ? Plasmoid.containment.id : 0
+        appletId: Plasmoid.id
+        screenGeometry: Plasmoid.containment ? Plasmoid.containment.screenGeometry : Qt.rect(0, 0, 0, 0)
+        notch: root.notchShape
+        notchThickness: root.notchPanelThickness
+        originalPanelId: root.settings.panelOrigPanelId
+        originalFloating: root.settings.panelOrigFloating
+        originalThickness: root.settings.panelOrigThickness
+        onOriginalsCaptured: (panelId, floating, thickness) => {
+            root.settings.panelOrigPanelId = panelId;
+            root.settings.panelOrigFloating = floating;
+            root.settings.panelOrigThickness = thickness;
+        }
+        onOriginalsCleared: {
+            root.settings.panelOrigPanelId = 0;
+            root.settings.panelOrigFloating = -1;
+            root.settings.panelOrigThickness = 0;
+        }
+    }
+
     SystemControls {
         id: systemControls
 
@@ -713,8 +566,6 @@ PlasmoidItem {
     }
 
     Component.onCompleted: {
-                if (root.panelSyncWanted())
-            panelStartTimer.start();
         controlLayoutService.ensureLayout();
         root.refreshSystemState();
         appLauncher.discoverCalendarApp();
@@ -726,42 +577,9 @@ PlasmoidItem {
     DecorClock {
         id: decorClockItem
 
-        paused: root.fullscreenCovering
+        paused: panelController.fullscreenCovering
     }
 
-    // A fullscreen window on top of the island's screen hides it, so decorative loops and the position poll stop.
-    // Event-driven: the task model reports windows as they open, close, minimize or change fullscreen.
-    property bool fullscreenCovering: false
-
-    function updateFullscreen() {
-        const tasks = [];
-        for (let i = 0; i < fullscreenModel.count; ++i) {
-            const idx = fullscreenModel.index(i, 0);
-            tasks.push({
-                "isWindow": fullscreenModel.data(idx, TaskManager.AbstractTasksModel.IsWindow),
-                "fullScreen": fullscreenModel.data(idx, TaskManager.AbstractTasksModel.IsFullScreen),
-                "minimized": fullscreenModel.data(idx, TaskManager.AbstractTasksModel.IsMinimized)
-            });
-        }
-        fullscreenCovering = FullscreenState.covering(tasks);
-    }
-
-    TaskManager.VirtualDesktopInfo {
-        id: virtualDesktopInfo
-    }
-
-    TaskManager.TasksModel {
-        id: fullscreenModel
-
-        filterByVirtualDesktop: true
-        virtualDesktop: virtualDesktopInfo.currentDesktop
-        filterByScreen: true
-        screenGeometry: Plasmoid.containment ? Plasmoid.containment.screenGeometry : Qt.rect(0, 0, 0, 0)
-        groupMode: TaskManager.TasksModel.GroupDisabled
-        onCountChanged: root.updateFullscreen()
-        onDataChanged: root.updateFullscreen()
-        Component.onCompleted: root.updateFullscreen()
-    }
 
     PausableTimer {
         id: activityPopupTimer
@@ -1048,7 +866,7 @@ PlasmoidItem {
                     root.clickButton = mouse.button;
                     root.idleClickTarget = !root.hasActivity && mouse.button === Qt.LeftButton ? idleFace.targetAt(mouse.x, mouse.y) : "";
                     // Time/weather launch only after the double-click window, so a double click always wins.
-                    clickTimer.interval = root.idleClickTarget !== "" ? Qt.styleHints.mouseDoubleClickInterval : 210;
+                    clickTimer.interval = root.idleClickTarget !== "" ? Application.styleHints.mouseDoubleClickInterval : 210;
                     clickTimer.restart();
                 }
                 onDoubleClicked: (mouse) => {
