@@ -17,6 +17,7 @@ Last updated: 12 November 2026. Decisions referenced as D-xx live in [DECISIONS.
 | — | Pill-mode Control Center side padding fix | `b1f6338` |
 | CC5 | KDE Connect card: D-Bus state, empty/connected/not-nearby states, theme phone glyph, notification card action icons | `cac7071` |
 | — | CI on Node 26, all Node tests auto-run | `2c58eb0`, `a9fc274` |
+| Q3 | CI hardening: one job in a pinned Arch container (image tag + Archive snapshot), real qmllint over all QML and JS with a warning ratchet, Qt Quick tests in CI, Dependabot for actions (D-36, `docs/CI.md`) | `2157738`, `d9e206f`, `8dc04c6`, `d577e87` |
 | Q1 | Performance: baseline script, finite unread pulse, gated position poll, one shared 8 fps clock, fullscreen pause, covered-pill fix (D-34); measurements in `docs/PERFORMANCE.md` | `f756d35`, `61f123a`, `e8dc61b`, `eecbf18`, `e4866a9`, `298c3a8`, `6fef95d`, `8802d5d` |
 | — | Idle face after 30 s without playback (D-35) | `68605e5` |
 | CC7 | Notification click-through: open the live action, URL or app (D-31), TasksModel window activation (D-32), whole-island hover target, single right-hand slot, popup timers hold on hover | `fd8d57b` |
@@ -34,13 +35,10 @@ CC6 (notification list density/scrolling) was dropped.
      idle source exists for QML; `IslandButton` Canvas glyph repaints.
    - Test coverage: extract and test logic still inside `main.qml` (activity priority/pre-emption,
      media player scoring, urgency mapping, click/double-click, weather caching).
-   - CI gaps: `contents/ui/weather/*.qml` and `weather/*.js` aren't syntax-checked; Qt Quick
-     tests don't run in CI.
    - Launcher extraction: move the desktop-entry lookup, launch and TasksModel logic out of `main.qml`
      into a standalone launcher component.
-   - CI maintenance: bump `actions/checkout` and `actions/setup-node` to their latest major
-     versions (v4 runs on a deprecated Node 20 runtime); pin the runner to an explicit Ubuntu
-     version instead of `ubuntu-latest`.
+   - Q2: reduce the qmllint "unqualified access" warnings (677 of the 687 baseline; `pragma ComponentBehavior: Bound`
+     and required properties), then lower `.github/qmllint-baseline.txt`; it only ever goes down.
 2. **Cursor gradient effect**: soft hover gradient on the compact shell, expanded views and Control
    Center. Idle-silent; measured against the baseline.
 3. **Frosted-glass spike** (D-23): time-boxed prototype of real KWin blur with a shape-matched region.
