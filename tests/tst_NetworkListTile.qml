@@ -1,7 +1,7 @@
 import QtQuick
 import QtTest
 import "../contents/ui/controlcenter" as Tiles
-import "../contents/ui/controlcenter/NetworkState.js" as NetworkState
+import "../contents/ui/logic/NetworkState.js" as NetworkState
 
 Item {
     id: testRoot

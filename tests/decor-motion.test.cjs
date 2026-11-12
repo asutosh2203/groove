@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
 
-const source = fs.readFileSync(path.join(__dirname, '../contents/ui/DecorMotion.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../contents/ui/logic/DecorMotion.js'), 'utf8');
 const m = vm.createContext({});
 vm.runInContext(source.replace(/^\.pragma library\s*/, ''), m);
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} is not within ${eps} of ${b}`);

@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
 
-const source = fs.readFileSync(path.join(__dirname, '../contents/ui/FullscreenState.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../contents/ui/logic/FullscreenState.js'), 'utf8');
 const ctx = vm.createContext({});
 vm.runInContext(source.replace(/^\.pragma library\s*/, ''), ctx);
 const covering = (tasks) => ctx.covering(tasks);

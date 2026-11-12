@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 
 // Run the same Qt JavaScript helper without requiring a Plasma session.
-const source = fs.readFileSync(path.join(__dirname, '../contents/ui/controlcenter/NetworkState.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../contents/ui/logic/NetworkState.js'), 'utf8');
 const network = vm.createContext({});
 vm.runInContext(source.replace(/^\.pragma library\s*/, ''), network);
 const state = (devices = '', addresses = '', wifi = '', enabled = true, wireless = true) => network.summarize(

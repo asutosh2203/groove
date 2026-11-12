@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 
 // Run the same Qt JavaScript helper without requiring a Plasma session.
-const source = fs.readFileSync(path.join(__dirname, '../contents/ui/TextUtils.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../contents/ui/logic/TextUtils.js'), 'utf8');
 const text = vm.createContext({});
 vm.runInContext(source.replace(/^\.pragma library\s*/, ''), text);
 

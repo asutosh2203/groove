@@ -1,7 +1,7 @@
 import QtQuick
 import ".."
-import "../DecorMotion.js" as Motion
-import "WeatherCodes.js" as Codes
+import "../logic/DecorMotion.js" as Motion
+import "../logic/WeatherCodes.js" as Codes
 import "WeatherManifest.js" as Manifest
 
 // Layered Meteocons icon. Qt SVG cannot play the packaged SMIL animations, so each layer

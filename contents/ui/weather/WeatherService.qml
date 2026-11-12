@@ -1,6 +1,6 @@
 import QtQuick
 import org.kde.plasma.plasmoid
-import "WeatherCodes.js" as Codes
+import "../logic/WeatherCodes.js" as Codes
 
 // Open-Meteo current conditions for the location chosen in the settings (no IP/GPS lookup).
 // The last good response is cached in the widget config and kept when a refresh fails.

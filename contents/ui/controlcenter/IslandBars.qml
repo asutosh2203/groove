@@ -1,6 +1,6 @@
 import QtQuick
 import ".."
-import "../DecorMotion.js" as Motion
+import "../logic/DecorMotion.js" as Motion
 import "Tokens.js" as T
 
 Row {

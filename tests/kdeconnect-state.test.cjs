@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
 
-const source = fs.readFileSync(path.join(__dirname, '../contents/ui/controlcenter/KdeConnectState.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../contents/ui/logic/KdeConnectState.js'), 'utf8');
 const k = vm.createContext({});
 vm.runInContext(source.replace(/^\.pragma library\s*/, ''), k);
 const lit = (pairs) => `[Argument: a{ss} {${pairs.map(([i, n]) => `"${i}" = "${n}"`).join(', ')}}]`;

@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
 
-const source = fs.readFileSync(path.join(__dirname, '../contents/ui/weather/WeatherCodes.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../contents/ui/logic/WeatherCodes.js'), 'utf8');
 const codes = vm.createContext({});
 vm.runInContext(source.replace(/^\.pragma library\s*/, ''), codes);
 

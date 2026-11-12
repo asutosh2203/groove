@@ -15,16 +15,16 @@ import org.kde.plasma.private.volume
 import org.kde.plasma.workspace.keyboardlayout as KeyboardLayout
 import org.kde.taskmanager as TaskManager
 import "controlcenter"
-import "controlcenter/ModuleRegistry.js" as ModuleRegistry
-import "controlcenter/NetworkState.js" as NetworkState
-import "controlcenter/KdeConnectState.js" as KdeConnectState
-import "TextUtils.js" as TextUtils
-import "NotificationOpen.js" as NotificationOpen
-import "AppMatch.js" as AppMatch
-import "FullscreenState.js" as FullscreenState
-import "MediaIdle.js" as MediaIdle
-import "MediaLength.js" as MediaLength
-import "NoticeDuration.js" as NoticeDuration
+import "logic/ModuleRegistry.js" as ModuleRegistry
+import "logic/NetworkState.js" as NetworkState
+import "logic/KdeConnectState.js" as KdeConnectState
+import "logic/TextUtils.js" as TextUtils
+import "logic/NotificationOpen.js" as NotificationOpen
+import "logic/AppMatch.js" as AppMatch
+import "logic/FullscreenState.js" as FullscreenState
+import "logic/MediaIdle.js" as MediaIdle
+import "logic/MediaLength.js" as MediaLength
+import "logic/NoticeDuration.js" as NoticeDuration
 import "activities" as Activities
 import "weather"
 

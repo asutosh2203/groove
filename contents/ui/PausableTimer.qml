@@ -1,5 +1,5 @@
 import QtQuick
-import "Countdown.js" as Countdown
+import "logic/Countdown.js" as Countdown
 
 // A one-shot timer that can be held: while `hold` is true the countdown stands still, and when it
 // is released the timer finishes with the time it had left instead of starting over.

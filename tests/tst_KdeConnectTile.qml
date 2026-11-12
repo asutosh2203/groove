@@ -1,7 +1,7 @@
 import QtQuick
 import QtTest
 import "../contents/ui/controlcenter" as Tiles
-import "../contents/ui/controlcenter/KdeConnectState.js" as K
+import "../contents/ui/logic/KdeConnectState.js" as K
 
 Item {
     id: testRoot
