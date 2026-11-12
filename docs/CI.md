@@ -9,8 +9,17 @@ push to `main`, every pull request and every `v*` tag; a tag also publishes a re
 2. `scripts/check-qml.sh`: `qmllint` over every QML and JS file under `contents/`
    - errors (any non-zero qmllint exit, for example a syntax error) fail the job;
    - any `[import]` warning fails the job (a module that cannot be loaded would weaken every other check);
-   - the warning count may not go above `.github/qmllint-baseline.txt`. It only ever goes down: when CI says the
-     count dropped, lower the number in that file in the same change.
+   - the warning count of each FILE may not go above its line in `.github/qmllint-baseline.txt` (`<count> <path>`; a
+     file with no line has a baseline of 0, so new files must be warning-free). It only ever goes down: when CI says a
+     file dropped, run `scripts/check-qml.sh --lower-baseline` (it only writes lower numbers and refuses while anything
+     fails) and commit the file. A moved file keeps its count: rename its line by hand;
+   - a file that drops by more than half gets a loud "verify the analysis didn't abort" warning;
+   - a probe: qmllint 6.12 can silently stop analysing a file (for example a `const` inside an arrow function), which
+     makes its warnings vanish and would pass the ratchet for the wrong reason. Each QML file is linted again as a
+     temporary copy with one unresolved name appended, and qmllint must report exactly one more warning (two probe
+     forms are tried, either may pass). Files where no form works are listed in `.github/qmllint-probe-exempt.txt`:
+     their counts are unverifiable, so adding one there is a review decision (today: `configGeneral.qml`,
+     `ControlCenterEditor.qml`, `WeatherService.qml`).
 3. Qt Quick tests: `qmltestrunner -input tests` (offscreen, software backend)
 4. Package build: `scripts/package.sh`, then `unzip -t`
 
@@ -26,8 +35,8 @@ The image tag and the package snapshot must always carry the same date. To bump 
 2. In `.github/workflows/ci.yml` set `container.image` to that tag and `ALA_DATE` to the same date as `YYYY/MM/DD`.
    The snapshot must exist at `https://archive.archlinux.org/repos/YYYY/MM/DD/`.
 3. Push to a branch and open a pull request: the run shows the Node, Qt and Plasma versions it resolved.
-4. If qmllint now counts differently, set the new count in `.github/qmllint-baseline.txt` only if it is lower, and
-   investigate if it is higher.
+4. If qmllint now counts differently, lower the affected files' counts in `.github/qmllint-baseline.txt` with
+   `scripts/check-qml.sh --lower-baseline`, and investigate any file that went up or fails the probe.
 
 Dependabot (`.github/dependabot.yml`) keeps the GitHub Actions versions current. It does **not** update the container
 image or `ALA_DATE`; those are bumped by hand as above.

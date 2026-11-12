@@ -1,0 +1,5 @@
+# QML files where qmllint reports nothing for an unresolved name under any probe form (scripts/check-qml.sh),
+# so their warning counts cannot be verified. A review decision to add a file here; remove it once it probes.
+contents/ui/configGeneral.qml
+contents/ui/ControlCenterEditor.qml
+contents/ui/weather/WeatherService.qml
