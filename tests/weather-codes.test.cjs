@@ -28,7 +28,8 @@ test('temperature display rounds and converts', () => {
     assert.equal(codes.displayTemperature(21.5, false), '22°C');
     assert.equal(codes.displayTemperature(0, true), '32°F');
     assert.equal(codes.displayTemperature(NaN, false), '--°C');
-    assert.deepEqual(codes.temperatureParts(18.6, true), { value: '65', unit: '°F' });
+    // Round-trip through JSON: objects from the vm context have a different prototype.
+    assert.deepEqual(JSON.parse(JSON.stringify(codes.temperatureParts(18.6, true))), { value: '65', unit: '°F' });
 });
 
 test('forecast url uses encoded-safe coordinates', () => {

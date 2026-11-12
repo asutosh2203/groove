@@ -20,10 +20,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Run parser and text tests
-        run: |
-          node tests/network-state.test.cjs
-          node tests/text-utils.test.cjs
+      - name: Run Node tests
+        run: node --test tests/*.test.cjs
 
       - name: Install QML linter
         run: |
