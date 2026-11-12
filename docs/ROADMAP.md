@@ -32,6 +32,9 @@ CC6 (notification list density/scrolling) was dropped.
      media player scoring, urgency mapping, click/double-click, weather caching).
    - CI gaps: `contents/ui/weather/*.qml` and `weather/*.js` aren't syntax-checked; Qt Quick
      tests don't run in CI.
+   - CI maintenance: bump `actions/checkout` and `actions/setup-node` to their latest major
+     versions (v4 runs on a deprecated Node 20 runtime); pin the runner to an explicit Ubuntu
+     version instead of `ubuntu-latest`.
 2. **Cursor gradient effect**: soft hover gradient on the compact shell, expanded views and Control
    Center. Idle-silent; measured against the baseline.
 3. **Frosted-glass spike** (D-23): time-boxed prototype of real KWin blur with a shape-matched region.
