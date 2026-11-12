@@ -31,10 +31,17 @@ jobs:
       - name: Install pinned packages
         run: |
           echo "Server = https://archive.archlinux.org/repos/$ALA_DATE/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist
-          pacman -Syyuu --noconfirm --noprogressbar
-          pacman -S --noconfirm --noprogressbar --needed \
-            qt6-declarative kirigami libplasma plasma-workspace plasma5support plasma-nm plasma-pa powerdevil kcmutils \
-            nodejs python zip unzip git
+          # The archive can be slow on large files; pacman resumes partial downloads, so a few retries are cheap.
+          for attempt in 1 2 3 4; do
+            if pacman -Syyuu --noconfirm --noprogressbar --needed --disable-download-timeout \
+                 qt6-declarative kirigami libplasma plasma-workspace plasma5support plasma-nm plasma-pa powerdevil kcmutils \
+                 nodejs python zip unzip git; then
+              break
+            fi
+            [ "$attempt" -lt 4 ] || { echo "::error::pacman failed after $attempt attempts"; exit 1; }
+            echo "pacman attempt $attempt failed, retrying in 20 s"
+            sleep 20
+          done
           # Arch keeps the Qt tools (qmllint, qmltestrunner) out of PATH.
           echo /usr/lib/qt6/bin >> "$GITHUB_PATH"
 
