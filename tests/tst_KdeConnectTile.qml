@@ -20,7 +20,7 @@ Item {
         }
         function kdeConnectReachableCount() { return K.connectedCount(kdeConnectDevices(0)); }
         function kdeConnectSummary() { return K.summaryKind(kdeConnectDevices(0)); }
-        function launchKdeConnectSettings() { lastAction = "open"; }
+        readonly property var launcher: QtObject { function launchKdeConnectSettings() { app.lastAction = "open"; } }
         function refreshKdeConnectDevices() {}
         function runKdeConnectDeviceAction(id, action) { lastAction = action + ":" + id; }
     }

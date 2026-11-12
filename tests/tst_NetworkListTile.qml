@@ -18,7 +18,7 @@ Item {
             NetworkState.parseDevices("wifi:wlan0:connected:<b>A very long network name</b>"),
             NetworkState.parseAddresses("GENERAL.DEVICE:wlan0\nIP4.ADDRESS[1]:192.0.2.1/24"),
             NetworkState.parseWifi("*:Example:100:wlan0"), networkingEnabled, true)
-        function launchNetworkSettings() { settingsOpened++; }
+        readonly property var launcher: QtObject { function launchNetworkSettings() { testApp.settingsOpened++; } }
         function refreshWifiNetworks() { refreshes++; }
     }
 

@@ -19,7 +19,7 @@ Item {
         return "<small><font color='#7f8490'>" + text + "</font></small>";
     }
 
-    readonly property string hoverText: timeHover.hovered ? Qt.formatDate(idle.now, Qt.locale(), Locale.LongFormat) + (app && app.calendarAppId().length > 0 ? "" : "<br/>" + tertiary(i18n("No calendar application found. Choose one in the widget settings."))) : weatherHover.hovered ? (!weather || !weather.configured ? i18n("Choose a location in the widget settings.") : weather.hasData ? (conditionText(weather.weatherCode, weather.isDay).length > 0 ? conditionText(weather.weatherCode, weather.isDay) + "<br/>" : "") + tertiary(i18n("Updated %1", Qt.formatTime(new Date(weather.updatedMs), Qt.locale(), Locale.ShortFormat)) + (weather.failing ? " · " + i18n("offline, showing last known weather") : "")) : i18n("Weather unavailable")) : ""
+    readonly property string hoverText: timeHover.hovered ? Qt.formatDate(idle.now, Qt.locale(), Locale.LongFormat) + (app && app.launcher.calendarAppId().length > 0 ? "" : "<br/>" + tertiary(i18n("No calendar application found. Choose one in the widget settings."))) : weatherHover.hovered ? (!weather || !weather.configured ? i18n("Choose a location in the widget settings.") : weather.hasData ? (conditionText(weather.weatherCode, weather.isDay).length > 0 ? conditionText(weather.weatherCode, weather.isDay) + "<br/>" : "") + tertiary(i18n("Updated %1", Qt.formatTime(new Date(weather.updatedMs), Qt.locale(), Locale.ShortFormat)) + (weather.failing ? " · " + i18n("offline, showing last known weather") : "")) : i18n("Weather unavailable")) : ""
 
     Binding {
         target: idle.app

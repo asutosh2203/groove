@@ -37,12 +37,12 @@ MouseArea {
     Accessible.role: Accessible.Button
     Accessible.name: "KDE Connect"
     Accessible.description: app.kdeConnectSummary()
-    Accessible.onPressAction: app.launchKdeConnectSettings()
-    Keys.onSpacePressed: app.launchKdeConnectSettings()
-    Keys.onReturnPressed: app.launchKdeConnectSettings()
-    Keys.onEnterPressed: app.launchKdeConnectSettings()
+    Accessible.onPressAction: app.launcher.launchKdeConnectSettings()
+    Keys.onSpacePressed: app.launcher.launchKdeConnectSettings()
+    Keys.onReturnPressed: app.launcher.launchKdeConnectSettings()
+    Keys.onEnterPressed: app.launcher.launchKdeConnectSettings()
     onPressed: kdeTile.forceActiveFocus()
-    onClicked: app.launchKdeConnectSettings()
+    onClicked: app.launcher.launchKdeConnectSettings()
 
     Rectangle {
         anchors.fill: parent
@@ -118,7 +118,7 @@ MouseArea {
                 focusColor: T.focusRing
                 flatHoverColor: T.raised
                 flatPressedColor: T.chip
-                onClicked: app.launchKdeConnectSettings()
+                onClicked: app.launcher.launchKdeConnectSettings()
             }
         }
 

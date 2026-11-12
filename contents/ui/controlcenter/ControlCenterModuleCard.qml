@@ -234,7 +234,7 @@ Rectangle {
             secondaryActionIconName: "settings"
             secondaryActionTooltip: i18n("Audio settings")
             onActionTriggered: app.toggleSystemMute()
-            onSecondaryActionTriggered: app.launchPavucontrol()
+            onSecondaryActionTriggered: app.launcher.launchPavucontrol()
             onMoved: (value) => app.setSystemVolumePercent(value)
         }
     }
@@ -251,7 +251,7 @@ Rectangle {
             actionTooltip: i18n("Display settings")
             secondaryActionIconName: keyboardBrightnessSource.isBrightnessAvailable ? "input-keyboard" : ""
             secondaryActionTooltip: i18n("Toggle keyboard brightness")
-            onActionTriggered: app.launchDisplaySettings()
+            onActionTriggered: app.launcher.launchDisplaySettings()
             onSecondaryActionTriggered: app.setKeyboardBrightnessPercent(app.keyboardBrightnessPercent() <= 20 ? 100 : 0)
             onMoved: (value) => app.setScreenBrightnessPercent(value)
         }
@@ -269,8 +269,8 @@ Rectangle {
             detailText: app.wifiTitle()
             footerText: connectionsSource.wirelessHwEnabled ? (connectionsSource.wirelessEnabled ? i18n("Click to turn off") : i18n("Click to turn on")) : i18n("No adapter")
             actionIconName: "settings"
-            onActionTriggered: app.launchNetworkSettings()
-            onTriggered: connectionsSource.wirelessHwEnabled ? app.toggleWifi() : app.launchNetworkSettings()
+            onActionTriggered: app.launcher.launchNetworkSettings()
+            onTriggered: connectionsSource.wirelessHwEnabled ? app.toggleWifi() : app.launcher.launchNetworkSettings()
         }
     }
     Component { id: wifiDevicesModule; NetworkListTile { app: moduleCard.app } }
@@ -288,8 +288,8 @@ Rectangle {
             detailText: app.bluetoothDetail()
             footerText: app.bluetoothAvailable ? (app.bluetoothPowered ? i18n("Click to turn off") : i18n("Click to turn on")) : i18n("Open settings")
             actionIconName: "settings"
-            onActionTriggered: app.launchBluetoothSettings()
-            onTriggered: app.bluetoothAvailable ? app.toggleBluetoothPower() : app.launchBluetoothSettings()
+            onActionTriggered: app.launcher.launchBluetoothSettings()
+            onTriggered: app.bluetoothAvailable ? app.toggleBluetoothPower() : app.launcher.launchBluetoothSettings()
         }
     }
     Component {
@@ -303,7 +303,7 @@ Rectangle {
             available: app.bluetoothAvailable
             detailText: app.bluetoothDetail()
             footerText: app.bluetoothAvailable ? i18n("Open Bluetooth") : i18n("Open settings")
-            onTriggered: app.launchBluetoothDiscovery()
+            onTriggered: app.launcher.launchBluetoothDiscovery()
         }
     }
     Component {
@@ -319,7 +319,7 @@ Rectangle {
             detailText: app.batteryText()
             footerText: batterySource.hasInternalBatteries ? (batterySource.pluggedIn ? i18n("Plugged in") : i18n("Discharging")) : i18n("AC power")
             actionIconName: "settings"
-            onActionTriggered: app.launchPowerSettings()
+            onActionTriggered: app.launcher.launchPowerSettings()
         }
     }
     Component {
@@ -334,7 +334,7 @@ Rectangle {
             progress: batterySource.hasInternalBatteries ? batterySource.percent : 100
             detailText: batterySource.pluggedIn ? i18n("Charging") : i18n("Power")
             actionIconName: "settings"
-            onActionTriggered: app.launchPowerSettings()
+            onActionTriggered: app.launcher.launchPowerSettings()
         }
     }
     Component {
@@ -348,7 +348,7 @@ Rectangle {
             detailText: powerProfilesSource.profiles && powerProfilesSource.profiles.length > 1 ? i18n("Click to cycle") : i18n("Current profile")
             footerText: app.powerProfileTitle()
             actionIconName: "settings"
-            onActionTriggered: app.launchPowerSettings()
+            onActionTriggered: app.launcher.launchPowerSettings()
             onTriggered: app.cyclePowerProfile()
         }
     }
@@ -374,7 +374,7 @@ Rectangle {
             subtitle: i18n("Global themes")
             active: false
             detailText: i18n("Open KDE themes")
-            onTriggered: app.launchAppearanceSettings()
+            onTriggered: app.launcher.launchAppearanceSettings()
         }
     }
     Component {
@@ -392,7 +392,7 @@ Rectangle {
             subtitle: i18n("System")
             active: false
             detailText: i18n("Open System Settings")
-            onTriggered: app.launchSystemSettings()
+            onTriggered: app.launcher.launchSystemSettings()
         }
     }
     Component {

@@ -5,7 +5,6 @@ import org.kde.kirigami as Kirigami
 import org.kde.notificationmanager as NotificationManager
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.networkmanagement as PlasmaNM
-import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.plasma.plasmoid
 import org.kde.plasma.private.battery
 import org.kde.plasma.private.batterymonitor
@@ -263,14 +262,6 @@ PlasmoidItem {
             + " r = {ok: true, id: " + panelId + ", location: p.location, floating: p.floating, height: p.height}; } "
             + "print('DI_PANEL ' + JSON.stringify(r));";
         return "qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript " + Utils.shellQuote(script);
-    }
-
-    readonly property string calendarDiscoveryCommand: 'echo "DI_CAL $(xdg-mime query default text/calendar 2>/dev/null)"'
-
-    function applyCalendarDiscovery(stdout) {
-        const text = String(stdout).trim();
-        if (text.indexOf("DI_CAL") === 0)
-            discoveredCalendarApp = text.substring(6).trim();
     }
 
     function onPanelReply(stdout) {
@@ -697,27 +688,12 @@ PlasmoidItem {
         return Math.max(0, notificationCount() - Math.max(0, Math.round(Utils.finiteNumber(limit, 0))));
     }
 
-    // desktop id -> { display, path } from Plasma's "apps" engine. A missing key means "not looked up yet",
-    // which counts as not openable until the answer arrives a moment later.
-    property var desktopEntryInfo: ({})
-    property var desktopEntrySources: ({})
-
-    function lookupDesktopEntry(entry) {
-        const names = entry.endsWith(".desktop") ? [entry + ".desktop", entry] : [entry + ".desktop"];
-        for (const name of names) {
-            if (desktopEntrySources[name] === undefined) {
-                desktopEntrySources[name] = entry;
-                appsSource.connectSource(name);
-            }
-        }
-    }
-
     // What a click on this notification would do (D-31). "none" rows are not clickable.
     function notificationOpenTarget(row) {
         const entry = TextUtils.cleanText(rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
-        const info = entry.length > 0 ? desktopEntryInfo[entry] : undefined;
+        const info = entry.length > 0 ? appLauncher.desktopEntryInfo[entry] : undefined;
         if (entry.length > 0 && info === undefined)
-            lookupDesktopEntry(entry);
+            appLauncher.lookupDesktopEntry(entry);
 
         return NotificationOpen.resolve({
             "expired": rowValue(row, NotificationManager.Notifications.ExpiredRole, false) === true,
@@ -754,7 +730,7 @@ PlasmoidItem {
             if (target.kind === "url")
                 Qt.openUrlExternally(target.target);
             else
-                launchDesktopEntry(target.target);
+                appLauncher.launch(target.target);
             if (rowValue(row, NotificationManager.Notifications.ClosableRole, true))
                 notifications.close(idx);
         }
@@ -1169,88 +1145,11 @@ PlasmoidItem {
     property string idleHoverTitle: ""
     property string idleHoverText: ""
     property string idleClickTarget: ""
-    property string discoveredCalendarApp: ""
     readonly property alias weather: weatherService
+    readonly property alias launcher: appLauncher
 
     WeatherService {
         id: weatherService
-    }
-
-    function calendarAppId() {
-        const configured = String(Plasmoid.configuration.calendarApp || "").trim();
-        return (configured.length > 0 ? configured : discoveredCalendarApp).replace(/\.desktop$/, "");
-    }
-
-    // The single app launcher (calendar and notification fallback). Ids come from other apps, so only plain
-    // desktop ids pass. An already-running app is activated through Plasma's task manager model (plasmashell is
-    // KWin's trusted shell, so this un-minimizes and raises even tray apps like Telegram, which ignore a
-    // relaunch); otherwise the desktop file is launched.
-    property string pendingLaunchEntry: ""
-    property int launchLookups: 0
-
-    function launchDesktopEntry(id) {
-        const entry = String(id || "").trim();
-        if (!/^[A-Za-z0-9._-]+$/.test(entry) || pendingLaunchEntry.length > 0)
-            return ;
-
-        pendingLaunchEntry = entry;
-        launchLookups = 0;
-        tasksLoader.active = true;
-        taskLookupTimer.restart();
-    }
-
-    // The model fills in asynchronously, so an empty one is retried a few times before concluding "not running".
-    function finishLaunch() {
-        const entry = pendingLaunchEntry;
-        const model = tasksLoader.item;
-        if (model && model.rowCount() === 0 && ++launchLookups < 5) {
-            taskLookupTimer.restart();
-            return ;
-        }
-
-        let activated = false;
-        if (model) {
-            const tasks = [];
-            for (let i = 0; i < model.rowCount(); ++i) {
-                const idx = model.index(i, 0);
-                tasks.push({
-                    "appId": model.data(idx, TaskManager.AbstractTasksModel.AppId),
-                    "launcherUrl": model.data(idx, TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon),
-                    "isWindow": model.data(idx, TaskManager.AbstractTasksModel.IsWindow)
-                });
-            }
-            const hit = AppMatch.findTask(entry, tasks);
-            if (hit >= 0) {
-                model.requestActivate(model.index(hit, 0));
-                activated = true;
-            }
-        }
-        pendingLaunchEntry = "";
-        tasksLoader.active = false;
-        if (!activated)
-            runDesktopEntry(entry);
-    }
-
-    // `kioclient exec` on the desktop file, falling back to gtk-launch. The id is tried as "<id>.desktop" and
-    // as-is (org.telegram.desktop is the file org.telegram.desktop.desktop); plasmashell has no XDG_DATA_DIRS,
-    // so the Flatpak exports are listed explicitly.
-    function runDesktopEntry(entry) {
-        commands.run("setsid sh -c 'f=; IFS=:; "
-            + "for d in \"${XDG_DATA_HOME:-$HOME/.local/share}\" ${XDG_DATA_DIRS:-/usr/local/share:/usr/share:/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share}; do "
-            + "for n in \"" + entry + ".desktop\" \"" + entry + "\"; do "
-            + "[ -f \"$d/applications/$n\" ] && f=\"$d/applications/$n\" && break 2; done; done; "
-            + "if [ -n \"$f\" ]; then kioclient exec \"$f\"; else gtk-launch " + entry + "; fi' >/dev/null 2>&1 &");
-    }
-
-    function openCalendar() {
-        launchDesktopEntry(calendarAppId());
-    }
-
-    function openForecast() {
-        if (weatherService.configured)
-            Qt.openUrlExternally(weatherService.forecastUrl);
-        else
-            Plasmoid.internalAction("configure").trigger();
     }
 
     // Bound to the default sink, so external mute changes and sink switches update every user.
@@ -1284,26 +1183,6 @@ PlasmoidItem {
             GlobalService.globalMute();
     }
 
-    function launchPavucontrol() {
-        commands.run("pavucontrol");
-    }
-
-    function launchNetworkSettings() {
-        commands.run("kcmshell6 kcm_networkmanagement");
-    }
-
-    function launchBluetoothSettings() {
-        commands.run("kcmshell6 kcm_bluetooth");
-    }
-
-    function launchDisplaySettings() {
-        commands.run("kcmshell6 kcm_kscreen");
-    }
-
-    function launchNotificationSettings() {
-        commands.run("kcmshell6 kcm_notifications");
-    }
-
     function lockScreen() {
         commands.run("loginctl lock-session");
         closeIsland();
@@ -1325,29 +1204,9 @@ PlasmoidItem {
         closeIsland();
     }
 
-    function launchKdeConnectSettings() {
-        commands.run("kdeconnect-app");
-    }
-
-    function launchAppearanceSettings() {
-        commands.run("kcmshell6 kcm_lookandfeel");
-    }
-
-    function launchSystemSettings() {
-        commands.run("systemsettings");
-    }
-
-    function launchPowerSettings() {
-        commands.run("kcmshell6 kcm_powerdevilprofilesconfig");
-    }
-
     function toggleBluetoothPower() {
         commands.run(bluetoothPowered ? "bluetoothctl power off" : "bluetoothctl power on");
         bluetoothRefreshTimer.restart();
-    }
-
-    function launchBluetoothDiscovery() {
-        commands.run("kcmshell6 kcm_bluetooth");
     }
 
     function toggleAppearanceMode() {
@@ -2089,44 +1948,18 @@ PlasmoidItem {
         id: networkHandler
     }
 
-    // One-shot lookups of desktop entries (is the entry a launchable app or a NoDisplay background service?).
-    Plasma5Support.DataSource {
-        id: appsSource
-
-        engine: "apps"
-        onNewData: (sourceName, data) => {
-            const entry = root.desktopEntrySources[sourceName];
-            if (entry !== undefined) {
-                const info = Object.assign({}, root.desktopEntryInfo);
-                info[entry] = { "display": data.display === true, "path": String(data.entryPath || "") };
-                root.desktopEntryInfo = info;
-            }
-            disconnectSource(sourceName);
-        }
-    }
-
-    // Created only while a launch looks for an existing window, so nothing watches windows while idle.
-    Loader {
-        id: tasksLoader
-
-        active: false
-        sourceComponent: TaskManager.TasksModel {
-            filterByVirtualDesktop: false
-            filterByScreen: false
-            filterByActivity: false
-            groupMode: TaskManager.TasksModel.GroupDisabled
-        }
-    }
-
-    Timer {
-        id: taskLookupTimer
-
-        interval: 150
-        onTriggered: root.finishLaunch()
-    }
-
     CommandRunner {
         id: commands
+    }
+
+    AppLauncher {
+        id: appLauncher
+
+        runner: commands
+        configuredCalendarApp: String(Plasmoid.configuration.calendarApp || "")
+        forecastAvailable: weatherService.configured
+        forecastUrl: weatherService.forecastUrl
+        onConfigureRequested: Plasmoid.internalAction("configure").trigger()
     }
 
     Component.onCompleted: {
@@ -2135,7 +1968,7 @@ PlasmoidItem {
             panelStartTimer.start();
         root.ensureControlLayout();
         root.refreshSystemState();
-        commands.run(calendarDiscoveryCommand, applyCalendarDiscovery);
+        appLauncher.discoverCalendarApp();
         root.lastUnreadNotificationsCount = notifications.unreadNotificationsCount;
         root.lastActiveJobsCount = notifications.activeJobsCount;
     }
@@ -2330,9 +2163,9 @@ PlasmoidItem {
                 root.showActivityPopup(false);
                 Qt.callLater(root.focusIslandDialog);
             } else if (root.idleClickTarget === "time") {
-                root.openCalendar();
+                appLauncher.openCalendar();
             } else if (root.idleClickTarget === "weather") {
-                root.openForecast();
+                appLauncher.openForecast();
             } else {
                 root.showControlCenter();
             }

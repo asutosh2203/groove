@@ -21,12 +21,12 @@ MouseArea {
     Accessible.role: Accessible.Button
     Accessible.name: networkList.networkStatus.title + " " + networkList.networkStatus.summary
     Accessible.description: networkList.networkStatus.detail
-    Accessible.onPressAction: app.launchNetworkSettings()
-    Keys.onSpacePressed: app.launchNetworkSettings()
-    Keys.onReturnPressed: app.launchNetworkSettings()
-    Keys.onEnterPressed: app.launchNetworkSettings()
+    Accessible.onPressAction: app.launcher.launchNetworkSettings()
+    Keys.onSpacePressed: app.launcher.launchNetworkSettings()
+    Keys.onReturnPressed: app.launcher.launchNetworkSettings()
+    Keys.onEnterPressed: app.launcher.launchNetworkSettings()
     onPressed: networkList.forceActiveFocus()
-    onClicked: app.launchNetworkSettings()
+    onClicked: app.launcher.launchNetworkSettings()
 
     Rectangle {
         anchors.fill: parent
@@ -97,7 +97,7 @@ MouseArea {
                 focusColor: T.focusRing
                 flatHoverColor: T.raised
                 flatPressedColor: T.chip
-                onClicked: networkList.app.launchNetworkSettings()
+                onClicked: networkList.app.launcher.launchNetworkSettings()
             }
         }
 

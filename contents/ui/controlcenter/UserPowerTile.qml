@@ -137,8 +137,8 @@ Item {
 
         IslandButton { width: 28; height: 28; iconName: "system-lock-screen"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Lock"); onClicked: app.runPowerAction("lock") }
         IslandButton { width: 28; height: 28; iconName: "system-suspend"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Sleep"); onClicked: app.runPowerAction("sleep") }
-        IslandButton { width: 28; height: 28; iconName: "preferences-desktop-theme-global"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Appearance"); onClicked: app.launchAppearanceSettings() }
-        IslandButton { width: 28; height: 28; iconName: "systemsettings"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("System Settings"); onClicked: app.launchSystemSettings() }
+        IslandButton { width: 28; height: 28; iconName: "preferences-desktop-theme-global"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Appearance"); onClicked: app.launcher.launchAppearanceSettings() }
+        IslandButton { width: 28; height: 28; iconName: "systemsettings"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("System Settings"); onClicked: app.launcher.launchSystemSettings() }
     }
 }
 

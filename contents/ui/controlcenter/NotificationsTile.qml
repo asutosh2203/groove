@@ -135,7 +135,7 @@ Item {
                 focusColor: T.focusRing
                 flatHoverColor: T.raised
                 flatPressedColor: T.chip
-                onClicked: app.launchNotificationSettings()
+                onClicked: app.launcher.launchNotificationSettings()
             }
         }
 
