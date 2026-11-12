@@ -23,6 +23,6 @@
 1 contents/ui/controlcenter/SimpleModuleTile.qml
 2 contents/ui/controlcenter/ThemeGlyph.qml
 35 contents/ui/controlcenter/UserPowerTile.qml
-212 contents/ui/main.qml
+7 contents/ui/main.qml
 23 contents/ui/weather/IdleContent.qml
 17 contents/ui/weather/WeatherIcon.qml
