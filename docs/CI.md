@@ -10,7 +10,10 @@ push to `main`, every pull request and every `v*` tag; a tag also publishes a re
    - errors (any non-zero qmllint exit, for example a syntax error) fail the job;
    - any `[import]` warning fails the job (a module that cannot be loaded would weaken every other check);
    - the warning count of each FILE may not go above its line in `.github/qmllint-baseline.txt` (`<count> <path>`; a
-     file with no line has a baseline of 0, so new files must be warning-free). It only ever goes down: when CI says a
+     file with no line has a baseline of 0, so new files must be warning-free). It only ever goes down, with one narrow
+     exception: a baseline may go up only for increased analysis coverage or a verified false positive (for example
+     Plasma's global `i18n`, which qmllint cannot qualify), with the reason in the commit message and the maintainer's
+     approval, never to absorb a real regression. When CI says a
      file dropped, run `scripts/check-qml.sh --lower-baseline` (it only writes lower numbers and refuses while anything
      fails) and commit the file. A moved file keeps its count: rename its line by hand;
    - a file that drops by more than half gets a loud "verify the analysis didn't abort" warning;
