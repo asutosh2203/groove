@@ -212,12 +212,7 @@ PlasmoidItem {
     }
 
     function notificationStatusText() {
-        const count = notificationService.count();
-        if (count <= 0)
-            return i18n("Quiet");
-        if (count === 1)
-            return i18n("1 notification");
-        return i18np("%1 notification", "%1 notifications", count);
+        return translations.notificationStatus(notificationService.count());
     }
 
     function activeRowFor(kind) {
@@ -228,30 +223,16 @@ PlasmoidItem {
         return activeRowFor("auto");
     }
 
-    // Translated fallbacks stay here; the service supplies the data.
     function jobTitle(row) {
-        const title = jobService.titleText(row);
-        return title.length > 0 ? title : i18n("Working");
+        return translations.jobTitle(jobService.titleText(row));
     }
 
     function jobDetailsText(row) {
-        const parts = jobService.detailsParts(row);
-        switch (parts.kind) {
-        case "paused":
-            return i18n("Paused");
-        case "speed":
-            return Utils.formatByteSize(parts.speed) + "/s";
-        case "progress":
-            return i18n("%1 of %2", Utils.formatByteSize(parts.processed), Utils.formatByteSize(parts.total));
-        case "app":
-            return parts.text;
-        default:
-            return "";
-        }
+        return translations.jobDetails(jobService.detailsParts(row));
     }
 
     function primaryTextFor(kind) {
-        return activityController.titleFor(kind, i18n("Control Center"));
+        return activityController.titleFor(kind, translations.idleTitle);
     }
 
     function primaryText() {
@@ -259,7 +240,7 @@ PlasmoidItem {
     }
 
     function secondaryTextFor(kind) {
-        return activityController.subtitleFor(kind, i18n("Brightness, audio, network, power"));
+        return activityController.subtitleFor(kind, translations.idleSubtitle);
     }
 
     function secondaryText() {
@@ -287,6 +268,7 @@ PlasmoidItem {
     readonly property alias jobs: jobService
     readonly property alias connectivity: connectivityService
     readonly property alias system: systemControls
+    readonly property alias strings: translations
 
     WeatherService {
         id: weatherService
@@ -299,70 +281,28 @@ PlasmoidItem {
     }
 
     function wifiTitle() {
-        if (!connectivityService.connections.wirelessHwEnabled)
-            return i18n("Unavailable");
-        return connectivityService.connections.wirelessEnabled ? i18n("On") : i18n("Off");
+        return translations.wifiTitle(connectivityService.connections.wirelessHwEnabled, connectivityService.connections.wirelessEnabled);
     }
 
     function bluetoothSummary() {
-        const summary = connectivityService.bluetoothSummary();
-        switch (summary.kind) {
-        case "noAdapter":
-            return i18n("No adapter");
-        case "off":
-            return i18n("Off");
-        case "on":
-            return i18n("On");
-        case "device":
-            return summary.text;
-        default:
-            return i18np("%1 device", "%1 devices", summary.count);
-        }
+        return translations.bluetoothSummary(connectivityService.bluetoothSummary());
     }
 
     function bluetoothDetail() {
-        const detail = connectivityService.bluetoothDetail();
-        switch (detail.kind) {
-        case "unavailable":
-            return i18n("Bluetooth adapter unavailable");
-        case "radioOff":
-            return i18n("Radio disabled");
-        case "devices":
-        case "adapter":
-            return detail.text;
-        default:
-            return i18n("No connected devices");
-        }
+        return translations.bluetoothDetail(connectivityService.bluetoothDetail());
     }
 
     function kdeConnectSummary() {
         const devices = connectivityService.kdeConnectDevices(0);
-        const kind = KdeConnectState.summaryKind(devices);
-        if (kind === "connected")
-            return i18np("%1 connected", "%1 connected", KdeConnectState.connectedCount(devices));
-        return kind === "away" ? i18n("Not nearby") : i18n("No devices");
+        return translations.kdeConnectSummary(KdeConnectState.summaryKind(devices), KdeConnectState.connectedCount(devices));
     }
 
     function powerProfileTitle() {
-        switch (systemControls.profileKind()) {
-        case "performance":
-            return i18n("Performance");
-        case "saver":
-            return i18n("Saver");
-        default:
-            return i18n("Balanced");
-        }
+        return translations.profileTitle(systemControls.profileKind());
     }
 
     function batteryText() {
-        switch (systemControls.batteryKind()) {
-        case "ac":
-            return i18n("AC");
-        case "power":
-            return i18n("Power");
-        default:
-            return systemControls.battery.percent + "%";
-        }
+        return translations.batteryText(systemControls.batteryKind(), systemControls.battery.percent);
     }
 
     Layout.minimumWidth: islandWidth
@@ -376,7 +316,7 @@ PlasmoidItem {
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
     Plasmoid.constraintHints: Plasmoid.CanFillArea
     Plasmoid.status: hasActivity ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.PassiveStatus
-    Plasmoid.title: i18n("Dynamic Island")
+    Plasmoid.title: translations.appTitle
     toolTipMainText: idleHoverTitle.length > 0 && !hasActivity ? idleHoverTitle : primaryText()
     toolTipTextFormat: idleHoverTitle.length > 0 && !hasActivity ? Text.RichText : Text.AutoText
     toolTipSubText: idleHoverTitle.length > 0 && !hasActivity ? idleHoverText : secondaryText()
@@ -452,8 +392,8 @@ PlasmoidItem {
                 key: "idle"
                 active: true
                 priority: ActivityResolver.priority.idle
-                title: i18n("Control Center")
-                subtitle: i18n("Brightness, audio, network, power")
+                title: translations.idleTitle
+                subtitle: translations.idleSubtitle
                 autoCloseMs: root.ongoingPopupDurationMs
                 visualComponent: idleVisualComponent
                 expandedComponent: activityPage
@@ -472,7 +412,7 @@ PlasmoidItem {
         activityEnabled: root.notificationActivityEnabled
         bodyCharacters: root.notificationBodyCharacters
         popupDurationMs: root.notificationPopupDurationMs
-        fallbackAppName: i18n("Notification")
+        fallbackAppName: translations.notificationFallback
         holdLifetime: root.holdNoticeLifetime
         popupTimerRunning: activityPopupTimer.running
         onNoticeShown: root.bump("notice")
@@ -485,6 +425,10 @@ PlasmoidItem {
             if (root.dialogVisible)
                 root.closeIsland();
         }
+    }
+
+    Strings {
+        id: translations
     }
 
     PanelController {
@@ -859,7 +803,7 @@ PlasmoidItem {
                 hoverEnabled: true
                 acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                 Accessible.role: Accessible.Button
-                Accessible.name: i18n("Dynamic Island")
+                Accessible.name: translations.appTitle
                 Accessible.description: root.primaryText() + ". " + root.secondaryText()
                 Accessible.onPressAction: root.toggleControlCenter()
                 onClicked: (mouse) => {
@@ -995,7 +939,7 @@ PlasmoidItem {
             focus: root.popupAcceptsFocus
             acceptedButtons: Qt.LeftButton
             Accessible.role: Accessible.Grouping
-            Accessible.name: i18n("Dynamic Island")
+            Accessible.name: translations.appTitle
             Accessible.description: root.primaryText() + ". " + root.secondaryText()
             Keys.onPressed: (event) => {
                 if (event.key !== Qt.Key_Escape)
@@ -1285,7 +1229,7 @@ PlasmoidItem {
                 IslandButton {
                     iconName: "media-skip-backward"
                     compact: true
-                    tooltipText: i18n("Previous")
+                    tooltipText: translations.previous
                     enabled: mediaService.player && mediaService.player.canGoPrevious
                     onClicked: mediaService.previous()
                 }
@@ -1294,7 +1238,7 @@ PlasmoidItem {
                     iconName: mediaService.isPlaying ? "media-playback-pause" : "media-playback-start"
                     compact: true
                     emphasized: true
-                    tooltipText: mediaService.isPlaying ? i18n("Pause") : i18n("Play")
+                    tooltipText: mediaService.isPlaying ? translations.pause : translations.play
                     enabled: mediaService.player && (mediaService.player.canPlay || mediaService.player.canPause)
                     onClicked: mediaService.playPause()
                 }
@@ -1302,7 +1246,7 @@ PlasmoidItem {
                 IslandButton {
                     iconName: "media-skip-forward"
                     compact: true
-                    tooltipText: i18n("Next")
+                    tooltipText: translations.next
                     enabled: mediaService.player && mediaService.player.canGoNext
                     onClicked: mediaService.next()
                 }
