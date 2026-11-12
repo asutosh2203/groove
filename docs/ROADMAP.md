@@ -17,6 +17,8 @@ Last updated: 12 November 2026. Decisions referenced as D-xx live in [DECISIONS.
 | — | Pill-mode Control Center side padding fix | `b1f6338` |
 | CC5 | KDE Connect card: D-Bus state, empty/connected/not-nearby states, theme phone glyph, notification card action icons | `cac7071` |
 | — | CI on Node 26, all Node tests auto-run | `2c58eb0`, `a9fc274` |
+| Q1 | Performance: baseline script, finite unread pulse, gated position poll, one shared 8 fps clock, fullscreen pause, covered-pill fix (D-34); measurements in `docs/PERFORMANCE.md` | `f756d35`, `61f123a`, `e8dc61b`, `eecbf18`, `e4866a9`, `298c3a8`, `6fef95d`, `8802d5d` |
+| — | Idle face after 30 s without playback (D-35) | `68605e5` |
 | CC7 | Notification click-through: open the live action, URL or app (D-31), TasksModel window activation (D-32), whole-island hover target, single right-hand slot, popup timers hold on hover | `fd8d57b` |
 | D-33 | Notification popup duration: app timeout shortens the setting (2 s floor), critical at least 6 s | `63eb31f` |
 
@@ -27,9 +29,9 @@ CC6 (notification list density/scrolling) was dropped.
 
 ## Next
 1. **Quality pass**
-   - Performance baseline: plasmashell CPU, memory and repaint rate for widget off / idle / media /
-     Control Center open. Then fix hot spots: always-on idle weather animation, unread pulse loop,
-     `layer`/`MultiEffect` usage, `IslandButton` Canvas glyph repaints.
+   - Performance follow-ups (the main work is done, see `docs/PERFORMANCE.md`): re-measure the Control Center
+     while open now that its bars ride the shared clock; the "idle for 5 minutes" pause once an event-driven
+     idle source exists for QML; `IslandButton` Canvas glyph repaints.
    - Test coverage: extract and test logic still inside `main.qml` (activity priority/pre-emption,
      media player scoring, urgency mapping, click/double-click, weather caching).
    - CI gaps: `contents/ui/weather/*.qml` and `weather/*.js` aren't syntax-checked; Qt Quick
