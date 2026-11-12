@@ -23,6 +23,10 @@ jobs:
       ALA_DATE: 2026/11/10
       QT_QPA_PLATFORM: offscreen
       QT_QUICK_BACKEND: software
+    defaults:
+      run:
+        # bash with pipefail, so a failing command in a pipeline (qmltestrunner | tee) fails the step.
+        shell: bash
     steps:
       - name: Install pinned packages
         run: |
@@ -31,6 +35,8 @@ jobs:
           pacman -S --noconfirm --noprogressbar --needed \
             qt6-declarative kirigami libplasma plasma-workspace plasma5support plasma-nm plasma-pa powerdevil kcmutils \
             nodejs python zip unzip git
+          # Arch keeps the Qt tools (qmllint, qmltestrunner) out of PATH.
+          echo /usr/lib/qt6/bin >> "$GITHUB_PATH"
 
       - uses: actions/checkout@v7
 
