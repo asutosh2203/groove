@@ -15,6 +15,7 @@ import org.kde.plasma.private.volume
 import org.kde.plasma.workspace.keyboardlayout as KeyboardLayout
 import org.kde.taskmanager as TaskManager
 import "controlcenter"
+import "services"
 import "logic/ModuleRegistry.js" as ModuleRegistry
 import "logic/NetworkState.js" as NetworkState
 import "logic/KdeConnectState.js" as KdeConnectState
@@ -264,6 +265,20 @@ PlasmoidItem {
         return "qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript " + Utils.shellQuote(script);
     }
 
+    readonly property string calendarDiscoveryCommand: 'echo "DI_CAL $(xdg-mime query default text/calendar 2>/dev/null)"'
+
+    function applyCalendarDiscovery(stdout) {
+        const text = String(stdout).trim();
+        if (text.indexOf("DI_CAL") === 0)
+            discoveredCalendarApp = text.substring(6).trim();
+    }
+
+    function onPanelReply(stdout) {
+        const text = String(stdout).trim();
+        if (text.indexOf("DI_PANEL ") === 0)
+            handlePanelReply(text);
+    }
+
     function panelSyncWanted() {
         return notchShape || Plasmoid.configuration.panelOrigPanelId > 0;
     }
@@ -278,14 +293,14 @@ PlasmoidItem {
         if (!Plasmoid.containment || !(Plasmoid.containment.id > 0))
             return ;
         panelSyncPhase = 1;
-        executable.exec(panelCommand(null, 0));
+        commands.run(panelCommand(null, 0), onPanelReply);
         panelWatchdog.restart();
     }
 
     function applyPanel(action, floating, thickness) {
         panelSyncAction = action;
         panelSyncPhase = 2;
-        executable.exec(panelCommand(floating, thickness));
+        commands.run(panelCommand(floating, thickness), onPanelReply);
         panelWatchdog.restart();
     }
 
@@ -779,16 +794,6 @@ PlasmoidItem {
         return TextUtils.plainText(text);
     }
 
-    function commandStdout(data) {
-        if (!data)
-            return "";
-
-        if (data.stdout !== undefined && data.stdout !== null)
-            return data.stdout;
-
-        return data["stdout"] || "";
-    }
-
     function resetControlInteractionState() {
         controlDragActive = false;
         controlResizeActive = false;
@@ -1230,7 +1235,7 @@ PlasmoidItem {
     // as-is (org.telegram.desktop is the file org.telegram.desktop.desktop); plasmashell has no XDG_DATA_DIRS,
     // so the Flatpak exports are listed explicitly.
     function runDesktopEntry(entry) {
-        executable.exec("setsid sh -c 'f=; IFS=:; "
+        commands.run("setsid sh -c 'f=; IFS=:; "
             + "for d in \"${XDG_DATA_HOME:-$HOME/.local/share}\" ${XDG_DATA_DIRS:-/usr/local/share:/usr/share:/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share}; do "
             + "for n in \"" + entry + ".desktop\" \"" + entry + "\"; do "
             + "[ -f \"$d/applications/$n\" ] && f=\"$d/applications/$n\" && break 2; done; done; "
@@ -1280,69 +1285,69 @@ PlasmoidItem {
     }
 
     function launchPavucontrol() {
-        executable.exec("pavucontrol");
+        commands.run("pavucontrol");
     }
 
     function launchNetworkSettings() {
-        executable.exec("kcmshell6 kcm_networkmanagement");
+        commands.run("kcmshell6 kcm_networkmanagement");
     }
 
     function launchBluetoothSettings() {
-        executable.exec("kcmshell6 kcm_bluetooth");
+        commands.run("kcmshell6 kcm_bluetooth");
     }
 
     function launchDisplaySettings() {
-        executable.exec("kcmshell6 kcm_kscreen");
+        commands.run("kcmshell6 kcm_kscreen");
     }
 
     function launchNotificationSettings() {
-        executable.exec("kcmshell6 kcm_notifications");
+        commands.run("kcmshell6 kcm_notifications");
     }
 
     function lockScreen() {
-        executable.exec("loginctl lock-session");
+        commands.run("loginctl lock-session");
         closeIsland();
     }
 
     function runPowerAction(action) {
         if (action === "lock")
-            executable.exec("loginctl lock-session");
+            commands.run("loginctl lock-session");
         else if (action === "logout")
-            executable.exec("qdbus6 org.kde.Shutdown /Shutdown logout");
+            commands.run("qdbus6 org.kde.Shutdown /Shutdown logout");
         else if (action === "sleep")
-            executable.exec("systemctl suspend");
+            commands.run("systemctl suspend");
         else if (action === "hibernate")
-            executable.exec("systemctl hibernate");
+            commands.run("systemctl hibernate");
         else if (action === "reboot")
-            executable.exec("systemctl reboot");
+            commands.run("systemctl reboot");
         else if (action === "shutdown")
-            executable.exec("systemctl poweroff");
+            commands.run("systemctl poweroff");
         closeIsland();
     }
 
     function launchKdeConnectSettings() {
-        executable.exec("kdeconnect-app");
+        commands.run("kdeconnect-app");
     }
 
     function launchAppearanceSettings() {
-        executable.exec("kcmshell6 kcm_lookandfeel");
+        commands.run("kcmshell6 kcm_lookandfeel");
     }
 
     function launchSystemSettings() {
-        executable.exec("systemsettings");
+        commands.run("systemsettings");
     }
 
     function launchPowerSettings() {
-        executable.exec("kcmshell6 kcm_powerdevilprofilesconfig");
+        commands.run("kcmshell6 kcm_powerdevilprofilesconfig");
     }
 
     function toggleBluetoothPower() {
-        executable.exec(bluetoothPowered ? "bluetoothctl power off" : "bluetoothctl power on");
+        commands.run(bluetoothPowered ? "bluetoothctl power off" : "bluetoothctl power on");
         bluetoothRefreshTimer.restart();
     }
 
     function launchBluetoothDiscovery() {
-        executable.exec("kcmshell6 kcm_bluetooth");
+        commands.run("kcmshell6 kcm_bluetooth");
     }
 
     function toggleAppearanceMode() {
@@ -1358,18 +1363,35 @@ PlasmoidItem {
     }
 
     function refreshSystemState() {
-        executable.exec("whoami");
-        executable.exec("hostname");
-        executable.exec(accountIconCommand);
+        commands.run("whoami", stdout => systemUsername = TextUtils.cleanText(stdout));
+        commands.run("hostname", stdout => systemHostname = TextUtils.cleanText(stdout));
+        commands.run(accountIconCommand, applyAccountIcon);
         refreshConnectivityState();
     }
 
+    function applyAccountIcon(stdout) {
+        const out = TextUtils.cleanText(stdout);
+        profileImageUrl = out.length > 0 ? (out.indexOf("file:") === 0 ? out : "file://" + out) : "";
+    }
+
     function refreshConnectivityState() {
-        executable.exec("bluetoothctl show");
-        executable.exec("bluetoothctl devices Connected");
+        refreshBluetoothState();
         refreshWifiNetworks();
-        executable.exec(KdeConnectState.pairedCommand);
-        executable.exec(KdeConnectState.connectedCommand);
+        refreshKdeConnectState();
+    }
+
+    function refreshBluetoothState() {
+        commands.run("bluetoothctl show", stdout => {
+            bluetoothAvailable = parseBluetoothAvailable(stdout);
+            bluetoothAdapterName = parseBluetoothAdapterName(stdout);
+            bluetoothPowered = TextUtils.cleanText(stdout).indexOf("Powered: yes") !== -1;
+        });
+        commands.run("bluetoothctl devices Connected", stdout => bluetoothDevicesText = parseBluetoothDevices(stdout));
+    }
+
+    function refreshKdeConnectState() {
+        commands.run(KdeConnectState.pairedCommand, stdout => kdeConnectPaired = KdeConnectState.parseNames(stdout));
+        commands.run(KdeConnectState.connectedCommand, stdout => kdeConnectConnected = KdeConnectState.parseNames(stdout));
     }
 
     function defaultControlLayout() {
@@ -1554,9 +1576,9 @@ PlasmoidItem {
     }
 
     function refreshWifiNetworks() {
-        executable.exec(wifiScanCommand);
-        executable.exec(networkStatusCommand);
-        executable.exec(networkIpCommand);
+        commands.run(wifiScanCommand, stdout => wifiNetworks = NetworkState.parseWifi(stdout));
+        commands.run(networkStatusCommand, stdout => networkDevices = NetworkState.parseDevices(stdout));
+        commands.run(networkIpCommand, stdout => networkAddresses = NetworkState.parseAddresses(stdout));
     }
 
     function wifiTitle() {
@@ -1652,9 +1674,8 @@ PlasmoidItem {
     }
 
     function refreshKdeConnectDevices() {
-        executable.exec("kdeconnect-cli --refresh");
-        executable.exec(KdeConnectState.pairedCommand);
-        executable.exec(KdeConnectState.connectedCommand);
+        commands.run("kdeconnect-cli --refresh");
+        refreshKdeConnectState();
     }
 
     function runKdeConnectDeviceAction(deviceId, action) {
@@ -1663,9 +1684,9 @@ PlasmoidItem {
             return ;
 
         if (action === "ring")
-            executable.exec("kdeconnect-cli --device " + Utils.shellQuote(id) + " --ring");
+            commands.run("kdeconnect-cli --device " + Utils.shellQuote(id) + " --ring");
         else if (action === "browse")
-            executable.exec("qdbus6 org.kde.kdeconnect /modules/kdeconnect/devices/" + id + "/sftp org.kde.kdeconnect.device.sftp.startBrowsing");
+            commands.run("qdbus6 org.kde.kdeconnect /modules/kdeconnect/devices/" + id + "/sftp org.kde.kdeconnect.device.sftp.startBrowsing");
     }
 
     function beginControlDrag(source, item, mouse, size) {
@@ -2104,55 +2125,8 @@ PlasmoidItem {
         onTriggered: root.finishLaunch()
     }
 
-    Plasma5Support.DataSource {
-        id: executable
-
-        function exec(cmd) {
-            if (cmd)
-                connectSource(cmd);
-
-        }
-
-        engine: "executable"
-        onNewData: (sourceName, data) => {
-            const stdout = root.commandStdout(data);
-            const out = TextUtils.cleanText(stdout);
-            if (String(stdout).trim().indexOf("DI_PANEL ") === 0) {
-                root.handlePanelReply(String(stdout).trim());
-                disconnectSource(sourceName);
-                return ;
-            }
-            if (String(stdout).trim().indexOf("DI_CAL") === 0) {
-                root.discoveredCalendarApp = String(stdout).trim().substring(6).trim();
-                disconnectSource(sourceName);
-                return ;
-            }
-            if (sourceName === "whoami")
-                root.systemUsername = out;
-            else if (sourceName === "hostname")
-                root.systemHostname = out;
-            else if (sourceName === root.accountIconCommand)
-                root.profileImageUrl = out.length > 0 ? (out.indexOf("file:") === 0 ? out : "file://" + out) : "";
-            else if (sourceName === "bluetoothctl show") {
-                root.bluetoothAvailable = root.parseBluetoothAvailable(stdout);
-                root.bluetoothAdapterName = root.parseBluetoothAdapterName(stdout);
-                root.bluetoothPowered = out.indexOf("Powered: yes") !== -1;
-            }
-            else if (sourceName === "bluetoothctl devices Connected")
-                root.bluetoothDevicesText = root.parseBluetoothDevices(stdout);
-            else if (sourceName === root.wifiScanCommand)
-                root.wifiNetworks = NetworkState.parseWifi(stdout);
-            else if (sourceName === root.networkStatusCommand)
-                root.networkDevices = NetworkState.parseDevices(stdout);
-            else if (sourceName === root.networkIpCommand)
-                root.networkAddresses = NetworkState.parseAddresses(stdout);
-            else if (sourceName === KdeConnectState.pairedCommand)
-                root.kdeConnectPaired = KdeConnectState.parseNames(stdout);
-            else if (sourceName === KdeConnectState.connectedCommand)
-                root.kdeConnectConnected = KdeConnectState.parseNames(stdout);
-
-            disconnectSource(sourceName);
-        }
+    CommandRunner {
+        id: commands
     }
 
     Component.onCompleted: {
@@ -2161,7 +2135,7 @@ PlasmoidItem {
             panelStartTimer.start();
         root.ensureControlLayout();
         root.refreshSystemState();
-        executable.exec('echo "DI_CAL $(xdg-mime query default text/calendar 2>/dev/null)"');
+        commands.run(calendarDiscoveryCommand, applyCalendarDiscovery);
         root.lastUnreadNotificationsCount = notifications.unreadNotificationsCount;
         root.lastActiveJobsCount = notifications.activeJobsCount;
     }
@@ -2371,8 +2345,7 @@ PlasmoidItem {
         interval: 900
         repeat: false
         onTriggered: {
-            executable.exec("bluetoothctl show");
-            executable.exec("bluetoothctl devices Connected");
+            root.refreshBluetoothState();
         }
     }
 

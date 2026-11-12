@@ -49,3 +49,14 @@ function formatByteSize(bytes) {
 function shellQuote(text) {
     return "'" + String(text || "").replace(/'/g, "'\"'\"'") + "'";
 }
+
+// stdout of one finished data-engine command (the executable engine reports a data map).
+function commandStdout(data) {
+    if (!data)
+        return "";
+
+    if (data.stdout !== undefined && data.stdout !== null)
+        return data.stdout;
+
+    return data["stdout"] || "";
+}

@@ -63,3 +63,11 @@ test('shellQuote single-quotes and escapes embedded quotes', () => {
     assert.equal(u.shellQuote("it's"), "'it'\"'\"'s'");
     assert.equal(u.shellQuote(undefined), "''");
 });
+
+test('commandStdout reads stdout from a finished command and tolerates missing data', () => {
+    assert.equal(u.commandStdout({ stdout: 'hi\n' }), 'hi\n');
+    assert.equal(u.commandStdout({ stdout: '' }), '');
+    assert.equal(u.commandStdout({ 'exit code': 1 }), '');
+    assert.equal(u.commandStdout(null), '');
+    assert.equal(u.commandStdout(undefined), '');
+});
