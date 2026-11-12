@@ -39,11 +39,32 @@ Item {
                 color: "#ff9f0a"
                 opacity: 0.16
 
-                SequentialAnimation on scale {
-                    running: notificationCompact.unreadCount > 0
-                    loops: Animation.Infinite
-                    NumberAnimation { to: 1.12; duration: 520; easing.type: Easing.InOutSine }
-                    NumberAnimation { to: 1; duration: 520; easing.type: Easing.InOutSine }
+                // A few pulses draw the eye to new unread items, then it stays still: an endless loop kept the
+                // whole panel redrawing every frame for as long as something was unread (perf, D-34).
+                SequentialAnimation {
+                    id: pulse
+
+                    loops: 3
+                    NumberAnimation { target: unreadPulse; property: "scale"; to: 1.12; duration: 520; easing.type: Easing.InOutSine }
+                    NumberAnimation { target: unreadPulse; property: "scale"; to: 1; duration: 520; easing.type: Easing.InOutSine }
+                }
+
+                Connections {
+                    target: notificationCompact
+
+                    function onUnreadCountChanged() {
+                        if (notificationCompact.unreadCount > 0)
+                            pulse.restart();
+                        else {
+                            pulse.stop();
+                            unreadPulse.scale = 1;
+                        }
+                    }
+                }
+
+                Component.onCompleted: {
+                    if (notificationCompact.unreadCount > 0)
+                        pulse.start();
                 }
             }
 
