@@ -21,6 +21,7 @@ import "controlcenter/KdeConnectState.js" as KdeConnectState
 import "TextUtils.js" as TextUtils
 import "NotificationOpen.js" as NotificationOpen
 import "AppMatch.js" as AppMatch
+import "NoticeDuration.js" as NoticeDuration
 import "activities" as Activities
 import "weather"
 
@@ -46,6 +47,14 @@ PlasmoidItem {
     readonly property int notificationBodyCharacters: Math.max(40, Math.min(1000, Math.round(finiteNumber(Plasmoid.configuration.notificationBodyCharacterLimit, 240))))
     readonly property int notificationBodyLines: Math.max(1, Math.min(6, Math.round(finiteNumber(Plasmoid.configuration.notificationBodyLineLimit, 3))))
     readonly property int notificationPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(finiteNumber(Plasmoid.configuration.notificationPopupDurationSeconds, 4)) * 1000))
+    // How long the presented notification stays up (D-33): the user's setting, shortened by the app's own timeout
+    // (2 s floor) and at least 6 s when critical. One value drives both the popup timer and the lifetime timer.
+    readonly property int noticeDurationMs: {
+        const row = noticeRowFor(activeNoticeId);
+        return NoticeDuration.effectiveDurationMs(
+            rowValue(row, NotificationManager.Notifications.TimeoutRole, -1), notificationPopupDurationMs,
+            rowValue(row, NotificationManager.Notifications.UrgencyRole, NotificationManager.Notifications.NormalUrgency));
+    }
     readonly property int ongoingPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(finiteNumber(Plasmoid.configuration.ongoingPopupDurationSeconds, 3)) * 1000))
     readonly property var keyboardLayoutNames: keyboardLayout.layoutsList.length > keyboardLayout.layout ? keyboardLayout.layoutsList[keyboardLayout.layout] : null
     readonly property string keyboardLayoutShortName: keyboardLayoutNames ? keyboardLayoutNames.shortName || "" : ""
@@ -591,7 +600,6 @@ PlasmoidItem {
         activeNoticeId = rowValue(row, NotificationManager.Notifications.IdRole, null);
         if (activeNoticeId === null)
             return ;
-        noticeLifetimeTimer.duration = notificationPopupDurationMs;
         noticeLifetimeTimer.restart();
         bump("notice");
     }
@@ -1916,7 +1924,7 @@ PlasmoidItem {
                 title: root.notificationTitle(root.notificationLatestRow())
                 subtitle: root.notificationBody(root.notificationLatestRow())
                 artwork: root.notificationMainImage(root.notificationLatestRow())
-                autoCloseMs: root.notificationPopupDurationMs
+                autoCloseMs: root.noticeDurationMs
                 visualComponent: noticeVisualComponent
                 compactComponent: notificationCompactComponent
                 expandedComponent: notificationActivityPage
@@ -2250,7 +2258,7 @@ PlasmoidItem {
     PausableTimer {
         id: noticeLifetimeTimer
 
-        duration: root.notificationPopupDurationMs
+        duration: root.noticeDurationMs
         hold: root.holdNoticeLifetime
         onTriggered: root.dismissNoticeActivity(activityPopupTimer.running)
     }
