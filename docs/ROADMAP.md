@@ -34,6 +34,17 @@ CC6 (notification list density/scrolling) was dropped.
   decision it still holds (which rows count, sorting and latest-row choice, freshness, urgency, the open target, the
   presentation duration) into `logic/Notifications.js` with Node tests, leaving the service a thin model wrapper.
 
+## B1: bug batch (run right after Q2)
+Found while moving code in Q2; behaviour was kept during the moves.
+1. **Light/Dark tile applies stock Breeze and wipes custom setups.** It applies the Breeze Light/Dark global theme
+   (colour scheme, widget style, cursor, window decoration, GTK files). Investigate how Plasma 6.8 stores the user's
+   preferred light and dark themes and switch between THOSE (or only the colour scheme); never apply a stock global theme.
+2. **Quote the KDE Connect device id** in the "browse" command (`runKdeConnectDeviceAction`); the "ring" command already does.
+3. **Fix the mute "no default sink" path.** `GlobalService.globalMute()` does not exist in Plasma 6.8; it has
+   `globalMuteSinks` and `globalMuteSources`. Today the branch throws and does nothing.
+4. **Volume display above 100 %.** The slider reads at most 100 although setting accepts up to 150 (`percentFromRatio`
+   clamps at the sink's normal volume).
+
 ## Next
 1. **Quality pass**
    - Performance follow-ups (the main work is done, see `docs/PERFORMANCE.md`): re-measure the Control Center
