@@ -117,7 +117,8 @@ Item {
                     flat: true
                     glyphSize: 17
                     implicitWidth: 34
-                    tooltipText: i18n("Previous")
+                    // No hover tooltip; screen readers still get the name.
+                    Accessible.name: i18n("Previous")
                     enabled: musicPage.hasPlayer && musicPage.app.player.canGoPrevious
                     onClicked: musicPage.app.mediaPrevious()
                 }
@@ -127,7 +128,7 @@ Item {
                     flat: true
                     glyphSize: 23
                     implicitWidth: 40
-                    tooltipText: musicPage.playing ? i18n("Pause") : i18n("Play")
+                    Accessible.name: musicPage.playing ? i18n("Pause") : i18n("Play")
                     enabled: musicPage.hasPlayer && (musicPage.app.player.canPlay || musicPage.app.player.canPause)
                     onClicked: musicPage.app.mediaPlayPause()
                 }
@@ -138,7 +139,7 @@ Item {
                     flat: true
                     glyphSize: 17
                     implicitWidth: 34
-                    tooltipText: i18n("Next")
+                    Accessible.name: i18n("Next")
                     enabled: musicPage.hasPlayer && musicPage.app.player.canGoNext
                     onClicked: musicPage.app.mediaNext()
                 }

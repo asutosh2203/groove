@@ -184,13 +184,23 @@ Item {
 
                     delegate: MouseArea {
                         id: rowArea
+                        objectName: "notificationRow"
+
+                        // Rows with nothing to open (no live action, URL or app) get no hover, cursor or glyph.
+                        readonly property bool clickable: app.notificationClickable(modelData)
+                        // Hover (passive, so labels and icons above the row can't steal it) or keyboard focus swaps the
+                        // right-hand slot from the age to the actions.
+                        readonly property bool revealed: enabled && (rowHover.hovered || activeFocus || detailedSlot.dismissFocused || titleSlot.dismissFocused)
+                        readonly property bool revealOpen: clickable && revealed
+                        readonly property bool dismissible: !notificationsContent.compact && app.rowValue(modelData, NotificationManager.Notifications.ClosableRole, true)
+                        readonly property string ageLabel: notificationsContent.ageText(modelData, notificationsContent.nowMs)
 
                         width: listColumn.width
                         height: notificationsContent.rowHeight
                         hoverEnabled: true
                         enabled: !app.controlEditMode
-                        activeFocusOnTab: enabled
-                        Accessible.role: Accessible.Button
+                        activeFocusOnTab: enabled && clickable
+                        Accessible.role: clickable ? Accessible.Button : Accessible.StaticText
                         Accessible.name: app.notificationTitle(modelData)
                         Accessible.description: app.notificationAppName(modelData)
                         Accessible.onPressAction: app.openNotification(modelData)
@@ -203,11 +213,18 @@ Item {
                         Rectangle {
                             anchors.fill: parent
                             radius: T.radiusInner
-                            color: rowArea.pressed ? T.cardPressed : rowArea.containsMouse ? T.rowHover : T.row
+                            color: rowArea.clickable && rowArea.pressed ? T.cardPressed : rowArea.clickable && rowHover.hovered ? T.raised : T.row
                             border.color: rowArea.activeFocus ? T.focusRing : T.border
                             border.width: 1
 
                             Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+                        }
+
+                        HoverHandler {
+                            id: rowHover
+
+                            enabled: !app.controlEditMode
+                            cursorShape: rowArea.clickable ? Qt.PointingHandCursor : Qt.ArrowCursor
                         }
 
                         RowLayout {
@@ -249,12 +266,15 @@ Item {
                                         maximumLineCount: 1
                                     }
 
-                                    PlasmaLabel {
-                                        visible: text.length > 0
-                                        text: notificationsContent.ageText(modelData, notificationsContent.nowMs)
-                                        color: T.textTertiary
-                                        font.pixelSize: T.fontCaption
-                                        font.features: { "tnum": 1 }
+                                    NotificationRowSlot {
+                                        id: detailedSlot
+
+                                        visible: notificationsContent.detailed
+                                        timeText: rowArea.ageLabel
+                                        revealed: rowArea.revealed
+                                        clickable: rowArea.clickable
+                                        dismissible: rowArea.dismissible
+                                        onDismissRequested: notificationsContent.closeRow(modelData)
                                     }
                                 }
 
@@ -281,13 +301,16 @@ Item {
                                         color: T.critical
                                     }
 
-                                    // Compact rows have no source line, so the time sits beside the title.
-                                    PlasmaLabel {
-                                        visible: !notificationsContent.detailed && text.length > 0
-                                        text: notificationsContent.ageText(modelData, notificationsContent.nowMs)
-                                        color: T.textTertiary
-                                        font.pixelSize: T.fontCaption
-                                        font.features: { "tnum": 1 }
+                                    // Rows without a source line carry the same slot beside the title.
+                                    NotificationRowSlot {
+                                        id: titleSlot
+
+                                        visible: !notificationsContent.detailed
+                                        timeText: rowArea.ageLabel
+                                        revealed: rowArea.revealed
+                                        clickable: rowArea.clickable
+                                        dismissible: rowArea.dismissible
+                                        onDismissRequested: notificationsContent.closeRow(modelData)
                                     }
                                 }
 
@@ -301,21 +324,6 @@ Item {
                                     elide: Text.ElideRight
                                     maximumLineCount: 1
                                 }
-                            }
-
-                            IslandButton {
-                                visible: !notificationsContent.compact
-                                Layout.preferredWidth: 24
-                                Layout.preferredHeight: 24
-                                iconName: "window-close"
-                                tooltipText: i18n("Dismiss")
-                                compact: true
-                                flat: true
-                                focusColor: T.focusRing
-                                flatHoverColor: T.raised
-                                flatPressedColor: T.chip
-                                enabled: app.rowValue(modelData, NotificationManager.Notifications.ClosableRole, true)
-                                onClicked: notificationsContent.closeRow(modelData)
                             }
                         }
                     }

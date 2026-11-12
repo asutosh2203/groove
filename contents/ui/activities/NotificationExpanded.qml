@@ -3,6 +3,8 @@ import QtQuick.Effects
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import ".."
+import "../controlcenter"
+import "../controlcenter/Tokens.js" as T
 
 // Expanded notification in the fixed media-popup footprint. One content row fills the inner area;
 // the icon and the text stack are both centred in it, so they share one centre line.
@@ -33,6 +35,9 @@ Item {
         return Qt.formatTime(new Date(createdMs), Qt.locale(), Locale.ShortFormat);
     }
     onCreatedMsChanged: nowMs = Date.now()
+
+    // Clickable (D-31) is decided and handled for the whole island in main.qml; the glyph follows its hover state.
+    readonly property bool clickable: hasNotification && app.notificationClickable(notificationRow)
 
     Timer {
         interval: 30000
@@ -72,17 +77,15 @@ Item {
             Layout.fillHeight: true
             Layout.preferredWidth: notificationPage.artSize
 
-            Image {
+            // Rounded frame for the sender photo. Web/Telegram avatars arrive as in-memory image data, which only
+            // Kirigami.Icon can draw; file or http URLs still use Image so they keep their crop.
+            Item {
                 id: photo
 
                 anchors.centerIn: parent
                 width: notificationPage.artSize
                 height: notificationPage.artSize
                 visible: notificationPage.hasImage
-                source: notificationPage.hasImage ? notificationPage.mainImage : ""
-                sourceSize: Qt.size(128, 128)
-                asynchronous: true
-                fillMode: Image.PreserveAspectCrop
                 layer.enabled: visible
                 layer.effect: MultiEffect {
                     maskEnabled: true
@@ -98,6 +101,22 @@ Item {
                             color: "#ffffff"
                         }
                     }
+                }
+
+                Image {
+                    anchors.fill: parent
+                    visible: typeof notificationPage.mainImage === "string"
+                    source: visible ? notificationPage.mainImage : ""
+                    sourceSize: Qt.size(128, 128)
+                    asynchronous: true
+                    fillMode: Image.PreserveAspectCrop
+                }
+
+                Kirigami.Icon {
+                    anchors.fill: parent
+                    visible: notificationPage.hasImage && typeof notificationPage.mainImage !== "string"
+                    source: visible ? notificationPage.mainImage : ""
+                    roundToIconSize: false
                 }
             }
 
@@ -141,12 +160,14 @@ Item {
                     maximumLineCount: 1
                 }
 
-                PlasmaLabel {
-                    visible: text.length > 0
-                    text: notificationPage.ageText
-                    color: "#6e707a"
-                    font.pixelSize: 10
-                    font.features: { "tnum": 1 }
+                // Same slot rule as the Control Center rows: the age at rest, the open glyph on hover, no layout shift.
+                NotificationRowSlot {
+                    visible: notificationPage.ageText.length > 0 || notificationPage.clickable
+                    timeText: notificationPage.ageText
+                    revealed: notificationPage.app && notificationPage.app.noticeHovered
+                    clickable: notificationPage.clickable
+                    timeColor: "#6e707a"
+                    iconColor: "#9a9ca6"
                 }
 
                 Rectangle {

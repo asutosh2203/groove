@@ -13,11 +13,14 @@ import org.kde.plasma.private.brightnesscontrolplugin as Brightness
 import org.kde.plasma.private.mpris as Mpris
 import org.kde.plasma.private.volume
 import org.kde.plasma.workspace.keyboardlayout as KeyboardLayout
+import org.kde.taskmanager as TaskManager
 import "controlcenter"
 import "controlcenter/ModuleRegistry.js" as ModuleRegistry
 import "controlcenter/NetworkState.js" as NetworkState
 import "controlcenter/KdeConnectState.js" as KdeConnectState
 import "TextUtils.js" as TextUtils
+import "NotificationOpen.js" as NotificationOpen
+import "AppMatch.js" as AppMatch
 import "activities" as Activities
 import "weather"
 
@@ -49,6 +52,14 @@ PlasmoidItem {
     readonly property string keyboardLayoutDisplayName: keyboardLayoutNames ? keyboardLayoutNames.displayName || keyboardLayoutShortName : keyboardLayoutShortName
     readonly property string keyboardLayoutLongName: keyboardLayoutNames ? keyboardLayoutNames.longName || keyboardLayoutDisplayName : keyboardLayoutDisplayName
     readonly property int notificationUnreadCount: notifications.unreadNotificationsCount
+    // True while the pointer is over a clickable notice popup (drives the whole-island highlight and the open glyph).
+    property bool noticeHovered: false
+    // True while the pointer is over an activity popup (notice, media, job...), clickable or not. Together with the
+    // dialog holding keyboard focus it freezes the popup's timers, which finish with the time left once the pointer
+    // or focus is gone.
+    property bool popupHovered: false
+    readonly property bool holdPopupTimers: dialogVisible && islandOpen && popupMode === "activity" && (popupHovered || dialogActive)
+    readonly property bool holdNoticeLifetime: holdPopupTimers && activityPopupMode === "notice"
     readonly property bool hasActivity: keyboardAnnouncementActive || jobActivityEnabled && hasJobs || mediaActivityEnabled && hasPlayer || noticeActivityActive
     // Fixed allocation: the panel never resizes for visual transitions. The
     // visible shape is drawn inside whatever slot the panel actually gives us.
@@ -580,7 +591,7 @@ PlasmoidItem {
         activeNoticeId = rowValue(row, NotificationManager.Notifications.IdRole, null);
         if (activeNoticeId === null)
             return ;
-        noticeLifetimeTimer.interval = notificationPopupDurationMs;
+        noticeLifetimeTimer.duration = notificationPopupDurationMs;
         noticeLifetimeTimer.restart();
         bump("notice");
     }
@@ -614,17 +625,71 @@ PlasmoidItem {
         return Math.max(0, notificationCount() - Math.max(0, Math.round(finiteNumber(limit, 0))));
     }
 
-    function openNotification(row) {
-        if (row < 0 || notifications.count <= row)
-            return ;
+    // desktop id -> { display, path } from Plasma's "apps" engine. A missing key means "not looked up yet",
+    // which counts as not openable until the answer arrives a moment later.
+    property var desktopEntryInfo: ({})
+    property var desktopEntrySources: ({})
 
-        if (rowValue(row, NotificationManager.Notifications.ExpiredRole, false)
-                || !rowValue(row, NotificationManager.Notifications.HasDefaultActionRole, false))
-            return ;
+    function lookupDesktopEntry(entry) {
+        const names = entry.endsWith(".desktop") ? [entry + ".desktop", entry] : [entry + ".desktop"];
+        for (const name of names) {
+            if (desktopEntrySources[name] === undefined) {
+                desktopEntrySources[name] = entry;
+                appsSource.connectSource(name);
+            }
+        }
+    }
+
+    // What a click on this notification would do (D-31). "none" rows are not clickable.
+    function notificationOpenTarget(row) {
+        const entry = cleanText(rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
+        const info = entry.length > 0 ? desktopEntryInfo[entry] : undefined;
+        if (entry.length > 0 && info === undefined)
+            lookupDesktopEntry(entry);
+
+        return NotificationOpen.resolve({
+            "expired": rowValue(row, NotificationManager.Notifications.ExpiredRole, false) === true,
+            "hasDefaultAction": rowValue(row, NotificationManager.Notifications.HasDefaultActionRole, false) === true,
+            "urls": rowValue(row, NotificationManager.Notifications.UrlsRole, []),
+            "desktopEntry": entry,
+            "desktopEntryLaunchable": info !== undefined && info.display === true
+        });
+    }
+
+    function notificationClickable(row) {
+        return notificationOpenTarget(row).kind !== "none";
+    }
+
+    // Click handlers pass a row index; resolve it to the notification id right away.
+    function openNotification(row) {
+        return openNotificationById(rowValue(row, NotificationManager.Notifications.IdRole, null));
+    }
+
+    // The row is looked up by id at click time, so a model change since render can't retarget the click.
+    function openNotificationById(id) {
+        const row = noticeRowFor(id);
+        if (row < 0)
+            return false;
+
+        const target = notificationOpenTarget(row);
+        if (target.kind === "none")
+            return false;
 
         const idx = notifications.index(row, 0);
-        if (notifications.invokeDefaultAction)
-            notifications.invokeDefaultAction(idx);
+        if (target.kind === "action") {
+            notifications.invokeDefaultAction(idx, NotificationManager.Notifications.Close);
+        } else {
+            if (target.kind === "url")
+                Qt.openUrlExternally(target.target);
+            else
+                launchDesktopEntry(target.target);
+            if (rowValue(row, NotificationManager.Notifications.ClosableRole, true))
+                notifications.close(idx);
+        }
+        // The model change also dismisses the activity; closing here covers the Control Center.
+        if (dialogVisible)
+            closeIsland();
+        return true;
     }
 
     function activeRowFor(kind) {
@@ -1102,10 +1167,69 @@ PlasmoidItem {
         return (configured.length > 0 ? configured : discoveredCalendarApp).replace(/\.desktop$/, "");
     }
 
+    // The single app launcher (calendar and notification fallback). Ids come from other apps, so only plain
+    // desktop ids pass. An already-running app is activated through Plasma's task manager model (plasmashell is
+    // KWin's trusted shell, so this un-minimizes and raises even tray apps like Telegram, which ignore a
+    // relaunch); otherwise the desktop file is launched.
+    property string pendingLaunchEntry: ""
+    property int launchLookups: 0
+
+    function launchDesktopEntry(id) {
+        const entry = String(id || "").trim();
+        if (!/^[A-Za-z0-9._-]+$/.test(entry) || pendingLaunchEntry.length > 0)
+            return ;
+
+        pendingLaunchEntry = entry;
+        launchLookups = 0;
+        tasksLoader.active = true;
+        taskLookupTimer.restart();
+    }
+
+    // The model fills in asynchronously, so an empty one is retried a few times before concluding "not running".
+    function finishLaunch() {
+        const entry = pendingLaunchEntry;
+        const model = tasksLoader.item;
+        if (model && model.rowCount() === 0 && ++launchLookups < 5) {
+            taskLookupTimer.restart();
+            return ;
+        }
+
+        let activated = false;
+        if (model) {
+            const tasks = [];
+            for (let i = 0; i < model.rowCount(); ++i) {
+                const idx = model.index(i, 0);
+                tasks.push({
+                    "appId": model.data(idx, TaskManager.AbstractTasksModel.AppId),
+                    "launcherUrl": model.data(idx, TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon),
+                    "isWindow": model.data(idx, TaskManager.AbstractTasksModel.IsWindow)
+                });
+            }
+            const hit = AppMatch.findTask(entry, tasks);
+            if (hit >= 0) {
+                model.requestActivate(model.index(hit, 0));
+                activated = true;
+            }
+        }
+        pendingLaunchEntry = "";
+        tasksLoader.active = false;
+        if (!activated)
+            runDesktopEntry(entry);
+    }
+
+    // `kioclient exec` on the desktop file, falling back to gtk-launch. The id is tried as "<id>.desktop" and
+    // as-is (org.telegram.desktop is the file org.telegram.desktop.desktop); plasmashell has no XDG_DATA_DIRS,
+    // so the Flatpak exports are listed explicitly.
+    function runDesktopEntry(entry) {
+        executable.exec("setsid sh -c 'f=; IFS=:; "
+            + "for d in \"${XDG_DATA_HOME:-$HOME/.local/share}\" ${XDG_DATA_DIRS:-/usr/local/share:/usr/share:/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share}; do "
+            + "for n in \"" + entry + ".desktop\" \"" + entry + "\"; do "
+            + "[ -f \"$d/applications/$n\" ] && f=\"$d/applications/$n\" && break 2; done; done; "
+            + "if [ -n \"$f\" ]; then kioclient exec \"$f\"; else gtk-launch " + entry + "; fi' >/dev/null 2>&1 &");
+    }
+
     function openCalendar() {
-        const id = calendarAppId();
-        if (id.length > 0)
-            executable.exec("setsid gtk-launch " + shellQuote(id) + " >/dev/null 2>&1 &");
+        launchDesktopEntry(calendarAppId());
     }
 
     function openForecast() {
@@ -1939,6 +2063,42 @@ PlasmoidItem {
         id: networkHandler
     }
 
+    // One-shot lookups of desktop entries (is the entry a launchable app or a NoDisplay background service?).
+    Plasma5Support.DataSource {
+        id: appsSource
+
+        engine: "apps"
+        onNewData: (sourceName, data) => {
+            const entry = root.desktopEntrySources[sourceName];
+            if (entry !== undefined) {
+                const info = Object.assign({}, root.desktopEntryInfo);
+                info[entry] = { "display": data.display === true, "path": String(data.entryPath || "") };
+                root.desktopEntryInfo = info;
+            }
+            disconnectSource(sourceName);
+        }
+    }
+
+    // Created only while a launch looks for an existing window, so nothing watches windows while idle.
+    Loader {
+        id: tasksLoader
+
+        active: false
+        sourceComponent: TaskManager.TasksModel {
+            filterByVirtualDesktop: false
+            filterByScreen: false
+            filterByActivity: false
+            groupMode: TaskManager.TasksModel.GroupDisabled
+        }
+    }
+
+    Timer {
+        id: taskLookupTimer
+
+        interval: 150
+        onTriggered: root.finishLaunch()
+    }
+
     Plasma5Support.DataSource {
         id: executable
 
@@ -2066,11 +2226,11 @@ PlasmoidItem {
         target: notifications
     }
 
-    Timer {
+    PausableTimer {
         id: activityPopupTimer
 
-        interval: activityController.autoCloseMsFor(root.activityPopupMode)
-        repeat: false
+        duration: activityController.autoCloseMsFor(root.activityPopupMode)
+        hold: root.holdPopupTimers
         onTriggered: {
             if (root.popupMode === "activity")
                 root.closeIsland();
@@ -2087,11 +2247,11 @@ PlasmoidItem {
         onTriggered: root.clearingNotifications = false
     }
 
-    Timer {
+    PausableTimer {
         id: noticeLifetimeTimer
 
-        interval: root.notificationPopupDurationMs
-        repeat: false
+        duration: root.notificationPopupDurationMs
+        hold: root.holdNoticeLifetime
         onTriggered: root.dismissNoticeActivity(activityPopupTimer.running)
     }
 
@@ -2563,15 +2723,6 @@ PlasmoidItem {
 
                 event.accepted = true;
             }
-            onEntered: {
-                // Allow the popup to receive keyboard focus without stealing it
-                // from the active window just because the pointer passed over it.
-                root.popupAcceptsFocus = true;
-            }
-            onExited: {
-                if (!root.dialogActive)
-                    root.popupAcceptsFocus = false;
-            }
             onClicked: (mouse) => {
                 root.closeIsland();
                 mouse.accepted = true;
@@ -2633,6 +2784,66 @@ PlasmoidItem {
                     }
                 }
 
+                // Clickable notice popup (D-31): the whole island is the target, so the highlight and hit area
+                // follow the shell silhouette instead of the inset content area.
+                RoundShape {
+                    anchors.fill: parent
+                    visible: !root.notchShape && opacity > 0
+                    opacity: noticeHover.hovered && noticeOpenArea.noticeClickable ? 1 : 0
+                    radius: popupRoot.panelRadius
+                    fillTop: "#14ffffff"
+                    fillBottom: "#0cffffff"
+                    strokeColor: "transparent"
+
+                    Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                }
+
+                NotchShape {
+                    anchors.fill: parent
+                    visible: root.notchShape && opacity > 0
+                    opacity: noticeHover.hovered && noticeOpenArea.noticeClickable ? 1 : 0
+                    shoulder: root.notchShoulder
+                    bottomRadius: popupRoot.panelRadius
+                    fillTop: "#14ffffff"
+                    fillBottom: "#0cffffff"
+                    strokeColor: "transparent"
+
+                    Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                }
+
+                // A HoverHandler is passive, so items above the popup (labels, icons) can't take the hover away
+                // the way they did from a MouseArea's containsMouse, which made the highlight flicker.
+                HoverHandler {
+                    id: noticeHover
+
+                    enabled: root.islandOpen && root.popupMode === "activity"
+                    cursorShape: noticeOpenArea.noticeClickable ? Qt.PointingHandCursor : Qt.ArrowCursor
+                }
+
+                Binding {
+                    target: root
+                    property: "noticeHovered"
+                    value: noticeHover.enabled && noticeHover.hovered && noticeOpenArea.noticeClickable
+                }
+
+                Binding {
+                    target: root
+                    property: "popupHovered"
+                    value: noticeHover.enabled && noticeHover.hovered
+                }
+
+                MouseArea {
+                    id: noticeOpenArea
+
+                    readonly property int noticeRow: root.popupMode === "activity" && root.popupActivityMode() === "notice" ? root.notificationLatestRow() : -1
+                    readonly property bool noticeClickable: noticeRow >= 0 && root.notificationClickable(noticeRow)
+
+                    anchors.fill: parent
+                    enabled: root.islandOpen && noticeClickable
+                    // Single click opens immediately; the notice popup has no double-click behaviour.
+                    onClicked: root.openNotificationById(root.rowValue(noticeRow, NotificationManager.Notifications.IdRole, null))
+                }
+
                 Loader {
                     // The notch body is narrower than the window by its shoulders, so it
                     // needs extra side padding (and a bit more top/bottom) to breathe.
@@ -2691,6 +2902,18 @@ PlasmoidItem {
 
                     }
 
+                }
+
+                // The popup only takes keyboard focus after an explicit press inside it (never on hover: changing
+                // the window flags re-configures the surface). The press is passed on to whatever is underneath.
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton
+                    onPressed: (mouse) => {
+                        if (!root.dialogActive)
+                            root.focusIslandDialog();
+                        mouse.accepted = false;
+                    }
                 }
 
             }

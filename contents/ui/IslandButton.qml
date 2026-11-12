@@ -20,6 +20,10 @@ Item {
     property color flatHoverColor: "#1b1b21"
     property color flatPressedColor: "#2a2a31"
 
+    // Focus taken by a mouse press shows no ring (it would stay lit after the click); keyboard focus keeps it.
+    property bool mouseFocused: false
+    readonly property bool showFocusRing: activeFocus && !mouseFocused
+
     signal clicked()
 
     implicitWidth: compact ? (emphasized ? 26 : 24) : (emphasized ? 38 : 32)
@@ -32,6 +36,7 @@ Item {
     Keys.onSpacePressed: clicked()
     Keys.onReturnPressed: clicked()
     Keys.onEnterPressed: clicked()
+    onActiveFocusChanged: if (!activeFocus) mouseFocused = false
     onIconNameChanged: glyph.requestPaint()
     onEnabledChanged: glyph.requestPaint()
     Component.onCompleted: glyph.requestPaint()
@@ -42,8 +47,8 @@ Item {
         anchors.fill: parent
         radius: height / 2
         color: control.flat ? (mouse.pressed ? control.flatPressedColor : mouse.containsMouse ? control.flatHoverColor : "transparent") : mouse.pressed ? control.pressedColor : mouse.containsMouse || control.emphasized ? control.hoverColor : control.restColor
-        border.color: control.activeFocus ? control.focusColor : control.outlineColor
-        border.width: control.flat && !control.activeFocus ? 0 : 1
+        border.color: control.showFocusRing ? control.focusColor : control.outlineColor
+        border.width: control.flat && !control.showFocusRing ? 0 : 1
     }
 
     Canvas {
@@ -74,6 +79,8 @@ Item {
         }
 
         anchors.centerIn: parent
+        // Pressed icons turn muted.
+        opacity: mouse.pressed ? 0.5 : 1
         width: control.glyphSize > 0 ? control.glyphSize : control.compact ? (control.emphasized ? 15 : 14) : (control.emphasized ? 20 : 17)
         height: width
         antialiasing: true
@@ -365,11 +372,14 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         enabled: control.enabled
-        onPressed: control.forceActiveFocus()
+        onPressed: {
+            control.mouseFocused = true;
+            control.forceActiveFocus(Qt.MouseFocusReason);
+        }
         onClicked: control.clicked()
     }
 
-    QQC2.ToolTip.visible: (mouse.containsMouse || control.activeFocus) && control.tooltipText.length > 0
+    QQC2.ToolTip.visible: (mouse.containsMouse || control.showFocusRing) && control.tooltipText.length > 0
     QQC2.ToolTip.text: control.tooltipText
     QQC2.ToolTip.delay: 350
 
