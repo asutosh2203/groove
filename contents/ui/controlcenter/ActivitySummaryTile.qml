@@ -14,7 +14,7 @@ Rectangle {
     readonly property bool showMedia: app.media.hasPlayer
     readonly property bool showAnyActivity: mediaOnly ? showMedia : app.hasActivity
     readonly property string summaryMode: mediaOnly ? app.media.hasPlayer ? "media" : "idle" : app.activityMode()
-    readonly property color activityColor: app.media.isPlaying || app.hasJobs || app.notifications.hasNotifications ? T.textCaption : T.textTertiary
+    readonly property color activityColor: app.media.isPlaying || app.jobs.hasJobs || app.notifications.hasNotifications ? T.textCaption : T.textTertiary
     readonly property bool iconOnly: width < 100 || height < 62
     readonly property bool compact: width < 190 || height < 112
     // Media card with room for artwork + controls on the left and track info on the right.
@@ -103,7 +103,7 @@ Rectangle {
                     Layout.preferredWidth: 36
                     Layout.preferredHeight: 28
                     color: activitySummary.activityColor
-                    playing: app.media.isPlaying || app.hasJobs || app.notifications.hasNotifications
+                    playing: app.media.isPlaying || app.jobs.hasJobs || app.notifications.hasNotifications
                 }
             }
 
@@ -115,10 +115,10 @@ Rectangle {
             ProgressBar {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 3
-                visible: !activitySummary.compact && ((!activitySummary.mediaOnly && app.hasJobs) || (app.media.hasPlayer && app.media.length > 0))
+                visible: !activitySummary.compact && ((!activitySummary.mediaOnly && app.jobs.hasJobs) || (app.media.hasPlayer && app.media.length > 0))
                 from: 0
-                to: !activitySummary.mediaOnly && app.hasJobs ? 100 : Math.max(1, app.media.player ? app.media.length : 1)
-                value: !activitySummary.mediaOnly && app.hasJobs ? Math.max(0, notificationsSource.jobsPercentage) : app.media.player ? app.media.player.position : 0
+                to: !activitySummary.mediaOnly && app.jobs.hasJobs ? 100 : Math.max(1, app.media.player ? app.media.length : 1)
+                value: !activitySummary.mediaOnly && app.jobs.hasJobs ? Math.max(0, notificationsSource.jobsPercentage) : app.media.player ? app.media.player.position : 0
                 accent: T.fillSoft
                 trackColor: T.track
             }
@@ -195,7 +195,7 @@ Rectangle {
                 }
                 PlasmaLabel {
                     Layout.fillWidth: true
-                    text: activitySummary.mediaOnly ? app.media.hasPlayer ? app.media.player.identity || i18n("Media player") : "" : app.hasJobs ? i18n("Download active") : app.notifications.hasNotifications ? i18np("%1 unread", "%1 unread", notificationsSource.unreadNotificationsCount) : i18n("No activity")
+                    text: activitySummary.mediaOnly ? app.media.hasPlayer ? app.media.player.identity || i18n("Media player") : "" : app.jobs.hasJobs ? i18n("Download active") : app.notifications.hasNotifications ? i18np("%1 unread", "%1 unread", notificationsSource.unreadNotificationsCount) : i18n("No activity")
                     color: T.textSecondary
                     font.pixelSize: T.fontCaption
                     horizontalAlignment: Text.AlignRight
@@ -365,7 +365,7 @@ Rectangle {
 
     IslandBars {
         clock: app.decorClock
-        visible: activitySummary.iconOnly && (activitySummary.mediaOnly ? app.media.isPlaying : app.media.isPlaying || app.hasJobs || app.notifications.hasNotifications) && width >= 58
+        visible: activitySummary.iconOnly && (activitySummary.mediaOnly ? app.media.isPlaying : app.media.isPlaying || app.jobs.hasJobs || app.notifications.hasNotifications) && width >= 58
         anchors.right: parent.right
         anchors.rightMargin: 8
         anchors.verticalCenter: parent.verticalCenter

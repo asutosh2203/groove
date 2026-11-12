@@ -7,10 +7,10 @@ Item {
     id: jobPage
 
     property var app: null
-    readonly property int row: app ? app.activeJobRow() : -1
-    readonly property var details: app ? app.jobDetails(row) : null
-    readonly property int percentage: app ? app.jobPercentage(row) : -1
-    readonly property bool suspended: app ? app.jobIsSuspended(row) : false
+    readonly property int row: app ? app.jobs.activeRow() : -1
+    readonly property var details: app ? app.jobs.details(row) : null
+    readonly property int percentage: app ? app.jobs.percentage(row) : -1
+    readonly property bool suspended: app ? app.jobs.isSuspended(row) : false
 
     RowLayout {
         anchors.fill: parent
@@ -29,7 +29,7 @@ Item {
                 anchors.centerIn: parent
                 width: 34
                 height: 34
-                source: jobPage.row >= 0 ? jobPage.app.jobIcon(jobPage.row) : "folder-download"
+                source: jobPage.row >= 0 ? jobPage.app.jobs.icon(jobPage.row) : "folder-download"
                 fallback: "folder-download"
             }
         }
@@ -50,7 +50,7 @@ Item {
 
             PlasmaLabel {
                 Layout.fillWidth: true
-                text: jobPage.row >= 0 ? jobPage.app.jobText(jobPage.row) : ""
+                text: jobPage.row >= 0 ? jobPage.app.jobs.text(jobPage.row) : ""
                 color: "#a7aaa9"
                 font.pixelSize: 9
                 elide: Text.ElideRight
@@ -93,20 +93,20 @@ Item {
             spacing: 5
 
             IslandButton {
-                visible: jobPage.row >= 0 && jobPage.app.jobSuspendable(jobPage.row)
+                visible: jobPage.row >= 0 && jobPage.app.jobs.suspendable(jobPage.row)
                 iconName: jobPage.suspended ? "media-playback-start" : "media-playback-pause"
                 tooltipText: jobPage.suspended ? i18n("Resume") : i18n("Pause")
                 compact: true
                 emphasized: jobPage.suspended
-                onClicked: jobPage.app.toggleJobSuspended(jobPage.row)
+                onClicked: jobPage.app.jobs.toggleSuspended(jobPage.row)
             }
 
             IslandButton {
-                visible: jobPage.row >= 0 && jobPage.app.jobKillable(jobPage.row)
+                visible: jobPage.row >= 0 && jobPage.app.jobs.killable(jobPage.row)
                 iconName: "process-stop"
                 tooltipText: i18n("Cancel")
                 compact: true
-                onClicked: jobPage.app.cancelJob(jobPage.row)
+                onClicked: jobPage.app.jobs.cancel(jobPage.row)
             }
         }
     }

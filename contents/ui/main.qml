@@ -35,7 +35,6 @@ PlasmoidItem {
     readonly property var settings: Plasmoid.configuration
     readonly property bool inPanel: [PlasmaCore.Types.TopEdge, PlasmaCore.Types.RightEdge, PlasmaCore.Types.BottomEdge, PlasmaCore.Types.LeftEdge].includes(Plasmoid.location)
     readonly property bool verticalPanel: [PlasmaCore.Types.LeftEdge, PlasmaCore.Types.RightEdge].includes(Plasmoid.location)
-    readonly property bool hasJobs: notificationService.model.activeJobsCount > 0
     readonly property bool mediaActivityEnabled: Plasmoid.configuration.mediaActivityEnabled !== false
     readonly property bool notificationActivityEnabled: Plasmoid.configuration.notificationActivityEnabled !== false
     readonly property bool jobActivityEnabled: Plasmoid.configuration.jobActivityEnabled !== false
@@ -60,7 +59,7 @@ PlasmoidItem {
     property bool popupHovered: false
     readonly property bool holdPopupTimers: dialogVisible && islandOpen && popupMode === "activity" && (popupHovered || dialogActive)
     readonly property bool holdNoticeLifetime: holdPopupTimers && activityPopupMode === "notice"
-    readonly property bool hasActivity: keyboardAnnouncementActive || jobActivityEnabled && hasJobs || mediaActivityEnabled && mediaService.shown || notificationService.activityActive
+    readonly property bool hasActivity: keyboardAnnouncementActive || jobActivityEnabled && jobService.hasJobs || mediaActivityEnabled && mediaService.shown || notificationService.activityActive
     // Fixed allocation: the panel never resizes for visual transitions. The
     // visible shape is drawn inside whatever slot the panel actually gives us.
     readonly property int islandWidth: 180
@@ -111,7 +110,6 @@ PlasmoidItem {
     property string activityPopupMode: "auto"
     property int clickButton: Qt.NoButton
     property bool keyboardAnnouncementActive: false
-    property int lastActiveJobsCount: 0
     property string screenBrightnessDisplayName: ""
     property int screenBrightnessValue: 0
     property int screenBrightnessMax: 100
@@ -425,94 +423,26 @@ PlasmoidItem {
         return activeRowFor("auto");
     }
 
-    function activeJobRow() {
-        return notificationService.firstRowOfType(NotificationManager.Notifications.JobType);
-    }
-
-    function jobDetails(row) {
-        return notificationService.rowValue(row, NotificationManager.Notifications.JobDetailsRole, null);
-    }
-
+    // Translated fallbacks stay here; the service supplies the data.
     function jobTitle(row) {
-        const details = jobDetails(row);
-        const title = TextUtils.cleanText(details && details.summary ? details.summary : notificationService.rowValue(row, NotificationManager.Notifications.SummaryRole, ""));
+        const title = jobService.titleText(row);
         return title.length > 0 ? title : i18n("Working");
     }
 
-    function jobText(row) {
-        const details = jobDetails(row);
-        const text = TextUtils.cleanText(details && details.text ? details.text : notificationService.rowValue(row, NotificationManager.Notifications.BodyRole, ""));
-        if (text.length > 0)
-            return text;
-        const appName = TextUtils.cleanText(details && details.applicationName ? details.applicationName : notificationService.rowValue(row, NotificationManager.Notifications.ApplicationNameRole, ""));
-        return appName;
-    }
-
-    function jobIcon(row) {
-        const details = jobDetails(row);
-        const icon = details && details.applicationIconName ? details.applicationIconName : notificationService.rowValue(row, NotificationManager.Notifications.ApplicationIconNameRole, "");
-        if (Utils.hasVisualValue(icon))
-            return icon;
-        const desktopEntry = TextUtils.cleanText(details && details.desktopEntry ? details.desktopEntry : notificationService.rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
-        return desktopEntry.length > 0 ? desktopEntry : "folder-download";
-    }
-
-    function jobState(row) {
-        const details = jobDetails(row);
-        if (details && details.state !== undefined)
-            return details.state;
-        return notificationService.rowValue(row, NotificationManager.Notifications.JobStateRole, NotificationManager.Notifications.JobStateRunning);
-    }
-
-    function jobPercentage(row) {
-        const details = jobDetails(row);
-        const percentage = details && details.percentage !== undefined ? details.percentage : notificationService.rowValue(row, NotificationManager.Notifications.PercentageRole, -1);
-        return Math.max(-1, Math.min(100, Math.round(Utils.finiteNumber(percentage, -1))));
-    }
-
-    function jobSuspendable(row) {
-        const details = jobDetails(row);
-        return details && details.suspendable !== undefined ? details.suspendable : Boolean(notificationService.rowValue(row, NotificationManager.Notifications.SuspendableRole, false));
-    }
-
-    function jobKillable(row) {
-        const details = jobDetails(row);
-        return details && details.killable !== undefined ? details.killable : Boolean(notificationService.rowValue(row, NotificationManager.Notifications.KillableRole, false));
-    }
-
-    function jobIsSuspended(row) {
-        return jobState(row) === NotificationManager.Notifications.JobStateSuspended;
-    }
-
-    function toggleJobSuspended(row) {
-        if (row < 0 || row >= notificationService.model.count || !jobSuspendable(row))
-            return ;
-        const idx = notificationService.model.index(row, 0);
-        if (jobIsSuspended(row))
-            notificationService.model.resumeJob(idx);
-        else
-            notificationService.model.suspendJob(idx);
-    }
-
-    function cancelJob(row) {
-        if (row < 0 || row >= notificationService.model.count || !jobKillable(row))
-            return ;
-        notificationService.model.killJob(notificationService.model.index(row, 0));
-    }
-
     function jobDetailsText(row) {
-        const details = jobDetails(row);
-        if (!details)
-            return jobIsSuspended(row) ? i18n("Paused") : "";
-        if (jobIsSuspended(row))
+        const parts = jobService.detailsParts(row);
+        switch (parts.kind) {
+        case "paused":
             return i18n("Paused");
-        if (Utils.finiteNumber(details.speed, 0) > 0)
-            return Utils.formatByteSize(details.speed) + "/s";
-        const processed = Utils.finiteNumber(details.processedBytes, 0);
-        const total = Utils.finiteNumber(details.totalBytes, 0);
-        if (total > 0)
-            return i18n("%1 of %2", Utils.formatByteSize(processed), Utils.formatByteSize(total));
-        return TextUtils.cleanText(details.applicationName || "");
+        case "speed":
+            return Utils.formatByteSize(parts.speed) + "/s";
+        case "progress":
+            return i18n("%1 of %2", Utils.formatByteSize(parts.processed), Utils.formatByteSize(parts.total));
+        case "app":
+            return parts.text;
+        default:
+            return "";
+        }
     }
 
     function announceKeyboardLayout() {
@@ -677,6 +607,7 @@ PlasmoidItem {
     readonly property alias layoutService: controlLayoutService
     readonly property alias media: mediaService
     readonly property alias notifications: notificationService
+    readonly property alias jobs: jobService
 
     WeatherService {
         id: weatherService
@@ -1016,13 +947,13 @@ PlasmoidItem {
             },
             Activities.ActivityProvider {
                 key: "job"
-                active: root.jobActivityEnabled && root.hasJobs
+                active: root.jobActivityEnabled && jobService.hasJobs
                 priority: 300
-                title: root.jobTitle(root.activeJobRow())
-                subtitle: root.jobText(root.activeJobRow())
-                progressVisible: root.jobPercentage(root.activeJobRow()) >= 0
+                title: root.jobTitle(jobService.activeRow())
+                subtitle: jobService.text(jobService.activeRow())
+                progressVisible: jobService.percentage(jobService.activeRow()) >= 0
                 progressTo: 100
-                progressValue: Math.max(0, root.jobPercentage(root.activeJobRow()))
+                progressValue: Math.max(0, jobService.percentage(jobService.activeRow()))
                 progressAccent: "#42d77d"
                 autoCloseMs: root.ongoingPopupDurationMs
                 visualComponent: jobVisualComponent
@@ -1163,6 +1094,13 @@ PlasmoidItem {
         }
     }
 
+    JobService {
+        id: jobService
+
+        notifications: notificationService
+        onJobStarted: root.bump("job")
+    }
+
     MediaService {
         id: mediaService
 
@@ -1199,18 +1137,6 @@ PlasmoidItem {
         controlLayoutService.ensureLayout();
         root.refreshSystemState();
         appLauncher.discoverCalendarApp();
-        root.lastActiveJobsCount = notificationService.model.activeJobsCount;
-    }
-
-    Connections {
-        function onActiveJobsCountChanged() {
-            const count = notificationService.model.activeJobsCount;
-            if (count > root.lastActiveJobsCount)
-                root.bump("job");
-            root.lastActiveJobsCount = count;
-        }
-
-        target: notificationService.model
     }
 
     // Shared low-rate clock for every decorative loop (weather icon, AudioBars); idle unless something holds a lease.
@@ -1464,7 +1390,7 @@ PlasmoidItem {
         MaskedArtwork {
             mode: "job"
             progress: root.activityProgressValue("job") / Math.max(1, root.activityProgressTo("job"))
-            playing: !root.jobIsSuspended(root.activeJobRow())
+            playing: !jobService.isSuspended(jobService.activeRow())
         }
     }
 
@@ -1950,7 +1876,7 @@ PlasmoidItem {
                     glyphSize: 32
                     mode: root.popupActivityMode()
                     progress: root.activityProgressValue(root.popupActivityMode()) / Math.max(1, root.activityProgressTo(root.popupActivityMode()))
-                    playing: root.popupActivityMode() === "media" ? mediaService.isPlaying : root.popupActivityMode() === "job" ? !root.jobIsSuspended(root.activeJobRow()) : false
+                    playing: root.popupActivityMode() === "media" ? mediaService.isPlaying : root.popupActivityMode() === "job" ? !jobService.isSuspended(jobService.activeRow()) : false
                 }
 
             }
