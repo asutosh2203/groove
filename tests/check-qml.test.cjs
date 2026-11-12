@@ -10,7 +10,7 @@ const A = 'contents/ui/A.qml';
 const B = 'contents/ui/B.qml';
 
 // Builds a tiny tree plus a stub "qmllint". The stub prints `counts[file]` warnings for each file it is given, and
-// one more for a probe copy (`__probe0_/__probe1_<name>`) unless the file is listed in `blind` (analysis "aborted").
+// one more for a probe copy (`__probe<place><style>_<name>`) unless the file is listed in `blind` (analysis "aborted").
 function run({ baseline = { [A]: 3 }, counts = { [A]: 3 }, files = [A, 'contents/ui/weather/W.js'], blind = [], exempt = [], extra = '', exitCode = 0, args = [] }) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'checkqml-'));
     for (const rel of files) {
@@ -24,7 +24,7 @@ function run({ baseline = { [A]: 3 }, counts = { [A]: 3 }, files = [A, 'contents
     const cases = Object.entries(counts).map(([f, n]) => {
         const name = path.basename(f);
         const probe = blind.includes(f) ? n : n + 1;
-        return `  *__probe[01]_${name}) emit "$a" ${probe} ;;\n  *${name}) emit "$a" ${n} ;;`;
+        return `  *__probe*_${name}) emit "$a" ${probe} ;;\n  *${name}) emit "$a" ${n} ;;`;
     }).join('\n');
     const stub = path.join(dir, 'fake-qmllint');
     fs.writeFileSync(stub, `#!/bin/sh
@@ -54,7 +54,7 @@ test('at the baseline passes and reports the counts and the probe, including wea
     assert.equal(r.code, 0, r.out);
     assert.match(r.out, /files: 2 \(1 QML, 1 JS; 1 under weather\/\)/);
     assert.match(r.out, /warnings: 3 \(baseline 3\)/);
-    assert.match(r.out, /probe: 1 QML files probed, 0 failed, 0 exempt/);
+    assert.match(r.out, /probe: 1 QML files probed at 3 places, 0 failed, 0 exempt/);
 });
 
 test('one file going up fails even when another file dropped by the same amount', () => {
@@ -86,7 +86,7 @@ test('a file whose analysis silently aborted fails the probe', () => {
     const r = run({ baseline: { [A]: 10 }, counts: { [A]: 4 }, blind: [A] });
     assert.equal(r.code, 1);
     assert.match(r.out, /contents\/ui\/A\.qml::probe failed/);
-    assert.match(r.out, /1 failed/);
+    assert.match(r.out, /3 failed/); // top, mid and end
 });
 
 test('a file that cannot be probed passes only when it is listed as exempt', () => {
@@ -94,13 +94,13 @@ test('a file that cannot be probed passes only when it is listed as exempt', () 
     assert.equal(bad.code, 1);
     const ok = run({ blind: [A], exempt: [A] });
     assert.equal(ok.code, 0, ok.out);
-    assert.match(ok.out, /0 failed, 1 exempt/);
+    assert.match(ok.out, /0 failed, 3 exempt/);
 });
 
 test('an exempt file that probes fine is flagged for removal from the list', () => {
     const r = run({ exempt: [A] });
     assert.equal(r.code, 0, r.out);
-    assert.match(r.out, /probe now works here: remove it from/);
+    assert.match(r.out, /now works here: remove it from/);
 });
 
 test('an error or a non-zero qmllint exit fails even with no warnings', () => {
@@ -126,4 +126,15 @@ test('--lower-baseline refuses while the check fails and leaves the baseline alo
     assert.equal(r.code, 1);
     assert.match(r.out, /not lowering the baseline while the check fails/);
     assert.equal(r.written, `3 ${A}\n3 ${B}\n`);
+});
+
+test('a blind spot can be exempted for one place only', () => {
+    // The stub is blind at every place, so exempting just "top" leaves mid and end failing.
+    const r = run({ blind: [A], exempt: [`${A}:top`] });
+    assert.equal(r.code, 1);
+    assert.match(r.out, /failed at the mid of the file/);
+    assert.match(r.out, /failed at the end of the file/);
+    assert.doesNotMatch(r.out, /failed at the top of the file/);
+    const ok = run({ blind: [A], exempt: [`${A}:top`, `${A}:mid`, `${A}:end`] });
+    assert.equal(ok.code, 0, ok.out);
 });

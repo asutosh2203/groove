@@ -117,11 +117,14 @@ while IFS= read -r f; do
 done <<< "$all_files"
 
 # Probe: every QML file, as a temporary copy with an unresolved name appended, must report exactly one more warning.
-# No single probe form works in every file (a child item is invalid in a non-Item root, a function is ignored in some
-# files), so two forms are tried and either one passing is enough. Files where neither works are listed in
-# .github/qmllint-probe-exempt.txt: qmllint reports nothing for an unresolved name there, so their counts are
-# unverifiable. Listing a file there is a review decision; an unprobeable file that is not listed fails.
+# qmllint can lose part of a file, so the name is planted at three places: the top (the first member of the root), the
+# middle (before the root-level member line nearest the midpoint, searching forward first) and the end. No single probe form works in every
+# file (a child item is invalid in a non-Item root, a function is ignored in some files), so two forms are tried at each
+# place and either one passing is enough. A place where neither works is a blind spot, listed in
+# .github/qmllint-probe-exempt.txt as "<path>" (all places) or "<path>:top|mid|end": the counts there are unverifiable,
+# so adding a line is a review decision. A blind spot that is not listed fails.
 probe_styles=('    Item { width: __bogusProbeName }' '    function __probe() { return __bogusProbeName }')
+probe_places=(top mid end)
 exempt_file=".github/qmllint-probe-exempt.txt"
 declare -A exempt=()
 if [ -f "$exempt_file" ]; then
@@ -138,14 +141,18 @@ probes=()
 while IFS= read -r f; do
     case "$f" in *.qml) ;; *) continue ;; esac
     qml_files+=("$f")
-    for i in "${!probe_styles[@]}"; do
-        out="$tmp/$(dirname "$f")/__probe${i}_$(basename "$f")"
-        awk -v ins="${probe_styles[$i]}" '{ l[NR] = $0 } END {
-            last = 0
-            for (i = NR; i > 0; i--) if (l[i] ~ /^}/) { last = i; break }
-            for (i = 1; i <= NR; i++) { if (i == last) print ins; print l[i] }
-        }' "$f" > "$out"
-        probes+=("$out")
+    for place in "${probe_places[@]}"; do
+        for i in "${!probe_styles[@]}"; do
+            out="$tmp/$(dirname "$f")/__probe${place}${i}_$(basename "$f")"
+            awk -v ins="${probe_styles[$i]}" -v place="$place" '{ l[NR] = $0 } END {
+                at = 0
+                if (place == "end") { for (i = NR; i > 0; i--) if (l[i] ~ /^}/) { at = i; break } }
+                else if (place == "top") { for (i = 1; i <= NR; i++) if (l[i] ~ /^[A-Za-z][A-Za-z0-9_.]* \{[ \t]*$/) { at = i + 1; break } }
+                else { for (i = int(NR / 2); i <= NR; i++) if (l[i] ~ /^    [A-Za-z]/) { at = i; break }; if (!at) for (i = int(NR / 2); i > 0; i--) if (l[i] ~ /^    [A-Za-z]/) { at = i; break } }
+                for (i = 1; i <= NR; i++) { if (i == at) print ins; print l[i] }
+            }' "$f" > "$out"
+            probes+=("$out")
+        done
     done
 done <<< "$files"
 declare -A probed=()
@@ -161,23 +168,25 @@ probe_bad=0
 probe_exempt=0
 for f in "${qml_files[@]}"; do
     want=$(( ${cur[$f]:-0} + 1 ))
-    ok=0
-    for i in "${!probe_styles[@]}"; do
-        got="${probed["$(dirname "$f")/__probe${i}_$(basename "$f")"]:-0}"
-        [ "$got" -eq "$want" ] && ok=1
-    done
-    if [ -n "${exempt[$f]:-}" ]; then
-        probe_exempt=$((probe_exempt + 1))
-        if [ "$ok" -eq 1 ]; then
-            echo "::notice file=$f::probe now works here: remove it from $exempt_file"
+    for place in "${probe_places[@]}"; do
+        ok=0
+        for i in "${!probe_styles[@]}"; do
+            got="${probed["$(dirname "$f")/__probe${place}${i}_$(basename "$f")"]:-0}"
+            [ "$got" -eq "$want" ] && ok=1
+        done
+        if [ -n "${exempt[$f]:-}" ] || [ -n "${exempt["$f:$place"]:-}" ]; then
+            probe_exempt=$((probe_exempt + 1))
+            if [ "$ok" -eq 1 ]; then
+                echo "::notice file=$f::probe ($place) now works here: remove it from $exempt_file"
+            fi
+        elif [ "$ok" -ne 1 ]; then
+            echo "::error file=$f::probe failed at the $place of the file (an unresolved name planted there should add exactly one warning): qmllint has silently stopped analysing part of this file, so its warning count means nothing"
+            probe_bad=$((probe_bad + 1))
+            status=1
         fi
-    elif [ "$ok" -ne 1 ]; then
-        echo "::error file=$f::probe failed (an unresolved name appended should add exactly one warning): qmllint has silently stopped analysing this file, so its warning count means nothing"
-        probe_bad=$((probe_bad + 1))
-        status=1
-    fi
+    done
 done
-echo "probe: ${#qml_files[@]} QML files probed, $probe_bad failed, $probe_exempt exempt (unverifiable: $exempt_file)"
+echo "probe: ${#qml_files[@]} QML files probed at ${#probe_places[@]} places, $probe_bad failed, $probe_exempt exempt (unverifiable: $exempt_file)"
 
 if [ "$mode" = lower ]; then
     if [ "$status" -ne 0 ]; then

@@ -1,5 +1,16 @@
-# QML files where qmllint reports nothing for an unresolved name under any probe form (scripts/check-qml.sh),
-# so their warning counts cannot be verified. A review decision to add a file here; remove it once it probes.
+# QML files (or one place in them: path:top|mid|end) where qmllint reports nothing for an unresolved name under any
+# probe form (scripts/check-qml.sh), so their warning counts are unverifiable there. Adding a line is a review decision.
+#
+# Known cause of the last group: a file that instantiates NotificationManager.Notifications (the Plasma notification
+# model) is only partly analysed by qmllint 6.12 - an undefined function call in it is not flagged - and wrapping the
+# type in its own file does not help. Keep that element confined to NotificationService; main.qml lost the same blind
+# spot when the model moved out of it.
 contents/ui/configGeneral.qml
 contents/ui/ControlCenterEditor.qml
 contents/ui/weather/WeatherService.qml
+contents/ui/IslandButton.qml:top
+contents/ui/IslandGlyph.qml:top
+contents/ui/IslandGlyph.qml:mid
+contents/ui/controlcenter/ControlCenterModuleCard.qml:top
+contents/ui/services/NotificationService.qml:top
+contents/ui/services/NotificationService.qml:mid

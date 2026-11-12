@@ -17,12 +17,15 @@ push to `main`, every pull request and every `v*` tag; a tag also publishes a re
      file dropped, run `scripts/check-qml.sh --lower-baseline` (it only writes lower numbers and refuses while anything
      fails) and commit the file. A moved file keeps its count: rename its line by hand;
    - a file that drops by more than half gets a loud "verify the analysis didn't abort" warning;
-   - a probe: qmllint 6.12 can silently stop analysing a file (for example a `const` inside an arrow function), which
-     makes its warnings vanish and would pass the ratchet for the wrong reason. Each QML file is linted again as a
-     temporary copy with one unresolved name appended, and qmllint must report exactly one more warning (two probe
-     forms are tried, either may pass). Files where no form works are listed in `.github/qmllint-probe-exempt.txt`:
-     their counts are unverifiable, so adding one there is a review decision (today: `configGeneral.qml`,
-     `ControlCenterEditor.qml`, `WeatherService.qml`).
+   - a probe: qmllint 6.12 can silently stop analysing part of a file (for example a `const` inside an arrow function),
+     which makes its warnings vanish and would pass the ratchet for the wrong reason. Each QML file is linted again as
+     temporary copies with one unresolved name planted at the top, the middle and the end, and qmllint must report
+     exactly one more warning at each (two probe forms are tried, either may pass). A place where neither works is a
+     blind spot, listed in `.github/qmllint-probe-exempt.txt` (`<path>` or `<path>:top|mid|end`): the counts there are
+     unverifiable, so adding a line is a review decision. Known cause for one group: a file that instantiates
+     `NotificationManager.Notifications` is only partly analysed (an undefined function call in it is not flagged), so
+     that element stays confined to `NotificationService`. The probe cannot see that kind of blind spot inside function
+     bodies, only the places it plants the name;
 3. Qt Quick tests: `qmltestrunner -input tests` (offscreen, software backend)
 4. Package build: `scripts/package.sh`, then `unzip -t`
 
