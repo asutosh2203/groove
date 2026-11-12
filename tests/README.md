@@ -2,6 +2,7 @@ Run the network parser, state, and text helper tests with Node.js 18 or later:
 
 ```bash
 node tests/network-state.test.cjs
+node tests/kdeconnect-state.test.cjs
 node tests/text-utils.test.cjs
 ```
 

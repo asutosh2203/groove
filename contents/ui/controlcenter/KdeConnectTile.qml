@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
-import org.kde.kirigami as Kirigami
 import ".."
 import "Tokens.js" as T
 
@@ -16,7 +15,11 @@ MouseArea {
     readonly property bool iconOnly: width < 92 || height < 54
     readonly property bool compact: width < 160 || height < 110
     readonly property bool detailed: width >= 220 && height >= 145
-    readonly property int rowLimit: compact ? 1 : Math.max(1, Math.floor((height - 54) / 44))
+    readonly property int rowHeight: detailed ? 42 : 30
+    // Rows that fit under the header; one line is kept for "+N more" when the list overflows.
+    readonly property real bodyHeight: height - 20 - 24 - 7
+    readonly property int fitRows: Math.max(1, Math.floor((bodyHeight + 7) / (rowHeight + 7)))
+    readonly property int rowLimit: totalDevices > fitRows ? Math.max(1, Math.floor((bodyHeight - 17 + 7) / (rowHeight + 7))) : fitRows
     readonly property int visibleDeviceCount: devices ? devices.length : 0
 
     function deviceText(device, key, fallbackValue) {
@@ -60,11 +63,9 @@ MouseArea {
             Layout.fillWidth: true
             spacing: 7
 
-            Kirigami.Icon {
+            PhoneGlyph {
                 Layout.preferredWidth: T.iconHeader
                 Layout.preferredHeight: T.iconHeader
-                source: T.symbolic("kdeconnect")
-                isMask: true
                 color: kdeTile.reachableDevices > 0 ? T.iconActive : T.iconIdle
             }
 
@@ -84,7 +85,7 @@ MouseArea {
 
                 PlasmaLabel {
                     Layout.fillWidth: true
-                    text: kdeTile.reachableDevices > 0 ? i18np("%1 reachable device", "%1 reachable devices", kdeTile.reachableDevices) : app.kdeConnectSummary()
+                    text: app.kdeConnectSummary()
                     color: T.textSecondary
                     font.pixelSize: T.fontCaption
                     elide: Text.ElideRight
@@ -124,12 +125,22 @@ MouseArea {
             model: kdeTile.devices
 
             delegate: Rectangle {
+                id: deviceRow
+
+                readonly property bool online: modelData && modelData.reachable
+                readonly property string deviceId: kdeTile.deviceText(modelData, "id", "")
+                readonly property bool showActions: online && kdeTile.detailed && (rowHover.hovered || ringButton.activeFocus || browseButton.activeFocus)
+
                 Layout.fillWidth: true
-                Layout.preferredHeight: kdeTile.detailed ? 42 : 30
+                Layout.preferredHeight: kdeTile.rowHeight
                 radius: T.radiusInner
                 color: T.row
                 border.color: T.border
                 border.width: 1
+
+                HoverHandler {
+                    id: rowHover
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -140,11 +151,12 @@ MouseArea {
                         Layout.preferredWidth: 7
                         Layout.preferredHeight: 7
                         radius: 4
-                        color: modelData && modelData.reachable ? T.fill : modelData && modelData.paired ? T.textCaption : T.textTertiary
+                        color: deviceRow.online ? T.fill : T.textTertiary
                     }
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        opacity: deviceRow.online ? 1 : T.disabledOpacity
                         spacing: -1
 
                         PlasmaLabel {
@@ -160,7 +172,7 @@ MouseArea {
                         PlasmaLabel {
                             visible: kdeTile.detailed
                             Layout.fillWidth: true
-                            text: kdeTile.deviceText(modelData, "status", i18n("available"))
+                            text: deviceRow.online ? i18n("Connected") : i18n("Not nearby")
                             color: T.textSecondary
                             font.pixelSize: T.fontCaption
                             elide: Text.ElideRight
@@ -168,24 +180,14 @@ MouseArea {
                         }
                     }
 
+                    // Faded, not hidden, so keyboard focus can still reach the buttons and reveal them.
                     Row {
-                        visible: kdeTile.deviceText(modelData, "id", "").length > 0 && kdeTile.detailed
+                        visible: deviceRow.online && kdeTile.detailed
+                        opacity: deviceRow.showActions ? 1 : 0
                         spacing: 5
 
                         IslandButton {
-                            width: 22
-                            height: 22
-                            iconName: "dialog-information"
-                            tooltipText: i18n("Ping device")
-                            compact: true
-                            flat: true
-                            focusColor: T.focusRing
-                            flatHoverColor: T.raised
-                            flatPressedColor: T.chip
-                            onClicked: app.runKdeConnectDeviceAction(kdeTile.deviceText(modelData, "id", ""), "ping")
-                        }
-
-                        IslandButton {
+                            id: ringButton
                             width: 22
                             height: 22
                             iconName: "notifications"
@@ -195,36 +197,76 @@ MouseArea {
                             focusColor: T.focusRing
                             flatHoverColor: T.raised
                             flatPressedColor: T.chip
-                            onClicked: app.runKdeConnectDeviceAction(kdeTile.deviceText(modelData, "id", ""), "ring")
+                            onClicked: app.runKdeConnectDeviceAction(deviceRow.deviceId, "ring")
                         }
 
                         IslandButton {
-                            visible: kdeTile.width >= 285
+                            id: browseButton
                             width: 22
                             height: 22
                             iconName: "folder"
-                            tooltipText: i18n("Mount files")
+                            tooltipText: i18n("Browse files")
                             compact: true
                             flat: true
                             focusColor: T.focusRing
                             flatHoverColor: T.raised
                             flatPressedColor: T.chip
-                            onClicked: app.runKdeConnectDeviceAction(kdeTile.deviceText(modelData, "id", ""), "mount")
+                            onClicked: app.runKdeConnectDeviceAction(deviceRow.deviceId, "browse")
                         }
                     }
                 }
             }
         }
 
-        PlasmaLabel {
+        ColumnLayout {
             visible: !kdeTile.hasDevices
             Layout.fillWidth: true
             Layout.fillHeight: true
-            text: i18n("No devices found")
-            color: T.textTertiary
-            font.pixelSize: T.fontCaption
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
+            spacing: 2
+
+            Item {
+                Layout.fillHeight: true
+            }
+
+            PhoneGlyph {
+                visible: kdeTile.height >= 140
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: 34
+                Layout.preferredHeight: 34
+                Layout.bottomMargin: 6
+                color: T.textTertiary
+            }
+
+            PlasmaLabel {
+                Layout.fillWidth: true
+                text: i18n("No phone nearby")
+                color: T.textCaption
+                font.pixelSize: T.fontBody
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
+                maximumLineCount: 1
+            }
+
+            PlasmaLabel {
+                visible: kdeTile.height >= 100
+                Layout.fillWidth: true
+                text: i18n("Pair one in KDE Connect")
+                color: T.textTertiary
+                font.pixelSize: T.fontCaption
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
+                maximumLineCount: 1
+            }
+
+            Item {
+                Layout.fillHeight: true
+            }
+        }
+
+        // Pushes rows up so they sit directly under the header.
+        Item {
+            visible: kdeTile.hasDevices
+            Layout.fillHeight: true
         }
 
         PlasmaLabel {
@@ -237,13 +279,11 @@ MouseArea {
         }
     }
 
-    Kirigami.Icon {
+    PhoneGlyph {
         visible: kdeTile.iconOnly
         anchors.centerIn: parent
         width: Math.max(20, Math.min(36, parent.width - 14, parent.height - 14))
         height: width
-        source: T.symbolic("kdeconnect")
-        isMask: true
         color: kdeTile.reachableDevices > 0 ? T.iconActive : T.iconIdle
     }
 

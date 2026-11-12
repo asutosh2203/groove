@@ -273,16 +273,24 @@ Item {
                 return ;
             }
             if (control.iconName.indexOf("settings") !== -1) {
+                // Gear: 8 trapezoid teeth around a hub, so it reads as settings, not a sun.
                 ctx.beginPath();
-                ctx.arc(w * 0.5, h * 0.5, w * 0.16, 0, Math.PI * 2);
-                ctx.stroke();
-                for (let i = 0; i < 8; ++i) {
-                    const a = i * Math.PI / 4;
-                    ctx.beginPath();
-                    ctx.moveTo(w / 2 + Math.cos(a) * w * 0.27, h / 2 + Math.sin(a) * h * 0.27);
-                    ctx.lineTo(w / 2 + Math.cos(a) * w * 0.42, h / 2 + Math.sin(a) * h * 0.42);
-                    ctx.stroke();
+                const teeth = 8;
+                for (let i = 0; i < teeth * 4; ++i) {
+                    const a = (i - 0.5) * Math.PI * 2 / (teeth * 4);
+                    const r = (i % 4 === 1 || i % 4 === 2) ? 0.43 : 0.33;
+                    const x = w / 2 + Math.cos(a) * w * r;
+                    const y = h / 2 + Math.sin(a) * h * r;
+                    if (i === 0)
+                        ctx.moveTo(x, y);
+                    else
+                        ctx.lineTo(x, y);
                 }
+                ctx.closePath();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(w * 0.5, h * 0.5, w * 0.13, 0, Math.PI * 2);
+                ctx.stroke();
                 return ;
             }
             if (control.iconName.indexOf("theme") !== -1) {

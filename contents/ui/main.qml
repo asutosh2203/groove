@@ -16,6 +16,7 @@ import org.kde.plasma.workspace.keyboardlayout as KeyboardLayout
 import "controlcenter"
 import "controlcenter/ModuleRegistry.js" as ModuleRegistry
 import "controlcenter/NetworkState.js" as NetworkState
+import "controlcenter/KdeConnectState.js" as KdeConnectState
 import "TextUtils.js" as TextUtils
 import "activities" as Activities
 import "weather"
@@ -96,7 +97,8 @@ PlasmoidItem {
     property var networkDevices: []
     property var networkAddresses: []
     readonly property var networkState: NetworkState.summarize(networkDevices, networkAddresses, wifiNetworks, enabledConnections.networkingEnabled, enabledConnections.wirelessEnabled && enabledConnections.wirelessHwEnabled)
-    property string kdeConnectDevicesText: ""
+    property var kdeConnectPaired: []
+    property var kdeConnectConnected: []
     property string popupMode: "control"
     property string activityPopupMode: "auto"
     property int clickButton: Qt.NoButton
@@ -138,7 +140,6 @@ PlasmoidItem {
     readonly property string wifiScanCommand: "env LC_ALL=C nmcli --colors no -t -f IN-USE,SSID,SIGNAL,DEVICE device wifi list --rescan no"
     readonly property string networkStatusCommand: "env LC_ALL=C nmcli --colors no -t -f TYPE,DEVICE,STATE,CONNECTION device status"
     readonly property string networkIpCommand: "env LC_ALL=C nmcli --colors no -t -f GENERAL.DEVICE,IP4.ADDRESS,IP6.ADDRESS device show"
-    readonly property string kdeConnectCommand: "kdeconnect-cli --list-devices"
 
     onControlEditModeChanged: {
         if (!controlEditMode)
@@ -1234,7 +1235,8 @@ PlasmoidItem {
         executable.exec("bluetoothctl show");
         executable.exec("bluetoothctl devices Connected");
         refreshWifiNetworks();
-        executable.exec(kdeConnectCommand);
+        executable.exec(KdeConnectState.pairedCommand);
+        executable.exec(KdeConnectState.connectedCommand);
     }
 
     function defaultControlLayout() {
@@ -1498,123 +1500,28 @@ PlasmoidItem {
         return bluetoothAdapterName.length > 0 ? bluetoothAdapterName : i18n("No connected devices");
     }
 
-    function parseKdeConnectDevices(text) {
-        const lines = String(text || "").split("\n");
-        const out = [];
-        const seen = {};
-        for (let i = 0; i < lines.length; ++i) {
-            const device = parseKdeConnectDeviceLine(lines[i]);
-            if (!device || device.name.length <= 0)
-                continue;
-
-            const key = device.id.length > 0 ? device.id : device.name;
-            if (seen[key])
-                continue;
-
-            seen[key] = true;
-            out.push(device.name + "|" + device.id + "|" + device.status + "|" + (device.reachable ? "1" : "0") + "|" + (device.paired ? "1" : "0"));
-        }
-        return out.join("\n");
-    }
-
-    function parseKdeConnectDeviceLine(line) {
-        let text = cleanText(line);
-        if (text.length <= 0 || text.indexOf("0 devices found") !== -1 || text.indexOf("No devices") !== -1)
-            return null;
-
-        if (text.indexOf("- ") === 0)
-            text = text.slice(2);
-
-        let name = text;
-        let id = "";
-        let status = "";
-        const idMatch = text.match(/^(.*?):\s*([^()\s]+)\s*(?:\((.*)\))?$/);
-        if (idMatch) {
-            name = cleanText(idMatch[1]);
-            id = cleanText(idMatch[2]);
-            status = cleanText(idMatch[3] || "");
-        } else {
-            const legacyStatus = text.match(/^(.*?)\s+-\s+(.*)$/);
-            if (legacyStatus) {
-                name = cleanText(legacyStatus[1]);
-                status = cleanText(legacyStatus[2]);
-            }
-            const inlineId = name.match(/^(.*?)\s*\(id:\s*([^)]+)\)$/i);
-            if (inlineId) {
-                name = cleanText(inlineId[1]);
-                id = cleanText(inlineId[2]);
-            }
-        }
-
-        status = status.replace(/\band\b/gi, ",").replace(/\s*,\s*/g, ", ");
-        const lower = status.toLowerCase();
-        return {
-            "name": name,
-            "id": id,
-            "status": status.length > 0 ? status : "available",
-            "reachable": lower.indexOf("reachable") !== -1 || lower.indexOf("available") !== -1,
-            "paired": lower.indexOf("paired") !== -1 || lower.indexOf("trusted") !== -1
-        };
-    }
-
-    function kdeConnectSummary() {
-        if (kdeConnectDevicesText.length <= 0)
-            return i18n("No devices");
-        const devices = kdeConnectDevices(0);
-        const reachable = kdeConnectReachableCount();
-        if (devices.length <= 0)
-            return i18n("No devices");
-        if (devices.length === 1)
-            return devices[0].name;
-        if (reachable > 0)
-            return i18np("%1 reachable device", "%1 reachable devices", reachable);
-        return i18np("%1 paired device", "%1 paired devices", devices.length);
-    }
-
-    function kdeConnectRows(limit) {
-        const devices = kdeConnectDevices(limit);
-        const rows = [];
-        for (let i = 0; i < devices.length; ++i)
-            rows.push(devices[i].name);
-        return rows;
-    }
-
     function kdeConnectDevices(limit) {
-        const devices = [];
-        const lines = kdeConnectDevicesText.length > 0 ? kdeConnectDevicesText.split("\n") : [];
+        const all = KdeConnectState.buildDevices(kdeConnectPaired, kdeConnectConnected);
         const maxRows = Math.max(0, Math.round(finiteNumber(limit, 0)));
-        for (let i = 0; i < lines.length; ++i) {
-            const parts = String(lines[i]).split("|");
-            const name = cleanText(parts[0]);
-            if (name.length <= 0)
-                continue;
-
-            devices.push({
-                "name": name,
-                "id": cleanText(parts[1]),
-                "status": cleanText(parts[2] || "available"),
-                "reachable": parts[3] === "1",
-                "paired": parts[4] === "1"
-            });
-            if (maxRows > 0 && devices.length >= maxRows)
-                break;
-        }
-        return devices;
+        return maxRows > 0 ? all.slice(0, maxRows) : all;
     }
 
     function kdeConnectReachableCount() {
+        return KdeConnectState.connectedCount(kdeConnectDevices(0));
+    }
+
+    function kdeConnectSummary() {
         const devices = kdeConnectDevices(0);
-        let count = 0;
-        for (let i = 0; i < devices.length; ++i) {
-            if (devices[i].reachable)
-                count++;
-        }
-        return count;
+        const kind = KdeConnectState.summaryKind(devices);
+        if (kind === "connected")
+            return i18np("%1 connected", "%1 connected", KdeConnectState.connectedCount(devices));
+        return kind === "away" ? i18n("Not nearby") : i18n("No devices");
     }
 
     function refreshKdeConnectDevices() {
         executable.exec("kdeconnect-cli --refresh");
-        executable.exec(kdeConnectCommand);
+        executable.exec(KdeConnectState.pairedCommand);
+        executable.exec(KdeConnectState.connectedCommand);
     }
 
     function shellQuote(text) {
@@ -1626,14 +1533,10 @@ PlasmoidItem {
         if (id.length <= 0)
             return ;
 
-        if (action === "ping")
-            executable.exec("kdeconnect-cli --device " + shellQuote(id) + " --ping");
-        else if (action === "ring")
+        if (action === "ring")
             executable.exec("kdeconnect-cli --device " + shellQuote(id) + " --ring");
-        else if (action === "mount")
-            executable.exec("kdeconnect-cli --device " + shellQuote(id) + " --mount");
-        else if (action === "notifications")
-            executable.exec("kdeconnect-cli --device " + shellQuote(id) + " --list-notifications");
+        else if (action === "browse")
+            executable.exec("qdbus6 org.kde.kdeconnect /modules/kdeconnect/devices/" + id + "/sftp org.kde.kdeconnect.device.sftp.startBrowsing");
     }
 
     function beginControlDrag(source, item, mouse, size) {
@@ -2078,8 +1981,10 @@ PlasmoidItem {
                 root.networkDevices = NetworkState.parseDevices(stdout);
             else if (sourceName === root.networkIpCommand)
                 root.networkAddresses = NetworkState.parseAddresses(stdout);
-            else if (sourceName === root.kdeConnectCommand)
-                root.kdeConnectDevicesText = root.parseKdeConnectDevices(stdout);
+            else if (sourceName === KdeConnectState.pairedCommand)
+                root.kdeConnectPaired = KdeConnectState.parseNames(stdout);
+            else if (sourceName === KdeConnectState.connectedCommand)
+                root.kdeConnectConnected = KdeConnectState.parseNames(stdout);
 
             disconnectSource(sourceName);
         }

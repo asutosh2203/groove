@@ -113,7 +113,7 @@ Item {
                 visible: !notificationsContent.compact
                 Layout.preferredWidth: 24
                 Layout.preferredHeight: 24
-                iconName: "edit-clear-all"
+                iconName: "clear-history"
                 tooltipText: i18n("Clear notifications")
                 compact: true
                 enabled: notificationsContent.notificationTotal > 0
