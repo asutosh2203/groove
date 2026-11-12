@@ -22,6 +22,7 @@ import "TextUtils.js" as TextUtils
 import "NotificationOpen.js" as NotificationOpen
 import "AppMatch.js" as AppMatch
 import "FullscreenState.js" as FullscreenState
+import "MediaIdle.js" as MediaIdle
 import "NoticeDuration.js" as NoticeDuration
 import "activities" as Activities
 import "weather"
@@ -41,6 +42,35 @@ PlasmoidItem {
     readonly property bool hasJobs: notifications.activeJobsCount > 0
     readonly property bool hasNotifications: notificationCount() > 0
     readonly property bool mediaActivityEnabled: Plasmoid.configuration.mediaActivityEnabled !== false
+    // A player that exists but hasn't played for 30 s hands the island back to the idle face; anything that starts
+    // playing takes it back at once (D-35). MediaIdle.js decides, the timer below only schedules the timeout.
+    property bool mediaGraceExpired: false
+    readonly property bool mediaShown: MediaIdle.shown(hasPlayer, isPlaying, mediaGraceExpired)
+
+    function mediaIdleEvent(event) {
+        const r = MediaIdle.reduce({ "expired": mediaGraceExpired }, event);
+        mediaGraceExpired = r.expired;
+        if (r.scheduleMs !== null) {
+            mediaIdleTimer.interval = r.scheduleMs;
+            mediaIdleTimer.restart();
+        } else {
+            mediaIdleTimer.stop();
+        }
+    }
+
+    function syncMediaIdle() {
+        mediaIdleEvent(!hasPlayer ? "gone" : isPlaying ? "playing" : "notPlaying");
+    }
+
+    onHasPlayerChanged: syncMediaIdle()
+    onIsPlayingChanged: syncMediaIdle()
+
+    Timer {
+        id: mediaIdleTimer
+
+        repeat: false
+        onTriggered: root.mediaIdleEvent("timeout")
+    }
     readonly property bool notificationActivityEnabled: Plasmoid.configuration.notificationActivityEnabled !== false
     readonly property bool jobActivityEnabled: Plasmoid.configuration.jobActivityEnabled !== false
     readonly property bool keyboardLayoutActivityEnabled: Plasmoid.configuration.keyboardLayoutActivityEnabled !== false
@@ -78,7 +108,7 @@ PlasmoidItem {
     property bool popupHovered: false
     readonly property bool holdPopupTimers: dialogVisible && islandOpen && popupMode === "activity" && (popupHovered || dialogActive)
     readonly property bool holdNoticeLifetime: holdPopupTimers && activityPopupMode === "notice"
-    readonly property bool hasActivity: keyboardAnnouncementActive || jobActivityEnabled && hasJobs || mediaActivityEnabled && hasPlayer || noticeActivityActive
+    readonly property bool hasActivity: keyboardAnnouncementActive || jobActivityEnabled && hasJobs || mediaActivityEnabled && mediaShown || noticeActivityActive
     // Fixed allocation: the panel never resizes for visual transitions. The
     // visible shape is drawn inside whatever slot the panel actually gives us.
     readonly property int islandWidth: 180
@@ -1940,7 +1970,7 @@ PlasmoidItem {
             },
             Activities.ActivityProvider {
                 key: "media"
-                active: root.mediaActivityEnabled && root.hasPlayer
+                active: root.mediaActivityEnabled && root.mediaShown
                 priority: 100
                 title: root.hasPlayer ? root.player.track || root.player.identity || "Media" : "Media"
                 subtitle: root.hasPlayer ? root.player.artist || root.player.album || root.player.identity || "" : ""
@@ -2168,6 +2198,7 @@ PlasmoidItem {
     }
 
     Component.onCompleted: {
+        root.syncMediaIdle();
         if (root.panelSyncWanted())
             panelStartTimer.start();
         root.ensureControlLayout();
