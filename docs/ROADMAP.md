@@ -17,11 +17,12 @@ Last updated: 12 November 2026. Decisions referenced as D-xx live in [DECISIONS.
 | — | Pill-mode Control Center side padding fix | `b1f6338` |
 | CC5 | KDE Connect card: D-Bus state, empty/connected/not-nearby states, theme phone glyph, notification card action icons | `cac7071` |
 | — | CI on Node 26, all Node tests auto-run | `2c58eb0`, `a9fc274` |
+| CC7 | Notification click-through: open the live action, URL or app (D-31), TasksModel window activation (D-32), whole-island hover target, single right-hand slot, popup timers hold on hover | `fd8d57b` |
 
 CC6 (notification list density/scrolling) was dropped.
 
 ## Now
-- **CC7: notification click-through** (D-31). Control Center list and expanded popup.
+- Nothing scheduled; pick from Next.
 
 ## Next
 1. **Quality pass**
@@ -48,6 +49,8 @@ CC6 (notification list density/scrolling) was dropped.
   pass is undecided.
 
 ## Backlog
+- Show a live notification's own actions (Reply, Mark as read, Mute) in the expanded popup; this is what will make mirrored KDE Connect notifications useful, since they have no default action
+- Expired notifications can only open the app, not the exact chat: the chat target exists only as the live default action, which dies on expiry (Telegram, WhatsApp Web). Inherent to the notification protocol; revisit only if a sender exposes a URL
 - Smart reply suggestions (parked: privacy and resource cost; candidate for a future opt-in AI widget)
 - Notification queueing with "more waiting" indicator
 - Project-wide icon migration to theme symbolic names (D-26), incl. `IslandButton` Canvas glyphs
