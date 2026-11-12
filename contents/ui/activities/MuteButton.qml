@@ -34,6 +34,7 @@ MouseArea {
         barWidth: button.large ? 2.5 : 1.5
         barColor: button.ink
         playing: button.playing
+        clock: button.app ? button.app.decorClock : null
         opacity: button.enabled ? 1 : 0.5
     }
 

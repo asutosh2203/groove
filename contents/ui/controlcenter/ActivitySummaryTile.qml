@@ -93,9 +93,11 @@ Rectangle {
                     Layout.alignment: Qt.AlignTop
                     Layout.topMargin: 3
                     playing: app.isPlaying
+                    clock: app.decorClock
                     barWidth: 1.5
                 }
                 IslandBars {
+                    clock: app.decorClock
                     visible: !activitySummary.mediaOnly && (!activitySummary.compact || width >= 260)
                     Layout.preferredWidth: 36
                     Layout.preferredHeight: 28
@@ -361,6 +363,7 @@ Rectangle {
     }
 
     IslandBars {
+        clock: app.decorClock
         visible: activitySummary.iconOnly && (activitySummary.mediaOnly ? app.isPlaying : app.isPlaying || app.hasJobs || app.hasNotifications) && width >= 58
         anchors.right: parent.right
         anchors.rightMargin: 8

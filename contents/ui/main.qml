@@ -2242,6 +2242,13 @@ PlasmoidItem {
         target: notifications
     }
 
+    // Shared low-rate clock for every decorative loop (weather icon, AudioBars); idle unless something holds a lease.
+    readonly property var decorClock: decorClockItem
+
+    DecorClock {
+        id: decorClockItem
+    }
+
     PausableTimer {
         id: activityPopupTimer
 

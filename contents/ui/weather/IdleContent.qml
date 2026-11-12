@@ -172,6 +172,7 @@ Item {
             isDay: idle.weather ? idle.weather.isDay : true
             placeholder: !idle.weather || !idle.weather.hasData
             running: idle.animate && idle.visible
+            clock: idle.app ? idle.app.decorClock : null
         }
 
         HoverHandler {
