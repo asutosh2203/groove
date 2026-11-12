@@ -6,7 +6,7 @@ Item {
     id: musicCompact
 
     property var app: null
-    readonly property bool hasPlayer: app && app.hasPlayer
+    readonly property bool hasPlayer: app && app.media.hasPlayer
 
     RowLayout {
         anchors.fill: parent
@@ -21,7 +21,7 @@ Item {
 
             PlasmaLabel {
                 Layout.fillWidth: true
-                text: musicCompact.hasPlayer ? musicCompact.app.player.track || musicCompact.app.player.identity || i18n("Media") : i18n("Media")
+                text: musicCompact.hasPlayer ? musicCompact.app.media.player.track || musicCompact.app.media.player.identity || i18n("Media") : i18n("Media")
                 color: "#e9e9ef"
                 font.pixelSize: 9
                 font.weight: Font.DemiBold
@@ -32,10 +32,10 @@ Item {
             ProgressBar {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 3
-                visible: musicCompact.hasPlayer && musicCompact.app.mediaLength > 0
+                visible: musicCompact.hasPlayer && musicCompact.app.media.length > 0
                 from: 0
-                to: Math.max(1, musicCompact.hasPlayer ? musicCompact.app.mediaLength : 1)
-                value: musicCompact.hasPlayer ? musicCompact.app.player.position : 0
+                to: Math.max(1, musicCompact.hasPlayer ? musicCompact.app.media.length : 1)
+                value: musicCompact.hasPlayer ? musicCompact.app.media.player.position : 0
                 accent: "#b4b6bf"
                 trackColor: "#25252b"
             }
@@ -48,7 +48,7 @@ Item {
             app: musicCompact.app
             // The compact pill is covered while a popup is open (Plasma keeps its wrapper "visible" at opacity 0, so
             // visibility can't tell), so its bars stop then instead of repainting the panel for nothing.
-            playing: musicCompact.hasPlayer && musicCompact.app.isPlaying && !musicCompact.app.panelHidden
+            playing: musicCompact.hasPlayer && musicCompact.app.media.isPlaying && !musicCompact.app.panelHidden
         }
     }
 }

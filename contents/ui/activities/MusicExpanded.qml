@@ -1,14 +1,15 @@
 import QtQuick
 import QtQuick.Layouts
 import ".."
+import "../logic/MediaPlayers.js" as MediaPlayers
 
 Item {
     id: musicPage
 
     property var app: null
-    readonly property bool hasPlayer: app && app.hasPlayer
-    readonly property bool hasLength: hasPlayer && app.mediaLength > 0
-    readonly property bool playing: hasPlayer && app.isPlaying
+    readonly property bool hasPlayer: app && app.media.hasPlayer
+    readonly property bool hasLength: hasPlayer && app.media.length > 0
+    readonly property bool playing: hasPlayer && app.media.isPlaying
 
     RowLayout {
         id: contentRow
@@ -27,10 +28,10 @@ Item {
             Layout.minimumHeight: contentRow.height
             Layout.maximumHeight: contentRow.height
             Layout.preferredWidth: contentRow.height
-            source: musicPage.hasPlayer ? musicPage.app.player.artUrl : ""
+            source: musicPage.hasPlayer ? musicPage.app.media.player.artUrl : ""
             cornerRadius: 26 - contentRow.inset
             fallbackMode: "media"
-            progress: musicPage.hasPlayer ? musicPage.app.player.position / Math.max(1, musicPage.app.mediaLength) : 0
+            progress: musicPage.hasPlayer ? musicPage.app.media.player.position / Math.max(1, musicPage.app.media.length) : 0
             playing: musicPage.playing
         }
 
@@ -51,7 +52,7 @@ Item {
 
                     PlasmaLabel {
                         Layout.fillWidth: true
-                        text: musicPage.hasPlayer ? musicPage.app.player.track || musicPage.app.player.identity || i18n("Media") : i18n("Media")
+                        text: musicPage.hasPlayer ? musicPage.app.media.player.track || musicPage.app.media.player.identity || i18n("Media") : i18n("Media")
                         color: "#ffffff"
                         font.pixelSize: 14
                         font.weight: Font.DemiBold
@@ -61,7 +62,7 @@ Item {
 
                     PlasmaLabel {
                         Layout.fillWidth: true
-                        text: musicPage.hasPlayer ? musicPage.app.player.artist || musicPage.app.player.album || musicPage.app.player.identity || "" : ""
+                        text: musicPage.hasPlayer ? musicPage.app.media.player.artist || musicPage.app.media.player.album || musicPage.app.media.player.identity || "" : ""
                         color: "#8d8f99"
                         font.pixelSize: 11
                         elide: Text.ElideRight
@@ -88,8 +89,8 @@ Item {
                 Layout.preferredHeight: 3
                 opacity: musicPage.hasLength ? 1 : 0
                 from: 0
-                to: Math.max(1, musicPage.hasPlayer ? musicPage.app.mediaLength : 1)
-                value: musicPage.hasPlayer ? musicPage.app.player.position : 0
+                to: Math.max(1, musicPage.hasPlayer ? musicPage.app.media.length : 1)
+                value: musicPage.hasPlayer ? musicPage.app.media.player.position : 0
                 accent: "#b4b6bf"
                 trackColor: "#25252b"
             }
@@ -101,7 +102,7 @@ Item {
 
                 PlasmaLabel {
                     Layout.preferredWidth: 36
-                    text: musicPage.hasLength ? musicPage.app.formatMediaTime(musicPage.app.player.position) : ""
+                    text: musicPage.hasLength ? MediaPlayers.formatTime(musicPage.app.media.player.position) : ""
                     color: "#9a9ca6"
                     font.pixelSize: 10
                     font.features: { "tnum": 1 }
@@ -119,8 +120,8 @@ Item {
                     implicitWidth: 34
                     // No hover tooltip; screen readers still get the name.
                     Accessible.name: i18n("Previous")
-                    enabled: musicPage.hasPlayer && musicPage.app.player.canGoPrevious
-                    onClicked: musicPage.app.mediaPrevious()
+                    enabled: musicPage.hasPlayer && musicPage.app.media.player.canGoPrevious
+                    onClicked: musicPage.app.media.previous()
                 }
 
                 IslandButton {
@@ -129,8 +130,8 @@ Item {
                     glyphSize: 23
                     implicitWidth: 40
                     Accessible.name: musicPage.playing ? i18n("Pause") : i18n("Play")
-                    enabled: musicPage.hasPlayer && (musicPage.app.player.canPlay || musicPage.app.player.canPause)
-                    onClicked: musicPage.app.mediaPlayPause()
+                    enabled: musicPage.hasPlayer && (musicPage.app.media.player.canPlay || musicPage.app.media.player.canPause)
+                    onClicked: musicPage.app.media.playPause()
                 }
 
                 IslandButton {
@@ -140,8 +141,8 @@ Item {
                     glyphSize: 17
                     implicitWidth: 34
                     Accessible.name: i18n("Next")
-                    enabled: musicPage.hasPlayer && musicPage.app.player.canGoNext
-                    onClicked: musicPage.app.mediaNext()
+                    enabled: musicPage.hasPlayer && musicPage.app.media.player.canGoNext
+                    onClicked: musicPage.app.media.next()
                 }
 
                 Item {
@@ -150,7 +151,7 @@ Item {
 
                 PlasmaLabel {
                     Layout.preferredWidth: 36
-                    text: musicPage.hasLength ? musicPage.app.formatMediaTime(musicPage.app.mediaLength) : ""
+                    text: musicPage.hasLength ? MediaPlayers.formatTime(musicPage.app.media.length) : ""
                     color: "#9a9ca6"
                     font.pixelSize: 10
                     font.features: { "tnum": 1 }

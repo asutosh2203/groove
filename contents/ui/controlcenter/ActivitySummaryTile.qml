@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import ".."
 import "../activities" as Activities
 import "Tokens.js" as T
+import "../logic/MediaPlayers.js" as MediaPlayers
 
 Rectangle {
     id: activitySummary
@@ -10,10 +11,10 @@ Rectangle {
     required property var app
     required property var notificationsSource
     property bool mediaOnly: false
-    readonly property bool showMedia: app.hasPlayer
+    readonly property bool showMedia: app.media.hasPlayer
     readonly property bool showAnyActivity: mediaOnly ? showMedia : app.hasActivity
-    readonly property string summaryMode: mediaOnly ? app.hasPlayer ? "media" : "idle" : app.activityMode()
-    readonly property color activityColor: app.isPlaying || app.hasJobs || app.hasNotifications ? T.textCaption : T.textTertiary
+    readonly property string summaryMode: mediaOnly ? app.media.hasPlayer ? "media" : "idle" : app.activityMode()
+    readonly property color activityColor: app.media.isPlaying || app.hasJobs || app.hasNotifications ? T.textCaption : T.textTertiary
     readonly property bool iconOnly: width < 100 || height < 62
     readonly property bool compact: width < 190 || height < 112
     // Media card with room for artwork + controls on the left and track info on the right.
@@ -21,15 +22,15 @@ Rectangle {
     readonly property real artSize: iconOnly ? Math.max(24, Math.min(width, height) - 18) : compact ? Math.max(36, Math.min(52, height - 22)) : Math.max(48, Math.min(72, height - 28))
 
     function previous() {
-        app.mediaPrevious();
+        app.media.previous();
     }
 
     function playPause() {
-        app.mediaPlayPause();
+        app.media.playPause();
     }
 
     function next() {
-        app.mediaNext();
+        app.media.next();
     }
 
     radius: T.radiusCard
@@ -49,12 +50,12 @@ Rectangle {
         MaskedArtworkTile {
             Layout.preferredWidth: activitySummary.artSize
             Layout.preferredHeight: activitySummary.artSize
-            artworkSource: app.hasPlayer ? app.player.artUrl : ""
+            artworkSource: app.media.hasPlayer ? app.media.player.artUrl : ""
             cornerRadius: activitySummary.compact ? 10 : T.radiusInner
             glyphSize: activitySummary.compact ? 28 : 36
             mode: activitySummary.summaryMode
             progress: Math.max(0, notificationsSource.jobsPercentage) / 100
-            playing: app.isPlaying
+            playing: app.media.isPlaying
         }
 
         ColumnLayout {
@@ -92,7 +93,7 @@ Rectangle {
                     Layout.preferredHeight: 12
                     Layout.alignment: Qt.AlignTop
                     Layout.topMargin: 3
-                    playing: app.isPlaying
+                    playing: app.media.isPlaying
                     clock: app.decorClock
                     barWidth: 1.5
                 }
@@ -102,7 +103,7 @@ Rectangle {
                     Layout.preferredWidth: 36
                     Layout.preferredHeight: 28
                     color: activitySummary.activityColor
-                    playing: app.isPlaying || app.hasJobs || app.hasNotifications
+                    playing: app.media.isPlaying || app.hasJobs || app.hasNotifications
                 }
             }
 
@@ -114,10 +115,10 @@ Rectangle {
             ProgressBar {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 3
-                visible: !activitySummary.compact && ((!activitySummary.mediaOnly && app.hasJobs) || (app.hasPlayer && app.mediaLength > 0))
+                visible: !activitySummary.compact && ((!activitySummary.mediaOnly && app.hasJobs) || (app.media.hasPlayer && app.media.length > 0))
                 from: 0
-                to: !activitySummary.mediaOnly && app.hasJobs ? 100 : Math.max(1, app.player ? app.mediaLength : 1)
-                value: !activitySummary.mediaOnly && app.hasJobs ? Math.max(0, notificationsSource.jobsPercentage) : app.player ? app.player.position : 0
+                to: !activitySummary.mediaOnly && app.hasJobs ? 100 : Math.max(1, app.media.player ? app.media.length : 1)
+                value: !activitySummary.mediaOnly && app.hasJobs ? Math.max(0, notificationsSource.jobsPercentage) : app.media.player ? app.media.player.position : 0
                 accent: T.fillSoft
                 trackColor: T.track
             }
@@ -132,7 +133,7 @@ Rectangle {
 
                 PlasmaLabel {
                     Layout.preferredWidth: 36
-                    text: app.hasPlayer && app.mediaLength > 0 ? app.formatMediaTime(app.player.position) : ""
+                    text: app.media.hasPlayer && app.media.length > 0 ? MediaPlayers.formatTime(app.media.player.position) : ""
                     color: T.textCaption
                     font.pixelSize: T.fontCaption
                     font.features: { "tnum": 1 }
@@ -146,17 +147,17 @@ Rectangle {
                     implicitWidth: 34
                     focusColor: T.focusRing
                     tooltipText: i18n("Previous")
-                    enabled: app.player && app.player.canGoPrevious
+                    enabled: app.media.player && app.media.player.canGoPrevious
                     onClicked: activitySummary.previous()
                 }
                 IslandButton {
-                    iconName: app.isPlaying ? "media-playback-pause" : "media-playback-start"
+                    iconName: app.media.isPlaying ? "media-playback-pause" : "media-playback-start"
                     flat: true
                     glyphSize: 23
                     implicitWidth: 40
                     focusColor: T.focusRing
-                    tooltipText: app.isPlaying ? i18n("Pause") : i18n("Play")
-                    enabled: app.player && (app.player.canPlay || app.player.canPause)
+                    tooltipText: app.media.isPlaying ? i18n("Pause") : i18n("Play")
+                    enabled: app.media.player && (app.media.player.canPlay || app.media.player.canPause)
                     onClicked: activitySummary.playPause()
                 }
                 IslandButton {
@@ -167,13 +168,13 @@ Rectangle {
                     implicitWidth: 34
                     focusColor: T.focusRing
                     tooltipText: i18n("Next")
-                    enabled: app.player && app.player.canGoNext
+                    enabled: app.media.player && app.media.player.canGoNext
                     onClicked: activitySummary.next()
                 }
                 Item { Layout.fillWidth: true }
                 PlasmaLabel {
                     Layout.preferredWidth: 36
-                    text: app.hasPlayer && app.mediaLength > 0 ? app.formatMediaTime(app.mediaLength) : ""
+                    text: app.media.hasPlayer && app.media.length > 0 ? MediaPlayers.formatTime(app.media.length) : ""
                     color: T.textCaption
                     font.pixelSize: T.fontCaption
                     font.features: { "tnum": 1 }
@@ -186,15 +187,15 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 8
                 RowLayout {
-                    visible: app.hasPlayer
+                    visible: app.media.hasPlayer
                     spacing: 8
-                    IslandButton { iconName: "media-skip-backward"; compact: true; focusColor: T.focusRing; tooltipText: i18n("Previous"); enabled: app.player && app.player.canGoPrevious; onClicked: activitySummary.previous() }
-                    IslandButton { iconName: app.isPlaying ? "media-playback-pause" : "media-playback-start"; compact: true; emphasized: true; focusColor: T.focusRing; tooltipText: app.isPlaying ? i18n("Pause") : i18n("Play"); enabled: app.player && (app.player.canPlay || app.player.canPause); onClicked: activitySummary.playPause() }
-                    IslandButton { iconName: "media-skip-forward"; compact: true; focusColor: T.focusRing; tooltipText: i18n("Next"); enabled: app.player && app.player.canGoNext; onClicked: activitySummary.next() }
+                    IslandButton { iconName: "media-skip-backward"; compact: true; focusColor: T.focusRing; tooltipText: i18n("Previous"); enabled: app.media.player && app.media.player.canGoPrevious; onClicked: activitySummary.previous() }
+                    IslandButton { iconName: app.media.isPlaying ? "media-playback-pause" : "media-playback-start"; compact: true; emphasized: true; focusColor: T.focusRing; tooltipText: app.media.isPlaying ? i18n("Pause") : i18n("Play"); enabled: app.media.player && (app.media.player.canPlay || app.media.player.canPause); onClicked: activitySummary.playPause() }
+                    IslandButton { iconName: "media-skip-forward"; compact: true; focusColor: T.focusRing; tooltipText: i18n("Next"); enabled: app.media.player && app.media.player.canGoNext; onClicked: activitySummary.next() }
                 }
                 PlasmaLabel {
                     Layout.fillWidth: true
-                    text: activitySummary.mediaOnly ? app.hasPlayer ? app.player.identity || i18n("Media player") : "" : app.hasJobs ? i18n("Download active") : app.hasNotifications ? i18np("%1 unread", "%1 unread", notificationsSource.unreadNotificationsCount) : i18n("No activity")
+                    text: activitySummary.mediaOnly ? app.media.hasPlayer ? app.media.player.identity || i18n("Media player") : "" : app.hasJobs ? i18n("Download active") : app.hasNotifications ? i18np("%1 unread", "%1 unread", notificationsSource.unreadNotificationsCount) : i18n("No activity")
                     color: T.textSecondary
                     font.pixelSize: T.fontCaption
                     horizontalAlignment: Text.AlignRight
@@ -228,12 +229,12 @@ Rectangle {
 
             MaskedArtworkTile {
                 anchors.fill: parent
-                artworkSource: app.hasPlayer ? app.player.artUrl : ""
+                artworkSource: app.media.hasPlayer ? app.media.player.artUrl : ""
                 // Card radius minus the inset: the corner continues the card's own curve.
                 cornerRadius: Math.max(6, T.radiusCard - twoColumnLayout.inset)
                 glyphSize: 36
                 mode: "media"
-                playing: app.isPlaying
+                playing: app.media.isPlaying
             }
         }
 
@@ -252,19 +253,19 @@ Rectangle {
                 glyphSize: 15
                 focusColor: T.focusRing
                 tooltipText: i18n("Previous")
-                enabled: app.player && app.player.canGoPrevious
+                enabled: app.media.player && app.media.player.canGoPrevious
                 onClicked: activitySummary.previous()
             }
 
             IslandButton {
                 width: twoColumnLayout.art / 3
                 height: parent.height
-                iconName: app.isPlaying ? "media-playback-pause" : "media-playback-start"
+                iconName: app.media.isPlaying ? "media-playback-pause" : "media-playback-start"
                 flat: true
                 glyphSize: 20
                 focusColor: T.focusRing
-                tooltipText: app.isPlaying ? i18n("Pause") : i18n("Play")
-                enabled: app.player && (app.player.canPlay || app.player.canPause)
+                tooltipText: app.media.isPlaying ? i18n("Pause") : i18n("Play")
+                enabled: app.media.player && (app.media.player.canPlay || app.media.player.canPause)
                 onClicked: activitySummary.playPause()
             }
 
@@ -276,7 +277,7 @@ Rectangle {
                 glyphSize: 15
                 focusColor: T.focusRing
                 tooltipText: i18n("Next")
-                enabled: app.player && app.player.canGoNext
+                enabled: app.media.player && app.media.player.canGoNext
                 onClicked: activitySummary.next()
             }
         }
@@ -321,7 +322,7 @@ Rectangle {
                 spacing: 8
 
                 PlasmaLabel {
-                    text: app.hasPlayer && app.mediaLength > 0 ? app.formatMediaTime(app.player.position) : ""
+                    text: app.media.hasPlayer && app.media.length > 0 ? MediaPlayers.formatTime(app.media.player.position) : ""
                     color: T.textCaption
                     font.pixelSize: T.fontCaption
                     font.features: { "tnum": 1 }
@@ -331,16 +332,16 @@ Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 3
                     Layout.alignment: Qt.AlignVCenter
-                    opacity: app.hasPlayer && app.mediaLength > 0 ? 1 : 0
+                    opacity: app.media.hasPlayer && app.media.length > 0 ? 1 : 0
                     from: 0
-                    to: Math.max(1, app.player ? app.mediaLength : 1)
-                    value: app.player ? app.player.position : 0
+                    to: Math.max(1, app.media.player ? app.media.length : 1)
+                    value: app.media.player ? app.media.player.position : 0
                     accent: T.fillSoft
                     trackColor: T.track
                 }
 
                 PlasmaLabel {
-                    text: app.hasPlayer && app.mediaLength > 0 ? app.formatMediaTime(app.mediaLength) : ""
+                    text: app.media.hasPlayer && app.media.length > 0 ? MediaPlayers.formatTime(app.media.length) : ""
                     color: T.textCaption
                     font.pixelSize: T.fontCaption
                     font.features: { "tnum": 1 }
@@ -354,17 +355,17 @@ Rectangle {
         anchors.centerIn: parent
         width: activitySummary.artSize
         height: width
-        artworkSource: app.hasPlayer ? app.player.artUrl : ""
+        artworkSource: app.media.hasPlayer ? app.media.player.artUrl : ""
         cornerRadius: 10
         glyphSize: width * 0.7
         mode: activitySummary.summaryMode
         progress: Math.max(0, notificationsSource.jobsPercentage) / 100
-        playing: app.isPlaying
+        playing: app.media.isPlaying
     }
 
     IslandBars {
         clock: app.decorClock
-        visible: activitySummary.iconOnly && (activitySummary.mediaOnly ? app.isPlaying : app.isPlaying || app.hasJobs || app.hasNotifications) && width >= 58
+        visible: activitySummary.iconOnly && (activitySummary.mediaOnly ? app.media.isPlaying : app.media.isPlaying || app.hasJobs || app.hasNotifications) && width >= 58
         anchors.right: parent.right
         anchors.rightMargin: 8
         anchors.verticalCenter: parent.verticalCenter

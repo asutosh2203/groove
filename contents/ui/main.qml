@@ -9,7 +9,6 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.private.battery
 import org.kde.plasma.private.batterymonitor
 import org.kde.plasma.private.brightnesscontrolplugin as Brightness
-import org.kde.plasma.private.mpris as Mpris
 import org.kde.plasma.private.volume
 import org.kde.plasma.workspace.keyboardlayout as KeyboardLayout
 import org.kde.taskmanager as TaskManager
@@ -23,8 +22,6 @@ import "logic/Utils.js" as Utils
 import "logic/NotificationOpen.js" as NotificationOpen
 import "logic/AppMatch.js" as AppMatch
 import "logic/FullscreenState.js" as FullscreenState
-import "logic/MediaIdle.js" as MediaIdle
-import "logic/MediaLength.js" as MediaLength
 import "logic/NoticeDuration.js" as NoticeDuration
 import "activities" as Activities
 import "weather"
@@ -34,53 +31,9 @@ PlasmoidItem {
 
     readonly property bool inPanel: [PlasmaCore.Types.TopEdge, PlasmaCore.Types.RightEdge, PlasmaCore.Types.BottomEdge, PlasmaCore.Types.LeftEdge].includes(Plasmoid.location)
     readonly property bool verticalPanel: [PlasmaCore.Types.LeftEdge, PlasmaCore.Types.RightEdge].includes(Plasmoid.location)
-    readonly property var rawPlayer: mprisModel.currentPlayer
-    readonly property var player: {
-        mediaPlayerRevision;
-        return bestMediaPlayer();
-    }
-    // Last known track length, held across metadata updates that omit it (see MediaLength.js).
-    property real mediaLength: 0
-    property var heldLength: null
-    function refreshMediaLength() {
-        heldLength = MediaLength.hold(heldLength, player ? mediaText(player.identity) + "|" + mediaText(player.track) + "|" + mediaText(player.artist) : "", player ? Utils.finiteNumber(player.length, 0) : 0);
-        mediaLength = heldLength.length;
-    }
-    onMediaPlayerRevisionChanged: refreshMediaLength()
-    readonly property bool hasPlayer: player !== null && player !== undefined
-    readonly property bool isPlaying: hasPlayer && player.playbackStatus === Mpris.PlaybackStatus.Playing
     readonly property bool hasJobs: notifications.activeJobsCount > 0
     readonly property bool hasNotifications: notificationCount() > 0
     readonly property bool mediaActivityEnabled: Plasmoid.configuration.mediaActivityEnabled !== false
-    // A player that exists but hasn't played for 30 s hands the island back to the idle face; anything that starts
-    // playing takes it back at once (D-35). MediaIdle.js decides, the timer below only schedules the timeout.
-    property bool mediaGraceExpired: false
-    readonly property bool mediaShown: MediaIdle.shown(hasPlayer, isPlaying, mediaGraceExpired)
-
-    function mediaIdleEvent(event) {
-        const r = MediaIdle.reduce({ "expired": mediaGraceExpired }, event);
-        mediaGraceExpired = r.expired;
-        if (r.scheduleMs !== null) {
-            mediaIdleTimer.interval = r.scheduleMs;
-            mediaIdleTimer.restart();
-        } else {
-            mediaIdleTimer.stop();
-        }
-    }
-
-    function syncMediaIdle() {
-        mediaIdleEvent(!hasPlayer ? "gone" : isPlaying ? "playing" : "notPlaying");
-    }
-
-    onHasPlayerChanged: syncMediaIdle()
-    onIsPlayingChanged: syncMediaIdle()
-
-    Timer {
-        id: mediaIdleTimer
-
-        repeat: false
-        onTriggered: root.mediaIdleEvent("timeout")
-    }
     readonly property bool notificationActivityEnabled: Plasmoid.configuration.notificationActivityEnabled !== false
     readonly property bool jobActivityEnabled: Plasmoid.configuration.jobActivityEnabled !== false
     readonly property bool keyboardLayoutActivityEnabled: Plasmoid.configuration.keyboardLayoutActivityEnabled !== false
@@ -105,12 +58,7 @@ PlasmoidItem {
     // True while the pointer is over a clickable notice popup (drives the whole-island highlight and the open glyph).
     // The playback position is only drawn by the compact media pill, the expanded media popup and the Control
     // Center's media card, so it is only polled while one of them can be seen.
-    readonly property bool mediaPositionVisible: hasPlayer && isPlaying && !fullscreenCovering && (popupMode === "control" ? dialogVisible : islandOpen ? popupMode === "activity" && popupActivityMode() === "media" : !panelHidden && activityMode() === "media")
-    onMediaPositionVisibleChanged: {
-        // Refresh right away so the bar is current the moment it appears.
-        if (mediaPositionVisible && player && player.updatePosition)
-            player.updatePosition();
-    }
+    readonly property bool mediaPositionVisible: mediaService.hasPlayer && mediaService.isPlaying && !fullscreenCovering && (popupMode === "control" ? dialogVisible : islandOpen ? popupMode === "activity" && popupActivityMode() === "media" : !panelHidden && activityMode() === "media")
     property bool noticeHovered: false
     // True while the pointer is over an activity popup (notice, media, job...), clickable or not. Together with the
     // dialog holding keyboard focus it freezes the popup's timers, which finish with the time left once the pointer
@@ -118,7 +66,7 @@ PlasmoidItem {
     property bool popupHovered: false
     readonly property bool holdPopupTimers: dialogVisible && islandOpen && popupMode === "activity" && (popupHovered || dialogActive)
     readonly property bool holdNoticeLifetime: holdPopupTimers && activityPopupMode === "notice"
-    readonly property bool hasActivity: keyboardAnnouncementActive || jobActivityEnabled && hasJobs || mediaActivityEnabled && mediaShown || noticeActivityActive
+    readonly property bool hasActivity: keyboardAnnouncementActive || jobActivityEnabled && hasJobs || mediaActivityEnabled && mediaService.shown || noticeActivityActive
     // Fixed allocation: the panel never resizes for visual transitions. The
     // visible shape is drawn inside whatever slot the panel actually gives us.
     readonly property int islandWidth: 180
@@ -168,7 +116,6 @@ PlasmoidItem {
     property string popupMode: "control"
     property string activityPopupMode: "auto"
     property int clickButton: Qt.NoButton
-    property int mediaPlayerRevision: 0
     property int notificationRevision: 0
     // Identity of the notification the island is currently presenting as a
     // temporary activity. History alone must not keep the activity alive.
@@ -741,118 +688,6 @@ PlasmoidItem {
         return TextUtils.plainText(text);
     }
 
-    function mediaText(value) {
-        return String(value || "").replace(/\s+/g, " ").trim();
-    }
-
-    function mediaHasMetadata(playerLike) {
-        if (!playerLike)
-            return false;
-
-        return mediaText(playerLike.track).length > 0 || mediaText(playerLike.artist).length > 0 || mediaText(playerLike.album).length > 0 || mediaText(playerLike.artUrl).length > 0 || Utils.finiteNumber(playerLike.length, 0) > 0;
-    }
-
-    function mediaIsBrowserish(playerLike) {
-        if (!playerLike)
-            return false;
-
-        const name = (mediaText(playerLike.identity) + " " + mediaText(playerLike.desktopEntry)).toLowerCase();
-        return name.indexOf("vivaldi") !== -1 || name.indexOf("chromium") !== -1 || name.indexOf("chrome") !== -1 || name.indexOf("firefox") !== -1 || name.indexOf("browser") !== -1;
-    }
-
-    function mediaPlayerScore(playerLike) {
-        if (!playerLike)
-            return -1;
-
-        const status = playerLike.playbackStatus;
-        const hasMetadata = mediaHasMetadata(playerLike);
-        if (status === Mpris.PlaybackStatus.Stopped)
-            return -1;
-
-        if (status !== Mpris.PlaybackStatus.Playing && !hasMetadata)
-            return -1;
-
-        let score = 0;
-        if (status === Mpris.PlaybackStatus.Playing)
-            score += 1000;
-        else if (status === Mpris.PlaybackStatus.Paused)
-            score += 500;
-        else
-            score += 100;
-
-        if (mediaText(playerLike.track).length > 0)
-            score += 80;
-        if (mediaText(playerLike.artist).length > 0)
-            score += 45;
-        if (mediaText(playerLike.album).length > 0)
-            score += 20;
-        if (mediaText(playerLike.artUrl).length > 0)
-            score += 20;
-        if (Utils.finiteNumber(playerLike.length, 0) > 0)
-            score += 25;
-        if (playerLike.canControl)
-            score += 10;
-        if (playerLike.canPlay || playerLike.canPause)
-            score += 10;
-        if (mediaIsBrowserish(playerLike) && !hasMetadata)
-            score -= 400;
-
-        return score;
-    }
-
-    function bestMediaPlayer() {
-        mediaPlayerRevision;
-        let best = null;
-        let bestScore = -1;
-        if (mediaPlayerInstantiator) {
-            for (let i = 0; i < mediaPlayerInstantiator.count; ++i) {
-                const candidate = mediaPlayerInstantiator.objectAt(i);
-                const score = mediaPlayerScore(candidate);
-                if (score > bestScore) {
-                    best = candidate ? candidate.playerContainer : null;
-                    bestScore = score;
-                }
-            }
-        }
-
-        const fallbackScore = mediaPlayerScore(rawPlayer);
-        if (fallbackScore > bestScore) {
-            best = rawPlayer;
-            bestScore = fallbackScore;
-        }
-
-        return bestScore >= 0 ? best : null;
-    }
-
-    function mediaPrevious() {
-        const current = player;
-        if (current && current.canGoPrevious)
-            current.Previous();
-    }
-
-    function mediaPlayPause() {
-        const current = player;
-        if (current && (current.canPlay || current.canPause))
-            current.PlayPause();
-    }
-
-    function mediaNext() {
-        const current = player;
-        if (current && current.canGoNext)
-            current.Next();
-    }
-
-    function formatMediaTime(value) {
-        const seconds = Math.max(0, Math.floor(Utils.finiteNumber(value, 0) / 1000000));
-        const minutes = Math.floor(seconds / 60);
-        const remainder = seconds % 60;
-        return minutes + ":" + (remainder < 10 ? "0" : "") + remainder;
-    }
-
-    function formatMediaProgress(position, length) {
-        return formatMediaTime(position) + " / " + formatMediaTime(length);
-    }
-
     function activeJobRow() {
         return firstRowOfType(NotificationManager.Notifications.JobType);
     }
@@ -1103,6 +938,7 @@ PlasmoidItem {
     readonly property alias weather: weatherService
     readonly property alias launcher: appLauncher
     readonly property alias layoutService: controlLayoutService
+    readonly property alias media: mediaService
 
     WeatherService {
         id: weatherService
@@ -1511,16 +1347,16 @@ PlasmoidItem {
             },
             Activities.ActivityProvider {
                 key: "media"
-                active: root.mediaActivityEnabled && root.mediaShown
+                active: root.mediaActivityEnabled && mediaService.shown
                 priority: 100
-                title: root.hasPlayer ? root.player.track || root.player.identity || "Media" : "Media"
-                subtitle: root.hasPlayer ? root.player.artist || root.player.album || root.player.identity || "" : ""
-                artwork: root.hasPlayer ? root.player.artUrl : ""
-                progressVisible: root.hasPlayer && root.mediaLength > 0
-                progressTo: Math.max(1, root.hasPlayer ? root.mediaLength : 1)
-                progressValue: root.hasPlayer ? root.player.position : 0
+                title: mediaService.hasPlayer ? mediaService.player.track || mediaService.player.identity || "Media" : "Media"
+                subtitle: mediaService.hasPlayer ? mediaService.player.artist || mediaService.player.album || mediaService.player.identity || "" : ""
+                artwork: mediaService.hasPlayer ? mediaService.player.artUrl : ""
+                progressVisible: mediaService.hasPlayer && mediaService.length > 0
+                progressTo: Math.max(1, mediaService.hasPlayer ? mediaService.length : 1)
+                progressValue: mediaService.hasPlayer ? mediaService.player.position : 0
                 progressAccent: "#5ac8fa"
-                mediaControlsVisible: root.hasPlayer
+                mediaControlsVisible: mediaService.hasPlayer
                 autoCloseMs: root.ongoingPopupDurationMs
                 visualComponent: mediaVisualComponent
                 compactComponent: musicCompactComponent
@@ -1537,52 +1373,6 @@ PlasmoidItem {
                 expandedComponent: activityPage
             }
         ]
-    }
-
-    Mpris.Mpris2Model {
-        id: mprisModel
-
-        onCurrentPlayerChanged: {
-            root.mediaPlayerRevision++;
-            root.bump("media");
-        }
-    }
-
-    Instantiator {
-        id: mediaPlayerInstantiator
-
-        model: Mpris.MultiplexerModel {}
-        onObjectAdded: root.mediaPlayerRevision++
-        onObjectRemoved: root.mediaPlayerRevision++
-
-        delegate: QtObject {
-            readonly property var playerContainer: model.container
-            readonly property int playbackStatus: model.playbackStatus
-            readonly property string track: model.track || ""
-            readonly property string artist: model.artist || ""
-            readonly property string album: model.album || ""
-            readonly property string artUrl: model.artUrl || ""
-            readonly property real length: Utils.finiteNumber(model.length, 0)
-            readonly property string identity: model.identity || ""
-            readonly property string desktopEntry: model.desktopEntry || ""
-            readonly property bool canControl: model.canControl || false
-            readonly property bool canPlay: model.canPlay || false
-            readonly property bool canPause: model.canPause || false
-
-            onPlaybackStatusChanged: {
-                root.mediaPlayerRevision++;
-                root.bump("media");
-            }
-            onTrackChanged: {
-                root.mediaPlayerRevision++;
-                root.bump("media");
-            }
-            onArtistChanged: root.mediaPlayerRevision++
-            onAlbumChanged: root.mediaPlayerRevision++
-            onArtUrlChanged: root.mediaPlayerRevision++
-            onLengthChanged: root.mediaPlayerRevision++
-            onIdentityChanged: root.mediaPlayerRevision++
-        }
     }
 
     Brightness.ScreenBrightnessControl {
@@ -1655,6 +1445,13 @@ PlasmoidItem {
         id: commands
     }
 
+    MediaService {
+        id: mediaService
+
+        positionPolling: root.mediaPositionVisible
+        onMediaEvent: root.bump("media")
+    }
+
     ControlLayout {
         id: controlLayoutService
 
@@ -1679,26 +1476,13 @@ PlasmoidItem {
     }
 
     Component.onCompleted: {
-        root.syncMediaIdle();
-        if (root.panelSyncWanted())
+                if (root.panelSyncWanted())
             panelStartTimer.start();
         controlLayoutService.ensureLayout();
         root.refreshSystemState();
         appLauncher.discoverCalendarApp();
         root.lastUnreadNotificationsCount = notifications.unreadNotificationsCount;
         root.lastActiveJobsCount = notifications.activeJobsCount;
-    }
-
-    Connections {
-        function onPlaybackStatusChanged() {
-            root.bump("media");
-        }
-
-        function onTrackChanged() {
-            root.bump("media");
-        }
-
-        target: root.player
     }
 
     Connections {
@@ -1869,8 +1653,8 @@ PlasmoidItem {
         interval: 210
         repeat: false
         onTriggered: {
-            if (root.clickButton === Qt.MiddleButton && root.player)
-                root.mediaPlayPause();
+            if (root.clickButton === Qt.MiddleButton && mediaService.player)
+                mediaService.playPause();
             else if (root.islandOpen)
                 root.closeIsland();
             else if (root.dialogVisible)
@@ -1998,19 +1782,6 @@ PlasmoidItem {
 
     }
 
-    Timer {
-        id: positionTimer
-
-        interval: 1000
-        running: root.mediaPositionVisible
-        repeat: true
-        onTriggered: {
-            if (root.player && root.player.updatePosition)
-                root.player.updatePosition();
-
-        }
-    }
-
     Component {
         id: idleVisualComponent
 
@@ -2022,11 +1793,11 @@ PlasmoidItem {
         id: mediaVisualComponent
 
         MaskedArtwork {
-            artworkSource: root.hasPlayer ? root.player.artUrl : ""
+            artworkSource: mediaService.hasPlayer ? mediaService.player.artUrl : ""
             cornerRadius: root.notchShape ? Math.round(Math.min(width, height) * 0.3) : Math.min(width, height) / 2 // notch: rounded square like expanded; pill: circle
             mode: "media"
             progress: root.activityProgressValue("media") / Math.max(1, root.activityProgressTo("media"))
-            playing: root.isPlaying
+            playing: mediaService.isPlaying
         }
     }
 
@@ -2158,8 +1929,8 @@ PlasmoidItem {
                     root.toggleControlCenter();
                 }
                 onWheel: (wheel) => {
-                    if (root.player && root.player.changeVolume)
-                        root.player.changeVolume(wheel.angleDelta.y > 0 ? 0.04 : -0.04, true);
+                    if (mediaService.player && mediaService.player.changeVolume)
+                        mediaService.player.changeVolume(wheel.angleDelta.y > 0 ? 0.04 : -0.04, true);
                     else
                         root.adjustSystemVolume(wheel.angleDelta.y > 0);
                 }
@@ -2522,7 +2293,7 @@ PlasmoidItem {
                     glyphSize: 32
                     mode: root.popupActivityMode()
                     progress: root.activityProgressValue(root.popupActivityMode()) / Math.max(1, root.activityProgressTo(root.popupActivityMode()))
-                    playing: root.popupActivityMode() === "media" ? root.isPlaying : root.popupActivityMode() === "job" ? !root.jobIsSuspended(root.activeJobRow()) : false
+                    playing: root.popupActivityMode() === "media" ? mediaService.isPlaying : root.popupActivityMode() === "job" ? !root.jobIsSuspended(root.activeJobRow()) : false
                 }
 
             }
@@ -2570,25 +2341,25 @@ PlasmoidItem {
                     iconName: "media-skip-backward"
                     compact: true
                     tooltipText: i18n("Previous")
-                    enabled: root.player && root.player.canGoPrevious
-                    onClicked: root.mediaPrevious()
+                    enabled: mediaService.player && mediaService.player.canGoPrevious
+                    onClicked: mediaService.previous()
                 }
 
                 IslandButton {
-                    iconName: root.isPlaying ? "media-playback-pause" : "media-playback-start"
+                    iconName: mediaService.isPlaying ? "media-playback-pause" : "media-playback-start"
                     compact: true
                     emphasized: true
-                    tooltipText: root.isPlaying ? i18n("Pause") : i18n("Play")
-                    enabled: root.player && (root.player.canPlay || root.player.canPause)
-                    onClicked: root.mediaPlayPause()
+                    tooltipText: mediaService.isPlaying ? i18n("Pause") : i18n("Play")
+                    enabled: mediaService.player && (mediaService.player.canPlay || mediaService.player.canPause)
+                    onClicked: mediaService.playPause()
                 }
 
                 IslandButton {
                     iconName: "media-skip-forward"
                     compact: true
                     tooltipText: i18n("Next")
-                    enabled: root.player && root.player.canGoNext
-                    onClicked: root.mediaNext()
+                    enabled: mediaService.player && mediaService.player.canGoNext
+                    onClicked: mediaService.next()
                 }
 
             }
