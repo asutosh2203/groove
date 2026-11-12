@@ -26,3 +26,7 @@ assets/*
 .directory
 .DS_Store
 Thumbs.db
+
+# Local-only Claude Code context
+CLAUDE.md
+CLAUDE.local.md
