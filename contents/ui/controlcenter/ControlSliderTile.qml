@@ -3,6 +3,7 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import ".."
 import "Tokens.js" as T
+import "../logic/Utils.js" as Utils
 
 Item {
     id: controlSlider
@@ -21,8 +22,8 @@ Item {
     // settings action buttons in the corner of the tile.
     property bool sliderEnabled: true
     readonly property bool sliderAvailable: enabled && sliderEnabled
-    readonly property real safeToValue: Math.max(1, app.finiteNumber(toValue, 100))
-    readonly property real safeValue: Math.max(0, Math.min(safeToValue, app.finiteNumber(value, 0)))
+    readonly property real safeToValue: Math.max(1, Utils.finiteNumber(toValue, 100))
+    readonly property real safeValue: Math.max(0, Math.min(safeToValue, Utils.finiteNumber(value, 0)))
     readonly property real ratio: safeValue / safeToValue
     readonly property real fillRatio: ratio
     readonly property real cornerRadius: Math.min(T.radiusCard, Math.min(width, height) / 2)

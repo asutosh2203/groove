@@ -19,6 +19,7 @@ import "logic/ModuleRegistry.js" as ModuleRegistry
 import "logic/NetworkState.js" as NetworkState
 import "logic/KdeConnectState.js" as KdeConnectState
 import "logic/TextUtils.js" as TextUtils
+import "logic/Utils.js" as Utils
 import "logic/NotificationOpen.js" as NotificationOpen
 import "logic/AppMatch.js" as AppMatch
 import "logic/FullscreenState.js" as FullscreenState
@@ -42,7 +43,7 @@ PlasmoidItem {
     property real mediaLength: 0
     property var heldLength: null
     function refreshMediaLength() {
-        heldLength = MediaLength.hold(heldLength, player ? mediaText(player.identity) + "|" + mediaText(player.track) + "|" + mediaText(player.artist) : "", player ? finiteNumber(player.length, 0) : 0);
+        heldLength = MediaLength.hold(heldLength, player ? mediaText(player.identity) + "|" + mediaText(player.track) + "|" + mediaText(player.artist) : "", player ? Utils.finiteNumber(player.length, 0) : 0);
         mediaLength = heldLength.length;
     }
     onMediaPlayerRevisionChanged: refreshMediaLength()
@@ -84,9 +85,9 @@ PlasmoidItem {
     readonly property bool jobActivityEnabled: Plasmoid.configuration.jobActivityEnabled !== false
     readonly property bool keyboardLayoutActivityEnabled: Plasmoid.configuration.keyboardLayoutActivityEnabled !== false
     readonly property bool notificationImagesEnabled: Plasmoid.configuration.notificationShowImages !== false
-    readonly property int notificationBodyCharacters: Math.max(40, Math.min(1000, Math.round(finiteNumber(Plasmoid.configuration.notificationBodyCharacterLimit, 240))))
-    readonly property int notificationBodyLines: Math.max(1, Math.min(6, Math.round(finiteNumber(Plasmoid.configuration.notificationBodyLineLimit, 3))))
-    readonly property int notificationPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(finiteNumber(Plasmoid.configuration.notificationPopupDurationSeconds, 4)) * 1000))
+    readonly property int notificationBodyCharacters: Math.max(40, Math.min(1000, Math.round(Utils.finiteNumber(Plasmoid.configuration.notificationBodyCharacterLimit, 240))))
+    readonly property int notificationBodyLines: Math.max(1, Math.min(6, Math.round(Utils.finiteNumber(Plasmoid.configuration.notificationBodyLineLimit, 3))))
+    readonly property int notificationPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(Utils.finiteNumber(Plasmoid.configuration.notificationPopupDurationSeconds, 4)) * 1000))
     // How long the presented notification stays up (D-33): the user's setting, shortened by the app's own timeout
     // (2 s floor) and at least 6 s when critical. One value drives both the popup timer and the lifetime timer.
     readonly property int noticeDurationMs: {
@@ -95,7 +96,7 @@ PlasmoidItem {
             rowValue(row, NotificationManager.Notifications.TimeoutRole, -1), notificationPopupDurationMs,
             rowValue(row, NotificationManager.Notifications.UrgencyRole, NotificationManager.Notifications.NormalUrgency));
     }
-    readonly property int ongoingPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(finiteNumber(Plasmoid.configuration.ongoingPopupDurationSeconds, 3)) * 1000))
+    readonly property int ongoingPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(Utils.finiteNumber(Plasmoid.configuration.ongoingPopupDurationSeconds, 3)) * 1000))
     readonly property var keyboardLayoutNames: keyboardLayout.layoutsList.length > keyboardLayout.layout ? keyboardLayout.layoutsList[keyboardLayout.layout] : null
     readonly property string keyboardLayoutShortName: keyboardLayoutNames ? keyboardLayoutNames.shortName || "" : ""
     readonly property string keyboardLayoutDisplayName: keyboardLayoutNames ? keyboardLayoutNames.displayName || keyboardLayoutShortName : keyboardLayoutShortName
@@ -223,10 +224,10 @@ PlasmoidItem {
         let nearestDistance = Number.POSITIVE_INFINITY;
         for (let i = 0; i < screens.length; ++i) {
             const screen = screens[i];
-            const left = finiteNumber(screen.virtualX, 0);
-            const top = finiteNumber(screen.virtualY, 0);
-            const width = Math.max(0, finiteNumber(screen.width, 0));
-            const height = Math.max(0, finiteNumber(screen.height, 0));
+            const left = Utils.finiteNumber(screen.virtualX, 0);
+            const top = Utils.finiteNumber(screen.virtualY, 0);
+            const width = Math.max(0, Utils.finiteNumber(screen.width, 0));
+            const height = Math.max(0, Utils.finiteNumber(screen.height, 0));
             if (width <= 0 || height <= 0)
                 continue;
 
@@ -260,7 +261,7 @@ PlasmoidItem {
             + "if (p && p.widgetIds.indexOf(" + appletId + ") >= 0) { " + apply
             + " r = {ok: true, id: " + panelId + ", location: p.location, floating: p.floating, height: p.height}; } "
             + "print('DI_PANEL ' + JSON.stringify(r));";
-        return "qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript " + shellQuote(script);
+        return "qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript " + Utils.shellQuote(script);
     }
 
     function panelSyncWanted() {
@@ -371,8 +372,8 @@ PlasmoidItem {
 
         const popupScreen = screenForPoint(collapsedX + realIslandWidth / 2, collapsedY + realIslandHeight / 2);
         if (popupScreen) {
-            dialogX = clampNumber(dialogX, popupScreen.virtualX, popupScreen.virtualX + popupScreen.width - popupWidth);
-            dialogY = clampNumber(dialogY, popupScreen.virtualY, popupScreen.virtualY + popupScreen.height - popupHeight);
+            dialogX = Utils.clampNumber(dialogX, popupScreen.virtualX, popupScreen.virtualX + popupScreen.width - popupWidth);
+            dialogY = Utils.clampNumber(dialogY, popupScreen.virtualY, popupScreen.virtualY + popupScreen.height - popupHeight);
         }
 
         islandDialog.x = Math.round(dialogX);
@@ -498,7 +499,7 @@ PlasmoidItem {
 
     function notificationRows(limit) {
         const out = [];
-        const maxRows = Math.max(0, Math.round(finiteNumber(limit, 0)));
+        const maxRows = Math.max(0, Math.round(Utils.finiteNumber(limit, 0)));
         for (let i = 0; i < notifications.count; ++i) {
             if (rowValue(i, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType) !== NotificationManager.Notifications.NotificationType)
                 continue;
@@ -516,16 +517,16 @@ PlasmoidItem {
     }
 
     function notificationAppName(row) {
-        const appName = cleanText(rowValue(row, NotificationManager.Notifications.ApplicationNameRole, ""));
+        const appName = TextUtils.cleanText(rowValue(row, NotificationManager.Notifications.ApplicationNameRole, ""));
         if (appName.length > 0)
             return appName;
 
-        const desktopEntry = cleanText(rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
+        const desktopEntry = TextUtils.cleanText(rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
         return desktopEntry.length > 0 ? desktopEntry : i18n("Notification");
     }
 
     function notificationTitle(row) {
-        const summary = cleanText(rowValue(row, NotificationManager.Notifications.SummaryRole, ""));
+        const summary = TextUtils.cleanText(rowValue(row, NotificationManager.Notifications.SummaryRole, ""));
         return summary.length > 0 ? summary : notificationAppName(row);
     }
 
@@ -535,21 +536,21 @@ PlasmoidItem {
 
     function notificationAppIcon(row) {
         const applicationIcon = rowValue(row, NotificationManager.Notifications.ApplicationIconNameRole, "");
-        if (hasVisualValue(applicationIcon))
+        if (Utils.hasVisualValue(applicationIcon))
             return applicationIcon;
 
-        const desktopEntry = cleanText(rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
+        const desktopEntry = TextUtils.cleanText(rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
         return desktopEntry.length > 0 ? desktopEntry : "notifications";
     }
 
     function notificationMainIcon(row) {
         const icon = rowValue(row, NotificationManager.Notifications.IconNameRole, "");
-        return hasVisualValue(icon) ? icon : notificationAppIcon(row);
+        return Utils.hasVisualValue(icon) ? icon : notificationAppIcon(row);
     }
 
     function notificationMainImage(row) {
         const image = rowValue(row, NotificationManager.Notifications.ImageRole, null);
-        if (hasVisualValue(image))
+        if (Utils.hasVisualValue(image))
             return image;
 
         const urls = rowValue(row, NotificationManager.Notifications.UrlsRole, []);
@@ -565,7 +566,7 @@ PlasmoidItem {
     }
 
     function notificationHasMainImage(row) {
-        return hasVisualValue(notificationMainImage(row));
+        return Utils.hasVisualValue(notificationMainImage(row));
     }
 
     function notificationIcon(row) {
@@ -604,7 +605,7 @@ PlasmoidItem {
     }
 
     function notificationUrgency(row) {
-        return finiteNumber(rowValue(row, NotificationManager.Notifications.UrgencyRole, 1), 1);
+        return Utils.finiteNumber(rowValue(row, NotificationManager.Notifications.UrgencyRole, 1), 1);
     }
 
     function noticeRowFor(id) {
@@ -678,7 +679,7 @@ PlasmoidItem {
     }
 
     function notificationOverflowCount(limit) {
-        return Math.max(0, notificationCount() - Math.max(0, Math.round(finiteNumber(limit, 0))));
+        return Math.max(0, notificationCount() - Math.max(0, Math.round(Utils.finiteNumber(limit, 0))));
     }
 
     // desktop id -> { display, path } from Plasma's "apps" engine. A missing key means "not looked up yet",
@@ -698,7 +699,7 @@ PlasmoidItem {
 
     // What a click on this notification would do (D-31). "none" rows are not clickable.
     function notificationOpenTarget(row) {
-        const entry = cleanText(rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
+        const entry = TextUtils.cleanText(rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
         const info = entry.length > 0 ? desktopEntryInfo[entry] : undefined;
         if (entry.length > 0 && info === undefined)
             lookupDesktopEntry(entry);
@@ -774,44 +775,8 @@ PlasmoidItem {
         return activeRowFor("auto");
     }
 
-    function cleanText(text) {
-        return TextUtils.cleanText(text);
-    }
-
     function notificationPlainText(text) {
         return TextUtils.plainText(text);
-    }
-
-    function hasVisualValue(value) {
-        if (value === undefined || value === null)
-            return false;
-        return typeof value !== "string" || value.trim().length > 0;
-    }
-
-    function finiteNumber(value, fallbackValue) {
-        const number = Number(value);
-        return isFinite(number) ? number : fallbackValue;
-    }
-
-    function clampNumber(value, minimumValue, maximumValue) {
-        const minimum = finiteNumber(minimumValue, 0);
-        const maximum = Math.max(minimum, finiteNumber(maximumValue, minimum));
-        return Math.max(minimum, Math.min(maximum, finiteNumber(value, minimum)));
-    }
-
-    function percentFromRatio(value, maximumValue) {
-        const maximum = Math.max(1, finiteNumber(maximumValue, 1));
-        return Math.round(clampNumber(value, 0, maximum) / maximum * 100);
-    }
-
-    function firstValidNumber(values, fallbackValue) {
-        for (let i = 0; i < values.length; ++i) {
-            const number = Number(values[i]);
-            if (isFinite(number))
-                return number;
-
-        }
-        return fallbackValue;
     }
 
     function commandStdout(data) {
@@ -848,7 +813,7 @@ PlasmoidItem {
         if (!playerLike)
             return false;
 
-        return mediaText(playerLike.track).length > 0 || mediaText(playerLike.artist).length > 0 || mediaText(playerLike.album).length > 0 || mediaText(playerLike.artUrl).length > 0 || finiteNumber(playerLike.length, 0) > 0;
+        return mediaText(playerLike.track).length > 0 || mediaText(playerLike.artist).length > 0 || mediaText(playerLike.album).length > 0 || mediaText(playerLike.artUrl).length > 0 || Utils.finiteNumber(playerLike.length, 0) > 0;
     }
 
     function mediaIsBrowserish(playerLike) {
@@ -887,7 +852,7 @@ PlasmoidItem {
             score += 20;
         if (mediaText(playerLike.artUrl).length > 0)
             score += 20;
-        if (finiteNumber(playerLike.length, 0) > 0)
+        if (Utils.finiteNumber(playerLike.length, 0) > 0)
             score += 25;
         if (playerLike.canControl)
             score += 10;
@@ -942,7 +907,7 @@ PlasmoidItem {
     }
 
     function formatMediaTime(value) {
-        const seconds = Math.max(0, Math.floor(finiteNumber(value, 0) / 1000000));
+        const seconds = Math.max(0, Math.floor(Utils.finiteNumber(value, 0) / 1000000));
         const minutes = Math.floor(seconds / 60);
         const remainder = seconds % 60;
         return minutes + ":" + (remainder < 10 ? "0" : "") + remainder;
@@ -962,25 +927,25 @@ PlasmoidItem {
 
     function jobTitle(row) {
         const details = jobDetails(row);
-        const title = cleanText(details && details.summary ? details.summary : rowValue(row, NotificationManager.Notifications.SummaryRole, ""));
+        const title = TextUtils.cleanText(details && details.summary ? details.summary : rowValue(row, NotificationManager.Notifications.SummaryRole, ""));
         return title.length > 0 ? title : i18n("Working");
     }
 
     function jobText(row) {
         const details = jobDetails(row);
-        const text = cleanText(details && details.text ? details.text : rowValue(row, NotificationManager.Notifications.BodyRole, ""));
+        const text = TextUtils.cleanText(details && details.text ? details.text : rowValue(row, NotificationManager.Notifications.BodyRole, ""));
         if (text.length > 0)
             return text;
-        const appName = cleanText(details && details.applicationName ? details.applicationName : rowValue(row, NotificationManager.Notifications.ApplicationNameRole, ""));
+        const appName = TextUtils.cleanText(details && details.applicationName ? details.applicationName : rowValue(row, NotificationManager.Notifications.ApplicationNameRole, ""));
         return appName;
     }
 
     function jobIcon(row) {
         const details = jobDetails(row);
         const icon = details && details.applicationIconName ? details.applicationIconName : rowValue(row, NotificationManager.Notifications.ApplicationIconNameRole, "");
-        if (hasVisualValue(icon))
+        if (Utils.hasVisualValue(icon))
             return icon;
-        const desktopEntry = cleanText(details && details.desktopEntry ? details.desktopEntry : rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
+        const desktopEntry = TextUtils.cleanText(details && details.desktopEntry ? details.desktopEntry : rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
         return desktopEntry.length > 0 ? desktopEntry : "folder-download";
     }
 
@@ -994,7 +959,7 @@ PlasmoidItem {
     function jobPercentage(row) {
         const details = jobDetails(row);
         const percentage = details && details.percentage !== undefined ? details.percentage : rowValue(row, NotificationManager.Notifications.PercentageRole, -1);
-        return Math.max(-1, Math.min(100, Math.round(finiteNumber(percentage, -1))));
+        return Math.max(-1, Math.min(100, Math.round(Utils.finiteNumber(percentage, -1))));
     }
 
     function jobSuspendable(row) {
@@ -1027,31 +992,19 @@ PlasmoidItem {
         notifications.killJob(notifications.index(row, 0));
     }
 
-    function formatByteSize(bytes) {
-        let value = Math.max(0, finiteNumber(bytes, 0));
-        const units = ["B", "KiB", "MiB", "GiB", "TiB"];
-        let unit = 0;
-        while (value >= 1024 && unit < units.length - 1) {
-            value /= 1024;
-            unit++;
-        }
-        const decimals = unit === 0 || value >= 100 ? 0 : value >= 10 ? 1 : 2;
-        return value.toFixed(decimals) + " " + units[unit];
-    }
-
     function jobDetailsText(row) {
         const details = jobDetails(row);
         if (!details)
             return jobIsSuspended(row) ? i18n("Paused") : "";
         if (jobIsSuspended(row))
             return i18n("Paused");
-        if (finiteNumber(details.speed, 0) > 0)
-            return formatByteSize(details.speed) + "/s";
-        const processed = finiteNumber(details.processedBytes, 0);
-        const total = finiteNumber(details.totalBytes, 0);
+        if (Utils.finiteNumber(details.speed, 0) > 0)
+            return Utils.formatByteSize(details.speed) + "/s";
+        const processed = Utils.finiteNumber(details.processedBytes, 0);
+        const total = Utils.finiteNumber(details.totalBytes, 0);
         if (total > 0)
-            return i18n("%1 of %2", formatByteSize(processed), formatByteSize(total));
-        return cleanText(details.applicationName || "");
+            return i18n("%1 of %2", Utils.formatByteSize(processed), Utils.formatByteSize(total));
+        return TextUtils.cleanText(details.applicationName || "");
     }
 
     function announceKeyboardLayout() {
@@ -1128,16 +1081,16 @@ PlasmoidItem {
 
     function screenBrightnessPercent() {
         if (screenBrightnessDisplayName.length > 0 && screenBrightnessMax > 0)
-            return percentFromRatio(screenBrightnessValue, screenBrightnessMax);
+            return Utils.percentFromRatio(screenBrightnessValue, screenBrightnessMax);
 
         const displays = screenBrightness.displays;
         if (!screenBrightness.isBrightnessAvailable || !displays || displays.count <= 0)
             return 0;
 
         const idx = displays.index(0, 0);
-        const value = firstValidNumber([displays.data(idx, 258), displays.data(idx, 257)], 0);
-        const max = firstValidNumber([displays.data(idx, 259), displays.data(idx, 260)], 100);
-        return percentFromRatio(value, max);
+        const value = Utils.firstValidNumber([displays.data(idx, 258), displays.data(idx, 257)], 0);
+        const max = Utils.firstValidNumber([displays.data(idx, 259), displays.data(idx, 260)], 100);
+        return Utils.percentFromRatio(value, max);
     }
 
     function displayedScreenBrightnessPercent() {
@@ -1148,9 +1101,9 @@ PlasmoidItem {
     }
 
     function syncScreenBrightnessDisplay(displayName, value, max) {
-        const safeMax = Math.max(1, Math.round(finiteNumber(max, 100)));
-        const safeValue = Math.round(clampNumber(value, 0, safeMax));
-        const percent = percentFromRatio(safeValue, safeMax);
+        const safeMax = Math.max(1, Math.round(Utils.finiteNumber(max, 100)));
+        const safeValue = Math.round(Utils.clampNumber(value, 0, safeMax));
+        const percent = Utils.percentFromRatio(safeValue, safeMax);
 
         screenBrightnessDisplayName = displayName || "";
         screenBrightnessValue = safeValue;
@@ -1166,7 +1119,7 @@ PlasmoidItem {
         if (!screenBrightness.isBrightnessAvailable)
             return ;
 
-        const percent = Math.round(clampNumber(value, 0, 100));
+        const percent = Math.round(Utils.clampNumber(value, 0, 100));
         screenBrightnessVisualPercent = percent;
         screenBrightnessVisualPinned = true;
         screenBrightnessSettleTimer.restart();
@@ -1182,16 +1135,16 @@ PlasmoidItem {
         if (!keyboardBrightness.isBrightnessAvailable || keyboardBrightness.brightnessMax <= 0)
             return 0;
 
-        const value = finiteNumber(keyboardBrightness.brightness, 0);
-        const max = finiteNumber(keyboardBrightness.brightnessMax, 0);
-        return max > 0 ? percentFromRatio(value, max) : 0;
+        const value = Utils.finiteNumber(keyboardBrightness.brightness, 0);
+        const max = Utils.finiteNumber(keyboardBrightness.brightnessMax, 0);
+        return max > 0 ? Utils.percentFromRatio(value, max) : 0;
     }
 
     function setKeyboardBrightnessPercent(value) {
         if (!keyboardBrightness.isBrightnessAvailable || keyboardBrightness.brightnessMax <= 0)
             return ;
 
-        const percent = clampNumber(value, 0, 100);
+        const percent = Utils.clampNumber(value, 0, 100);
         keyboardBrightness.brightness = Math.round(keyboardBrightness.brightnessMax * percent / 100);
     }
 
@@ -1304,8 +1257,8 @@ PlasmoidItem {
         if (!sink)
             return 0;
 
-        const volume = finiteNumber(sink.volume, 0);
-        return Math.max(0, Math.min(150, percentFromRatio(volume, PulseAudio.NormalVolume)));
+        const volume = Utils.finiteNumber(sink.volume, 0);
+        return Math.max(0, Math.min(150, Utils.percentFromRatio(volume, PulseAudio.NormalVolume)));
     }
 
     function setSystemVolumePercent(value) {
@@ -1313,7 +1266,7 @@ PlasmoidItem {
         if (!sink)
             return ;
 
-        const percent = clampNumber(value, 0, 150);
+        const percent = Utils.clampNumber(value, 0, 150);
         sink.muted = false;
         sink.volume = Math.round(PulseAudio.NormalVolume * percent / 100);
     }
@@ -1439,8 +1392,8 @@ PlasmoidItem {
         const minSize = controlModuleMinSize(id);
         const maxSize = controlModuleMaxSize(id);
         return {
-            "w": Math.round(clampNumber(widthUnits, minSize.w, maxSize.w)),
-            "h": Math.round(clampNumber(heightUnits, minSize.h, maxSize.h))
+            "w": Math.round(Utils.clampNumber(widthUnits, minSize.w, maxSize.w)),
+            "h": Math.round(Utils.clampNumber(heightUnits, minSize.h, maxSize.h))
         };
     }
 
@@ -1481,9 +1434,9 @@ PlasmoidItem {
                 continue;
 
             const migrated = item.v === 2;
-            const size = clampedControlModule(item.id, finiteNumber(item.w, 1) * (migrated ? 1 : 2), finiteNumber(item.h, 1) * (migrated ? 1 : 2));
-            const col = isFinite(Number(item.col)) ? Math.round(clampNumber(item.col, 0, 7)) : -1;
-            const row = isFinite(Number(item.row)) ? Math.max(0, Math.round(finiteNumber(item.row, 0))) : -1;
+            const size = clampedControlModule(item.id, Utils.finiteNumber(item.w, 1) * (migrated ? 1 : 2), Utils.finiteNumber(item.h, 1) * (migrated ? 1 : 2));
+            const col = isFinite(Number(item.col)) ? Math.round(Utils.clampNumber(item.col, 0, 7)) : -1;
+            const row = isFinite(Number(item.row)) ? Math.max(0, Math.round(Utils.finiteNumber(item.row, 0))) : -1;
             const saved = {
                 "id": item.id,
                 "w": size.w,
@@ -1644,9 +1597,9 @@ PlasmoidItem {
         for (let i = 0; i < lines.length; ++i) {
             const line = String(lines[i] || "").trim();
             if (line.indexOf("Alias:") === 0)
-                return cleanText(line.slice(6));
+                return TextUtils.cleanText(line.slice(6));
             if (line.indexOf("Name:") === 0)
-                return cleanText(line.slice(5));
+                return TextUtils.cleanText(line.slice(5));
         }
         return "";
     }
@@ -1682,7 +1635,7 @@ PlasmoidItem {
 
     function kdeConnectDevices(limit) {
         const all = KdeConnectState.buildDevices(kdeConnectPaired, kdeConnectConnected);
-        const maxRows = Math.max(0, Math.round(finiteNumber(limit, 0)));
+        const maxRows = Math.max(0, Math.round(Utils.finiteNumber(limit, 0)));
         return maxRows > 0 ? all.slice(0, maxRows) : all;
     }
 
@@ -1704,17 +1657,13 @@ PlasmoidItem {
         executable.exec(KdeConnectState.connectedCommand);
     }
 
-    function shellQuote(text) {
-        return "'" + String(text || "").replace(/'/g, "'\"'\"'") + "'";
-    }
-
     function runKdeConnectDeviceAction(deviceId, action) {
-        const id = cleanText(deviceId);
+        const id = TextUtils.cleanText(deviceId);
         if (id.length <= 0)
             return ;
 
         if (action === "ring")
-            executable.exec("kdeconnect-cli --device " + shellQuote(id) + " --ring");
+            executable.exec("kdeconnect-cli --device " + Utils.shellQuote(id) + " --ring");
         else if (action === "browse")
             executable.exec("qdbus6 org.kde.kdeconnect /modules/kdeconnect/devices/" + id + "/sftp org.kde.kdeconnect.device.sftp.startBrowsing");
     }
@@ -1726,7 +1675,7 @@ PlasmoidItem {
         const pos = item.mapToItem(dialogHost, mouse.x, mouse.y);
         controlDragSource = source;
         controlDragIcon = moduleIcon(source.moduleId);
-        controlDragSize = Math.max(32, Math.min(96, finiteNumber(size, 54)));
+        controlDragSize = Math.max(32, Math.min(96, Utils.finiteNumber(size, 54)));
         controlDragX = pos.x - controlDragSize / 2;
         controlDragY = pos.y - controlDragSize / 2;
         controlDragActive = true;
@@ -2030,7 +1979,7 @@ PlasmoidItem {
             readonly property string artist: model.artist || ""
             readonly property string album: model.album || ""
             readonly property string artUrl: model.artUrl || ""
-            readonly property real length: root.finiteNumber(model.length, 0)
+            readonly property real length: Utils.finiteNumber(model.length, 0)
             readonly property string identity: model.identity || ""
             readonly property string desktopEntry: model.desktopEntry || ""
             readonly property bool canControl: model.canControl || false
@@ -2167,7 +2116,7 @@ PlasmoidItem {
         engine: "executable"
         onNewData: (sourceName, data) => {
             const stdout = root.commandStdout(data);
-            const out = root.cleanText(stdout);
+            const out = TextUtils.cleanText(stdout);
             if (String(stdout).trim().indexOf("DI_PANEL ") === 0) {
                 root.handlePanelReply(String(stdout).trim());
                 disconnectSource(sourceName);

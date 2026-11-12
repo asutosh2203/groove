@@ -3,6 +3,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import ".."
 import "Tokens.js" as T
+import "../logic/TextUtils.js" as TextUtils
 
 MouseArea {
     id: kdeTile
@@ -26,7 +27,7 @@ MouseArea {
         if (!device || device[key] === undefined || device[key] === null)
             return fallbackValue;
 
-        return app.cleanText(device[key]);
+        return TextUtils.cleanText(device[key]);
     }
 
     anchors.fill: parent

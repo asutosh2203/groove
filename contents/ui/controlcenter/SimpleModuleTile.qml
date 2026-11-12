@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import ".."
 import "Tokens.js" as T
+import "../logic/Utils.js" as Utils
 
 MouseArea {
     id: simpleTile
@@ -26,7 +27,7 @@ MouseArea {
     readonly property bool hasAction: actionIconName.length > 0
     readonly property bool showProgressFill: progress >= 0 && !iconOnly && detailed
     readonly property real contentMargin: iconOnly ? 6 : 8
-    readonly property real safeProgress: app.clampNumber(progress, 0, 100)
+    readonly property real safeProgress: Utils.clampNumber(progress, 0, 100)
     readonly property color glyphColor: critical ? T.critical : active ? T.iconActive : T.iconIdle
     readonly property color barColor: critical ? T.critical : T.fill
 

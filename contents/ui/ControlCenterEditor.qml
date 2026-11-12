@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import "controlcenter/Tokens.js" as T
+import "logic/Utils.js" as Utils
 
 Item {
     id: editor
@@ -73,13 +74,13 @@ Item {
             const resized = layout.splice(app.controlResizeIndex, 1)[0];
             const basePlaced = packLayout([resized].concat(layout));
             const basePlacement = basePlaced[resized.id] || {
-                "col": app.finiteNumber(resized.col, 0),
-                "row": app.finiteNumber(resized.row, 0)
+                "col": Utils.finiteNumber(resized.col, 0),
+                "row": Utils.finiteNumber(resized.row, 0)
             };
             resized.w = app.controlResizeWidthUnits;
             resized.h = app.controlResizeHeightUnits;
-            resized.col = Math.max(0, Math.min(moduleGrid.columns - gridUnitWidth(resized), Math.round(app.finiteNumber(basePlacement.col, 0))));
-            resized.row = Math.max(0, Math.round(app.finiteNumber(basePlacement.row, 0)));
+            resized.col = Math.max(0, Math.min(moduleGrid.columns - gridUnitWidth(resized), Math.round(Utils.finiteNumber(basePlacement.col, 0))));
+            resized.row = Math.max(0, Math.round(Utils.finiteNumber(basePlacement.row, 0)));
             layout.unshift(resized);
             return layout;
         }
@@ -146,8 +147,8 @@ Item {
     }
 
     function rowMajorIndex(col, row) {
-        const safeCol = Math.max(0, Math.min(moduleGrid.columns - 1, Math.round(app.finiteNumber(col, 0))));
-        const safeRow = Math.max(0, Math.round(app.finiteNumber(row, 0)));
+        const safeCol = Math.max(0, Math.min(moduleGrid.columns - 1, Math.round(Utils.finiteNumber(col, 0))));
+        const safeRow = Math.max(0, Math.round(Utils.finiteNumber(row, 0)));
         return safeRow * moduleGrid.columns + safeCol;
     }
 
@@ -237,11 +238,11 @@ Item {
     }
 
     function gridUnitWidth(item) {
-        return Math.round(app.clampNumber(item ? item.w : 1, 1, moduleGrid.columns));
+        return Math.round(Utils.clampNumber(item ? item.w : 1, 1, moduleGrid.columns));
     }
 
     function gridUnitHeight(item) {
-        return Math.round(app.clampNumber(item ? item.h : 1, 1, 6));
+        return Math.round(Utils.clampNumber(item ? item.h : 1, 1, 6));
     }
 
     function packLayout(layout) {
@@ -336,26 +337,26 @@ Item {
     }
 
     function gridX(col) {
-        return Math.max(0, Math.round(app.finiteNumber(col, 0))) * Math.max(1, moduleGrid.unitSize + moduleGrid.gap);
+        return Math.max(0, Math.round(Utils.finiteNumber(col, 0))) * Math.max(1, moduleGrid.unitSize + moduleGrid.gap);
     }
 
     function gridY(row) {
-        return Math.max(0, Math.round(app.finiteNumber(row, 0))) * Math.max(1, moduleGrid.unitSize + moduleGrid.gap);
+        return Math.max(0, Math.round(Utils.finiteNumber(row, 0))) * Math.max(1, moduleGrid.unitSize + moduleGrid.gap);
     }
 
     function gridWidth(widthUnits) {
-        const units = Math.round(app.clampNumber(widthUnits, 1, moduleGrid.columns));
+        const units = Math.round(Utils.clampNumber(widthUnits, 1, moduleGrid.columns));
         return units * moduleGrid.unitSize + (units - 1) * moduleGrid.gap;
     }
 
     function gridHeight(heightUnits) {
-        const units = Math.round(app.clampNumber(heightUnits, 1, 6));
+        const units = Math.round(Utils.clampNumber(heightUnits, 1, 6));
         return units * moduleGrid.unitSize + (units - 1) * moduleGrid.gap;
     }
 
     function packedHeight() {
         const placed = packedLayout();
-        const rows = Math.max(1, Math.round(app.finiteNumber(placed.__rows, 1)));
+        const rows = Math.max(1, Math.round(Utils.finiteNumber(placed.__rows, 1)));
         return rows * moduleGrid.unitSize + Math.max(0, rows - 1) * moduleGrid.gap;
     }
 
@@ -444,14 +445,14 @@ Item {
         const item = layout.splice(source.moduleIndex, 1)[0];
         const basePlaced = packLayout([item].concat(layout));
         const basePlacement = basePlaced[item.id] || {
-            "col": app.finiteNumber(item.col, 0),
-            "row": app.finiteNumber(item.row, 0)
+            "col": Utils.finiteNumber(item.col, 0),
+            "row": Utils.finiteNumber(item.row, 0)
         };
         const size = app.clampedControlModule(item.id, widthUnits, heightUnits);
         item.w = size.w;
         item.h = size.h;
-        item.col = Math.max(0, Math.min(moduleGrid.columns - item.w, Math.round(app.finiteNumber(basePlacement.col, 0))));
-        item.row = Math.max(0, Math.round(app.finiteNumber(basePlacement.row, 0)));
+        item.col = Math.max(0, Math.min(moduleGrid.columns - item.w, Math.round(Utils.finiteNumber(basePlacement.col, 0))));
+        item.row = Math.max(0, Math.round(Utils.finiteNumber(basePlacement.row, 0)));
         item.v = 2;
 
         savePackedLayout([item].concat(layout));

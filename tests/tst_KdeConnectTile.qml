@@ -14,7 +14,6 @@ Item {
         property var paired: []
         property var connected: []
         property string lastAction: ""
-        function cleanText(t) { return String(t === undefined || t === null ? "" : t).trim(); }
         function kdeConnectDevices(limit) {
             const all = K.buildDevices(paired, connected);
             return limit > 0 ? all.slice(0, limit) : all;
