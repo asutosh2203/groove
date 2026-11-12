@@ -8,7 +8,7 @@ import "WeatherManifest.js" as Manifest
 // (sun/moon, clouds, precipitation, bolt) is a separate static SVG animated here.
 // All motion is a function of the shared DecorClock's time, so the icon is redrawn at the clock's low rate
 // (D-34); nothing ticks while `running` is false or there is no clock.
-Item {
+Item { property int broken: ;
     id: icon
 
     property int code: -1
