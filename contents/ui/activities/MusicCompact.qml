@@ -46,7 +46,9 @@ Item {
             Layout.preferredHeight: Math.min(24, Math.max(14, musicCompact.height - 6))
             Layout.alignment: Qt.AlignVCenter
             app: musicCompact.app
-            playing: musicCompact.hasPlayer && musicCompact.app.isPlaying
+            // The compact pill is covered while a popup is open (Plasma keeps its wrapper "visible" at opacity 0, so
+            // visibility can't tell), so its bars stop then instead of repainting the panel for nothing.
+            playing: musicCompact.hasPlayer && musicCompact.app.isPlaying && !musicCompact.app.panelHidden
         }
     }
 }

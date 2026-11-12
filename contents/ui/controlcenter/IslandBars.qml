@@ -33,7 +33,8 @@ Row {
             opacity: islandBars.playing ? 1 : 0.45
             readonly property real lowLevel: Math.max(0.24, 1 - modelData * 0.35)
             Binding on level {
-                when: islandBars.playing && islandBars.clock !== null
+                // Hidden bars must not keep changing: even invisible items schedule a repaint when a property moves.
+                when: islandBars.playing && islandBars.visible && islandBars.clock !== null
                 value: Motion.cycle(islandBars.clock ? islandBars.clock.time : 0, index * 55, 210 + index * 20, 240 + index * 25, modelData, lowLevel)
             }
         }

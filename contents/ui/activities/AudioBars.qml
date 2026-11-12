@@ -39,7 +39,8 @@ Row {
             // Rest at the original level; while playing, follow the clock (the old per-bar loop, at the clock's rate).
             readonly property real lowLevel: Math.max(0.35, 1 - modelData * 0.25)
             Binding on level {
-                when: bars.playing && bars.clock !== null
+                // Hidden bars must not keep changing: even invisible items schedule a repaint when a property moves.
+                when: bars.playing && bars.visible && bars.clock !== null
                 value: Motion.cycle(bars.clock ? bars.clock.time : 0, index * 55, 400 + index * 40, 440 + index * 45, modelData, lowLevel)
             }
         }

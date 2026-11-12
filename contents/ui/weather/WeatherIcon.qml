@@ -22,7 +22,8 @@ Item {
     readonly property var layers: Manifest.manifest[key] || Manifest.manifest["not-available"]
     readonly property bool animated: running && !placeholder
     readonly property real u: width / 128
-    readonly property bool driven: animated && clock !== null && clock !== undefined
+    // Hidden icons must not keep changing either: even invisible items schedule a repaint when a property moves.
+    readonly property bool driven: animated && visible && clock !== null && clock !== undefined
     readonly property real now: driven ? clock.time : 0
     readonly property bool hasMotion: !!layers.drops || !!layers.stars || !!layers.sun || !!layers.moon || !!layers.bolt || cloudsOnly
 
