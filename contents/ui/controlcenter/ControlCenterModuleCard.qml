@@ -211,31 +211,31 @@ Rectangle {
             app: moduleCard.app
             title: i18n("Volume")
             iconName: {
-                const sink = app.defaultSink();
-                if (!sink || app.systemVolumePercent() <= 0 || sink.muted)
+                const sink = app.system.defaultSink();
+                if (!sink || app.system.volumePercent() <= 0 || sink.muted)
                     return "audio-volume-muted";
-                return app.systemVolumePercent() < 45 ? "audio-volume-low" : "audio-volume-high";
+                return app.system.volumePercent() < 45 ? "audio-volume-low" : "audio-volume-high";
             }
             valueText: {
-                const sink = app.defaultSink();
-                return sink && sink.muted ? i18n("Muted") : app.systemVolumePercent() + "%";
+                const sink = app.system.defaultSink();
+                return sink && sink.muted ? i18n("Muted") : app.system.volumePercent() + "%";
             }
-            value: app.systemVolumePercent()
+            value: app.system.volumePercent()
             toValue: 150
-            sliderEnabled: app.defaultSink() !== null
+            sliderEnabled: app.system.defaultSink() !== null
             actionIconName: {
-                const sink = app.defaultSink();
+                const sink = app.system.defaultSink();
                 return sink && sink.muted ? "audio-volume-high" : "audio-volume-muted";
             }
             actionTooltip: {
-                const sink = app.defaultSink();
+                const sink = app.system.defaultSink();
                 return sink && sink.muted ? i18n("Unmute") : i18n("Mute");
             }
             secondaryActionIconName: "settings"
             secondaryActionTooltip: i18n("Audio settings")
-            onActionTriggered: app.toggleSystemMute()
+            onActionTriggered: app.system.toggleMute()
             onSecondaryActionTriggered: app.launcher.launchPavucontrol()
-            onMoved: (value) => app.setSystemVolumePercent(value)
+            onMoved: (value) => app.system.setVolumePercent(value)
         }
     }
     Component {
@@ -244,16 +244,16 @@ Rectangle {
             app: moduleCard.app
             title: i18n("Brightness")
             iconName: value <= 1 ? "brightness-low" : value < 55 ? "brightness-medium" : "brightness-high"
-            valueText: screenBrightnessSource.isBrightnessAvailable ? app.displayedScreenBrightnessPercent() + "%" : "--"
-            value: app.displayedScreenBrightnessPercent()
+            valueText: screenBrightnessSource.isBrightnessAvailable ? app.system.displayedScreenPercent() + "%" : "--"
+            value: app.system.displayedScreenPercent()
             sliderEnabled: screenBrightnessSource.isBrightnessAvailable
             actionIconName: "video-display"
             actionTooltip: i18n("Display settings")
             secondaryActionIconName: keyboardBrightnessSource.isBrightnessAvailable ? "input-keyboard" : ""
             secondaryActionTooltip: i18n("Toggle keyboard brightness")
             onActionTriggered: app.launcher.launchDisplaySettings()
-            onSecondaryActionTriggered: app.setKeyboardBrightnessPercent(app.keyboardBrightnessPercent() <= 20 ? 100 : 0)
-            onMoved: (value) => app.setScreenBrightnessPercent(value)
+            onSecondaryActionTriggered: app.system.setKeyboardPercent(app.system.keyboardPercent() <= 20 ? 100 : 0)
+            onMoved: (value) => app.system.setScreenPercent(value)
         }
     }
     Component {
@@ -341,7 +341,7 @@ Rectangle {
         id: powerModeModule
         SimpleModuleTile {
             app: moduleCard.app
-            iconName: app.powerProfileIcon()
+            iconName: app.system.profileIcon()
             title: app.powerProfileTitle()
             subtitle: i18n("Power mode")
             active: true
@@ -349,7 +349,7 @@ Rectangle {
             footerText: app.powerProfileTitle()
             actionIconName: "settings"
             onActionTriggered: app.launcher.launchPowerSettings()
-            onTriggered: app.cyclePowerProfile()
+            onTriggered: app.system.cycleProfile()
         }
     }
     Component {
@@ -362,7 +362,7 @@ Rectangle {
             active: Brightness.DarkModeControl.darkMode
             detailText: i18n("Desktop color scheme")
             footerText: i18n("Click to switch")
-            onTriggered: app.toggleAppearanceMode()
+            onTriggered: app.system.toggleAppearanceMode()
         }
     }
     Component {

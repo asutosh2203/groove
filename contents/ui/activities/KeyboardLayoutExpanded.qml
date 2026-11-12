@@ -43,7 +43,7 @@ Item {
 
             PlasmaLabel {
                 Layout.fillWidth: true
-                text: keyboardPage.app ? keyboardPage.app.keyboardLayoutLongName : ""
+                text: keyboardPage.app ? keyboardPage.app.system.layoutLongName : ""
                 color: "#ffffff"
                 font.pixelSize: 16
                 font.weight: Font.Bold
@@ -53,8 +53,8 @@ Item {
 
             PlasmaLabel {
                 Layout.fillWidth: true
-                text: keyboardPage.app ? keyboardPage.app.keyboardLayoutDisplayName : ""
-                visible: text.length > 0 && text !== (keyboardPage.app ? keyboardPage.app.keyboardLayoutLongName : "")
+                text: keyboardPage.app ? keyboardPage.app.system.layoutDisplayName : ""
+                visible: text.length > 0 && text !== (keyboardPage.app ? keyboardPage.app.system.layoutLongName : "")
                 color: "#aaaab5"
                 font.pixelSize: 10
                 elide: Text.ElideRight
@@ -74,7 +74,7 @@ Item {
                 id: layoutCode
 
                 anchors.centerIn: parent
-                text: keyboardPage.app ? keyboardPage.app.keyboardLayoutShortName.toUpperCase() : ""
+                text: keyboardPage.app ? keyboardPage.app.system.layoutShortName.toUpperCase() : ""
                 color: "#dadae8"
                 font.pixelSize: 11
                 font.weight: Font.Bold

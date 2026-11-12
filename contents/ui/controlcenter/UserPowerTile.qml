@@ -19,7 +19,7 @@ Item {
 
     anchors.fill: parent
     Accessible.role: Accessible.Grouping
-    Accessible.name: (app.systemUsername || i18n("User")) + ". " + (app.systemHostname || i18n("KDE Plasma"))
+    Accessible.name: (app.system.systemUsername || i18n("User")) + ". " + (app.system.systemHostname || i18n("KDE Plasma"))
 
     Rectangle {
         id: profileAvatarFrame
@@ -34,9 +34,9 @@ Item {
         Image {
             id: profileAvatarImage
             anchors.fill: parent
-            source: app.profileFaceUrl()
+            source: app.system.faceUrl()
             fillMode: Image.PreserveAspectCrop
-            visible: app.profileFaceUrl().length > 0 && status === Image.Ready
+            visible: app.system.faceUrl().length > 0 && status === Image.Ready
             layer.enabled: visible
             layer.effect: MultiEffect {
                 maskEnabled: true
@@ -75,7 +75,7 @@ Item {
 
         PlasmaLabel {
             width: parent.width
-            text: app.systemUsername || i18n("User")
+            text: app.system.systemUsername || i18n("User")
             color: T.textPrimary
             font.pixelSize: userPowerContent.shortTile ? T.fontCaption : userPowerContent.compact ? T.fontBody : T.fontTitle
             font.weight: Font.DemiBold
@@ -86,7 +86,7 @@ Item {
         PlasmaLabel {
             visible: !userPowerContent.compact || userPowerContent.height >= 34
             width: parent.width
-            text: app.systemHostname || i18n("KDE Plasma")
+            text: app.system.systemHostname || i18n("KDE Plasma")
             color: T.textSecondary
             font.pixelSize: userPowerContent.shortTile ? T.fontCaption - 1 : T.fontCaption
             elide: Text.ElideRight
@@ -119,13 +119,13 @@ Item {
                 if (app.dialogVisible)
                     app.focusIslandDialog();
             }
-            PlasmaMenuItem { text: i18n("Lock"); icon.name: "system-lock-screen"; onTriggered: app.runPowerAction("lock") }
-            PlasmaMenuItem { text: i18n("Logout"); icon.name: "system-log-out"; onTriggered: app.runPowerAction("logout") }
-            PlasmaMenuItem { text: i18n("Sleep"); icon.name: "system-suspend"; onTriggered: app.runPowerAction("sleep") }
-            PlasmaMenuItem { text: i18n("Hibernate"); icon.name: "system-suspend-hibernate"; onTriggered: app.runPowerAction("hibernate") }
+            PlasmaMenuItem { text: i18n("Lock"); icon.name: "system-lock-screen"; onTriggered: app.system.runPowerAction("lock") }
+            PlasmaMenuItem { text: i18n("Logout"); icon.name: "system-log-out"; onTriggered: app.system.runPowerAction("logout") }
+            PlasmaMenuItem { text: i18n("Sleep"); icon.name: "system-suspend"; onTriggered: app.system.runPowerAction("sleep") }
+            PlasmaMenuItem { text: i18n("Hibernate"); icon.name: "system-suspend-hibernate"; onTriggered: app.system.runPowerAction("hibernate") }
             QQC2.MenuSeparator {}
-            PlasmaMenuItem { text: i18n("Reboot"); icon.name: "system-reboot"; onTriggered: app.runPowerAction("reboot") }
-            PlasmaMenuItem { text: i18n("Shutdown"); icon.name: "system-shutdown"; onTriggered: app.runPowerAction("shutdown") }
+            PlasmaMenuItem { text: i18n("Reboot"); icon.name: "system-reboot"; onTriggered: app.system.runPowerAction("reboot") }
+            PlasmaMenuItem { text: i18n("Shutdown"); icon.name: "system-shutdown"; onTriggered: app.system.runPowerAction("shutdown") }
         }
     }
 
@@ -135,8 +135,8 @@ Item {
         y: parent.height - height - userPowerContent.pad
         spacing: 7
 
-        IslandButton { width: 28; height: 28; iconName: "system-lock-screen"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Lock"); onClicked: app.runPowerAction("lock") }
-        IslandButton { width: 28; height: 28; iconName: "system-suspend"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Sleep"); onClicked: app.runPowerAction("sleep") }
+        IslandButton { width: 28; height: 28; iconName: "system-lock-screen"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Lock"); onClicked: app.system.runPowerAction("lock") }
+        IslandButton { width: 28; height: 28; iconName: "system-suspend"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Sleep"); onClicked: app.system.runPowerAction("sleep") }
         IslandButton { width: 28; height: 28; iconName: "preferences-desktop-theme-global"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("Appearance"); onClicked: app.launcher.launchAppearanceSettings() }
         IslandButton { width: 28; height: 28; iconName: "systemsettings"; compact: true; restColor: T.raised; hoverColor: T.chip; pressedColor: T.cardPressed; outlineColor: T.border; focusColor: T.focusRing; tooltipText: i18n("System Settings"); onClicked: app.launcher.launchSystemSettings() }
     }

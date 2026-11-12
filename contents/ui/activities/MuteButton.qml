@@ -8,16 +8,16 @@ MouseArea {
     property var app: null
     property bool large: false
     property bool playing: false
-    readonly property bool muted: app && app.systemMuted
+    readonly property bool muted: app && app.system.systemMuted
     readonly property color ink: muted ? "#8d8f99" : "#BFC2CC"
 
-    enabled: app && app.systemAudioAvailable
+    enabled: app && app.system.systemAudioAvailable
     hoverEnabled: true
     acceptedButtons: Qt.LeftButton
     Accessible.role: Accessible.Button
     Accessible.name: muted ? i18n("Unmute system audio") : i18n("Mute system audio")
     Accessible.onPressAction: clicked(null)
-    onClicked: app.toggleSystemMute()
+    onClicked: app.system.toggleMute()
 
     Rectangle {
         anchors.fill: parent

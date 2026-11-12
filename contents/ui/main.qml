@@ -6,13 +6,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.notificationmanager as NotificationManager
 import org.kde.plasma.core as PlasmaCore
-import org.kde.plasma.networkmanagement as PlasmaNM
 import org.kde.plasma.plasmoid
-import org.kde.plasma.private.battery
-import org.kde.plasma.private.batterymonitor
-import org.kde.plasma.private.brightnesscontrolplugin as Brightness
-import org.kde.plasma.private.volume
-import org.kde.plasma.workspace.keyboardlayout as KeyboardLayout
 import org.kde.taskmanager as TaskManager
 import "controlcenter"
 import "services"
@@ -44,10 +38,6 @@ PlasmoidItem {
     readonly property int notificationBodyLines: Math.max(1, Math.min(6, Math.round(Utils.finiteNumber(Plasmoid.configuration.notificationBodyLineLimit, 3))))
     readonly property int notificationPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(Utils.finiteNumber(Plasmoid.configuration.notificationPopupDurationSeconds, 4)) * 1000))
     readonly property int ongoingPopupDurationMs: Math.max(2000, Math.min(15000, Math.round(Utils.finiteNumber(Plasmoid.configuration.ongoingPopupDurationSeconds, 3)) * 1000))
-    readonly property var keyboardLayoutNames: keyboardLayout.layoutsList.length > keyboardLayout.layout ? keyboardLayout.layoutsList[keyboardLayout.layout] : null
-    readonly property string keyboardLayoutShortName: keyboardLayoutNames ? keyboardLayoutNames.shortName || "" : ""
-    readonly property string keyboardLayoutDisplayName: keyboardLayoutNames ? keyboardLayoutNames.displayName || keyboardLayoutShortName : keyboardLayoutShortName
-    readonly property string keyboardLayoutLongName: keyboardLayoutNames ? keyboardLayoutNames.longName || keyboardLayoutDisplayName : keyboardLayoutDisplayName
     // True while the pointer is over a clickable notice popup (drives the whole-island highlight and the open glyph).
     // The playback position is only drawn by the compact media pill, the expanded media popup and the Control
     // Center's media card, so it is only polled while one of them can be seen.
@@ -59,7 +49,7 @@ PlasmoidItem {
     property bool popupHovered: false
     readonly property bool holdPopupTimers: dialogVisible && islandOpen && popupMode === "activity" && (popupHovered || dialogActive)
     readonly property bool holdNoticeLifetime: holdPopupTimers && activityPopupMode === "notice"
-    readonly property bool hasActivity: keyboardAnnouncementActive || jobActivityEnabled && jobService.hasJobs || mediaActivityEnabled && mediaService.shown || notificationService.activityActive
+    readonly property bool hasActivity: systemControls.announcementActive || jobActivityEnabled && jobService.hasJobs || mediaActivityEnabled && mediaService.shown || notificationService.activityActive
     // Fixed allocation: the panel never resizes for visual transitions. The
     // visible shape is drawn inside whatever slot the panel actually gives us.
     readonly property int islandWidth: 180
@@ -93,19 +83,9 @@ PlasmoidItem {
     property bool dialogActive: false
     property real popupCollapsedX: (popupWidth - realIslandWidth) / 2
     property real popupCollapsedY: islandExpandsUp ? popupHeight - realIslandHeight : islandExpandsDown ? 0 : (popupHeight - realIslandHeight) / 2
-    property string systemUsername: ""
-    property string systemHostname: ""
-    property string profileImageUrl: ""
     property string popupMode: "control"
     property string activityPopupMode: "auto"
     property int clickButton: Qt.NoButton
-    property bool keyboardAnnouncementActive: false
-    property string screenBrightnessDisplayName: ""
-    property int screenBrightnessValue: 0
-    property int screenBrightnessMax: 100
-    property int screenBrightnessVisualPercent: 0
-    property bool screenBrightnessVisualPinned: false
-    readonly property string accountIconCommand: "sh -c 'user=$(id -un); path=$(qdbus6 org.freedesktop.Accounts /org/freedesktop/Accounts org.freedesktop.Accounts.FindUserByName \"$user\" 2>/dev/null); test -n \"$path\" && qdbus6 org.freedesktop.Accounts \"$path\" org.freedesktop.Accounts.User.IconFile 2>/dev/null'"
 
 
     function screenForPoint(pointX, pointY) {
@@ -351,8 +331,7 @@ PlasmoidItem {
     }
 
     function showControlCenter() {
-        keyboardAnnouncementLifetimeTimer.stop();
-        keyboardAnnouncementActive = false;
+        systemControls.cancelAnnouncement();
         root.refreshSystemState();
         controlLayoutService.ensureLayout();
         openIsland("control", false);
@@ -432,14 +411,6 @@ PlasmoidItem {
         }
     }
 
-    function announceKeyboardLayout() {
-        if (!keyboardLayoutActivityEnabled)
-            return ;
-        keyboardAnnouncementActive = true;
-        keyboardAnnouncementLifetimeTimer.restart();
-        bump("keyboard");
-    }
-
     function primaryTextFor(kind) {
         const provider = activityController.providerFor(kind || "auto");
         return provider && provider.title.length > 0 ? provider.title : i18n("Control Center");
@@ -504,86 +475,6 @@ PlasmoidItem {
         return provider ? provider.mediaControlsVisible : false;
     }
 
-    function screenBrightnessPercent() {
-        if (screenBrightnessDisplayName.length > 0 && screenBrightnessMax > 0)
-            return Utils.percentFromRatio(screenBrightnessValue, screenBrightnessMax);
-
-        const displays = screenBrightness.displays;
-        if (!screenBrightness.isBrightnessAvailable || !displays || displays.count <= 0)
-            return 0;
-
-        const idx = displays.index(0, 0);
-        const value = Utils.firstValidNumber([displays.data(idx, 258), displays.data(idx, 257)], 0);
-        const max = Utils.firstValidNumber([displays.data(idx, 259), displays.data(idx, 260)], 100);
-        return Utils.percentFromRatio(value, max);
-    }
-
-    function displayedScreenBrightnessPercent() {
-        if (!screenBrightness.isBrightnessAvailable)
-            return 0;
-
-        return screenBrightnessVisualPinned ? screenBrightnessVisualPercent : screenBrightnessPercent();
-    }
-
-    function syncScreenBrightnessDisplay(displayName, value, max) {
-        const safeMax = Math.max(1, Math.round(Utils.finiteNumber(max, 100)));
-        const safeValue = Math.round(Utils.clampNumber(value, 0, safeMax));
-        const percent = Utils.percentFromRatio(safeValue, safeMax);
-
-        screenBrightnessDisplayName = displayName || "";
-        screenBrightnessValue = safeValue;
-        screenBrightnessMax = safeMax;
-
-        if (!screenBrightnessVisualPinned || Math.abs(percent - screenBrightnessVisualPercent) <= 1) {
-            screenBrightnessVisualPercent = percent;
-            screenBrightnessVisualPinned = false;
-        }
-    }
-
-    function setScreenBrightnessPercent(value) {
-        if (!screenBrightness.isBrightnessAvailable)
-            return ;
-
-        const percent = Math.round(Utils.clampNumber(value, 0, 100));
-        screenBrightnessVisualPercent = percent;
-        screenBrightnessVisualPinned = true;
-        screenBrightnessSettleTimer.restart();
-
-        if (screenBrightnessDisplayName.length > 0 && screenBrightnessMax > 0) {
-            screenBrightness.setBrightness(screenBrightnessDisplayName, Math.round(screenBrightnessMax * percent / 100));
-        } else {
-            screenBrightness.adjustBrightnessRatio((percent - screenBrightnessPercent()) / 100);
-        }
-    }
-
-    function keyboardBrightnessPercent() {
-        if (!keyboardBrightness.isBrightnessAvailable || keyboardBrightness.brightnessMax <= 0)
-            return 0;
-
-        const value = Utils.finiteNumber(keyboardBrightness.brightness, 0);
-        const max = Utils.finiteNumber(keyboardBrightness.brightnessMax, 0);
-        return max > 0 ? Utils.percentFromRatio(value, max) : 0;
-    }
-
-    function setKeyboardBrightnessPercent(value) {
-        if (!keyboardBrightness.isBrightnessAvailable || keyboardBrightness.brightnessMax <= 0)
-            return ;
-
-        const percent = Utils.clampNumber(value, 0, 100);
-        keyboardBrightness.brightness = Math.round(keyboardBrightness.brightnessMax * percent / 100);
-    }
-
-    function adjustSystemVolume(up) {
-        if (up)
-            GlobalService.volumeUp();
-        else
-            GlobalService.volumeDown();
-    }
-
-    function defaultSink() {
-        return PreferredDevice.sink || null;
-    }
-
     // Faint 1px top highlight on the Pill surfaces (the Notch has none); set to 0 to disable.
     readonly property real rimLight: 0.12
     property string idleHoverTitle: ""
@@ -596,85 +487,16 @@ PlasmoidItem {
     readonly property alias notifications: notificationService
     readonly property alias jobs: jobService
     readonly property alias connectivity: connectivityService
+    readonly property alias system: systemControls
 
     WeatherService {
         id: weatherService
     }
 
-    // Bound to the default sink, so external mute changes and sink switches update every user.
-    readonly property bool systemAudioAvailable: PreferredDevice.sink !== null && PreferredDevice.sink !== undefined
-    readonly property bool systemMuted: systemAudioAvailable && PreferredDevice.sink.muted === true
-
-    function systemVolumePercent() {
-        const sink = defaultSink();
-        if (!sink)
-            return 0;
-
-        const volume = Utils.finiteNumber(sink.volume, 0);
-        return Math.max(0, Math.min(150, Utils.percentFromRatio(volume, PulseAudio.NormalVolume)));
-    }
-
-    function setSystemVolumePercent(value) {
-        const sink = defaultSink();
-        if (!sink)
-            return ;
-
-        const percent = Utils.clampNumber(value, 0, 150);
-        sink.muted = false;
-        sink.volume = Math.round(PulseAudio.NormalVolume * percent / 100);
-    }
-
-    function toggleSystemMute() {
-        const sink = defaultSink();
-        if (sink)
-            sink.muted = !sink.muted;
-        else
-            GlobalService.globalMute();
-    }
-
-    function lockScreen() {
-        commands.run("loginctl lock-session");
-        closeIsland();
-    }
-
-    function runPowerAction(action) {
-        if (action === "lock")
-            commands.run("loginctl lock-session");
-        else if (action === "logout")
-            commands.run("qdbus6 org.kde.Shutdown /Shutdown logout");
-        else if (action === "sleep")
-            commands.run("systemctl suspend");
-        else if (action === "hibernate")
-            commands.run("systemctl hibernate");
-        else if (action === "reboot")
-            commands.run("systemctl reboot");
-        else if (action === "shutdown")
-            commands.run("systemctl poweroff");
-        closeIsland();
-    }
-
-    function toggleAppearanceMode() {
-        Brightness.DarkModeControl.darkMode = !Brightness.DarkModeControl.darkMode;
-    }
-
-    function profileFaceUrl() {
-        if (profileImageUrl.length > 0)
-            return profileImageUrl;
-
-        const user = systemUsername || "";
-        return user.length > 0 ? "file:///var/lib/AccountsService/icons/" + user : "";
-    }
 
     function refreshSystemState() {
-        commands.run("whoami", stdout => systemUsername = TextUtils.cleanText(stdout));
-        commands.run("hostname", stdout => systemHostname = TextUtils.cleanText(stdout));
-        commands.run(accountIconCommand, applyAccountIcon);
+        systemControls.refreshAccount();
         connectivityService.refreshAll();
-    }
-
-    function applyAccountIcon(stdout) {
-        const out = TextUtils.cleanText(stdout);
-        profileImageUrl = out.length > 0 ? (out.indexOf("file:") === 0 ? out : "file://" + out) : "";
     }
 
     function wifiTitle() {
@@ -722,39 +544,26 @@ PlasmoidItem {
         return kind === "away" ? i18n("Not nearby") : i18n("No devices");
     }
 
-    function cyclePowerProfile() {
-        const profiles = powerProfiles.profiles;
-        if (!profiles || profiles.length <= 0)
-            return ;
-
-        const current = profiles.indexOf(powerProfiles.activeProfile);
-        const next = profiles[(Math.max(0, current) + 1) % profiles.length];
-        powerProfiles.setProfile(next);
-    }
-
-    function powerProfileIcon() {
-        if (powerProfiles.activeProfile === "performance")
-            return "battery-profile-performance";
-
-        if (powerProfiles.activeProfile === "power-saver")
-            return "battery-profile-powersave";
-
-        return "battery-profile-balanced";
-    }
-
     function powerProfileTitle() {
-        if (powerProfiles.activeProfile === "performance")
+        switch (systemControls.profileKind()) {
+        case "performance":
             return i18n("Performance");
-        if (powerProfiles.activeProfile === "power-saver")
+        case "saver":
             return i18n("Saver");
-        return i18n("Balanced");
+        default:
+            return i18n("Balanced");
+        }
     }
 
     function batteryText() {
-        if (!batteryControl.hasInternalBatteries)
-            return batteryControl.pluggedIn ? i18n("AC") : i18n("Power");
-
-        return batteryControl.percent + "%";
+        switch (systemControls.batteryKind()) {
+        case "ac":
+            return i18n("AC");
+        case "power":
+            return i18n("Power");
+        default:
+            return systemControls.battery.percent + "%";
+        }
     }
 
     Layout.minimumWidth: islandWidth
@@ -806,30 +615,16 @@ PlasmoidItem {
         }
     }
 
-    KeyboardLayout.KeyboardLayout {
-        id: keyboardLayout
-
-        property bool announcementReady: false
-
-        Component.onCompleted: Qt.callLater(function() {
-            keyboardLayout.announcementReady = true;
-        })
-        onLayoutChanged: {
-            if (announcementReady)
-                root.announceKeyboardLayout();
-        }
-    }
-
     Activities.ActivityController {
         id: activityController
 
         providers: [
             Activities.ActivityProvider {
                 key: "keyboard"
-                active: root.keyboardAnnouncementActive
+                active: systemControls.announcementActive
                 priority: 350
-                title: root.keyboardLayoutLongName
-                subtitle: root.keyboardLayoutDisplayName
+                title: systemControls.layoutLongName
+                subtitle: systemControls.layoutDisplayName
                 autoCloseMs: root.ongoingPopupDurationMs
                 visualComponent: keyboardVisualComponent
                 expandedComponent: keyboardExpandedComponent
@@ -891,60 +686,6 @@ PlasmoidItem {
         ]
     }
 
-    Brightness.ScreenBrightnessControl {
-        id: screenBrightness
-
-        isSilent: true
-    }
-
-    Instantiator {
-        model: screenBrightness.displays
-
-        delegate: QtObject {
-            required property int index
-            required property string displayName
-            required property int brightness
-            required property int maxBrightness
-
-            function syncIfPrimary() {
-                if (index === 0)
-                    root.syncScreenBrightnessDisplay(displayName, brightness, maxBrightness);
-            }
-
-            Component.onCompleted: syncIfPrimary()
-            onBrightnessChanged: syncIfPrimary()
-            onMaxBrightnessChanged: syncIfPrimary()
-            onDisplayNameChanged: syncIfPrimary()
-        }
-    }
-
-    Timer {
-        id: screenBrightnessSettleTimer
-
-        interval: 900
-        repeat: false
-        onTriggered: {
-            root.screenBrightnessVisualPinned = false;
-            root.screenBrightnessVisualPercent = root.screenBrightnessPercent();
-        }
-    }
-
-    Brightness.KeyboardBrightnessControl {
-        id: keyboardBrightness
-
-        isSilent: true
-    }
-
-    PowerProfilesControl {
-        id: powerProfiles
-
-        isSilent: true
-    }
-
-    BatteryControlModel {
-        id: batteryControl
-    }
-
     CommandRunner {
         id: commands
     }
@@ -969,6 +710,16 @@ PlasmoidItem {
             if (root.dialogVisible)
                 root.closeIsland();
         }
+    }
+
+    SystemControls {
+        id: systemControls
+
+        runner: commands
+        announceEnabled: root.keyboardLayoutActivityEnabled
+        announcementMs: root.ongoingPopupDurationMs + 420
+        onActionRun: root.closeIsland()
+        onLayoutAnnounced: root.bump("keyboard")
     }
 
     ConnectivityService {
@@ -999,8 +750,8 @@ PlasmoidItem {
         dragHost: dialogHost
         iconState: ({
             "wifiEnabled": connectivityService.connections.wirelessEnabled,
-            "batteryCharging": batteryControl.pluggedIn,
-            "powerProfileIcon": root.powerProfileIcon()
+            "batteryCharging": systemControls.battery.pluggedIn,
+            "powerProfileIcon": systemControls.profileIcon()
         })
         onSaveRequested: json => root.settings.controlCenterLayoutJson = json
     }
@@ -1079,14 +830,6 @@ PlasmoidItem {
     }
 
     Timer {
-        id: keyboardAnnouncementLifetimeTimer
-
-        interval: root.ongoingPopupDurationMs + 420
-        repeat: false
-        onTriggered: root.keyboardAnnouncementActive = false
-    }
-
-    Timer {
         id: closeDialogTimer
 
         interval: 360
@@ -1095,10 +838,9 @@ PlasmoidItem {
             if (!root.islandOpen) {
                 root.dialogVisible = false;
                 root.panelHidden = false;
-                if (root.keyboardAnnouncementActive) {
-                    keyboardAnnouncementLifetimeTimer.stop();
-                    root.keyboardAnnouncementActive = false;
-                }
+                if (systemControls.announcementActive)
+                    systemControls.cancelAnnouncement();
+
             }
         }
     }
@@ -1261,7 +1003,7 @@ PlasmoidItem {
 
             PlasmaLabel {
                 anchors.centerIn: parent
-                text: root.keyboardLayoutShortName.toUpperCase()
+                text: systemControls.layoutShortName.toUpperCase()
                 color: "#e2e2ed"
                 font.pixelSize: Math.max(8, Math.min(11, parent.height * 0.42))
                 font.weight: Font.Bold
@@ -1371,7 +1113,7 @@ PlasmoidItem {
                     if (mediaService.player && mediaService.player.changeVolume)
                         mediaService.player.changeVolume(wheel.angleDelta.y > 0 ? 0.04 : -0.04, true);
                     else
-                        root.adjustSystemVolume(wheel.angleDelta.y > 0);
+                        systemControls.adjustVolume(wheel.angleDelta.y > 0);
                 }
             }
 
@@ -1815,11 +1557,11 @@ PlasmoidItem {
             app: root
             hostItem: dialogHost
             notificationsSource: notificationService.model
-            batterySource: batteryControl
+            batterySource: systemControls.battery
             connectionsSource: connectivityService.connections
-            screenBrightnessSource: screenBrightness
-            keyboardBrightnessSource: keyboardBrightness
-            powerProfilesSource: powerProfiles
+            screenBrightnessSource: systemControls.screenBrightness
+            keyboardBrightnessSource: systemControls.keyboardBrightness
+            powerProfilesSource: systemControls.powerProfiles
         }
     }
 
