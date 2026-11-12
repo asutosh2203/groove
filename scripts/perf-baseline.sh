@@ -20,15 +20,23 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 results="$root/perf/results"
 unit=plasma-plasmashell.service
 
+# systemd refuses a unit that was started too often in a short time, which would leave the desktop without a
+# shell, so clear the counter before restarting and give the shell a moment afterwards.
+restart_shell() {
+    systemctl --user reset-failed "$unit" 2>/dev/null || true
+    systemctl --user restart "$unit"
+    sleep 12
+}
+
 if [ "${1:-}" = "frames-on" ]; then
     systemctl --user set-environment QSG_RENDER_TIMING=1
-    systemctl --user restart "$unit"
+    restart_shell
     echo "Render timing ON for plasmashell. Run 'frames-off' when finished."
     exit 0
 fi
 if [ "${1:-}" = "frames-off" ]; then
     systemctl --user unset-environment QSG_RENDER_TIMING
-    systemctl --user restart "$unit"
+    restart_shell
     echo "Render timing OFF; plasmashell restarted."
     exit 0
 fi
