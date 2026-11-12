@@ -28,15 +28,6 @@ Item {
         width: Math.max(parent.height, parent.width * control.amount)
         radius: height / 2
         color: control.accent
-
-        Behavior on width {
-            NumberAnimation {
-                duration: 260
-                easing.type: Easing.OutCubic
-            }
-
-        }
-
     }
 
 }

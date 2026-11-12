@@ -62,6 +62,14 @@ PlasmoidItem {
     readonly property string keyboardLayoutLongName: keyboardLayoutNames ? keyboardLayoutNames.longName || keyboardLayoutDisplayName : keyboardLayoutDisplayName
     readonly property int notificationUnreadCount: notifications.unreadNotificationsCount
     // True while the pointer is over a clickable notice popup (drives the whole-island highlight and the open glyph).
+    // The playback position is only drawn by the compact media pill, the expanded media popup and the Control
+    // Center's media card, so it is only polled while one of them can be seen.
+    readonly property bool mediaPositionVisible: hasPlayer && isPlaying && (popupMode === "control" ? dialogVisible : islandOpen ? popupMode === "activity" && popupActivityMode() === "media" : !panelHidden && activityMode() === "media")
+    onMediaPositionVisibleChanged: {
+        // Refresh right away so the bar is current the moment it appears.
+        if (mediaPositionVisible && player && player.updatePosition)
+            player.updatePosition();
+    }
     property bool noticeHovered: false
     // True while the pointer is over an activity popup (notice, media, job...), clickable or not. Together with the
     // dialog holding keyboard focus it freezes the popup's timers, which finish with the time left once the pointer
@@ -2439,7 +2447,7 @@ PlasmoidItem {
         id: positionTimer
 
         interval: 1000
-        running: root.hasPlayer && root.isPlaying
+        running: root.mediaPositionVisible
         repeat: true
         onTriggered: {
             if (root.player && root.player.updatePosition)
