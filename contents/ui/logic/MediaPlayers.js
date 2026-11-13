@@ -1,9 +1,9 @@
 .pragma library
 .import "Utils.js" as Utils
 
-// Which MPRIS player the island shows, and how its times read. A "player-like" is anything with the fields below
-// (a delegate of the player model, or the model's current player): playbackStatus, track, artist, album, artUrl,
-// length, identity, desktopEntry, canControl, canPlay, canPause. `status` is { playing, paused, stopped }: the
+// Which MPRIS player the island shows (D-39), and how its times read. A "player-like" is anything with the fields below:
+// playbackStatus, track, artist, album, artUrl, length, identity, desktopEntry, canControl, canPlay, canPause, and the
+// times startedAt / stoppedAt that the service records. `status` is { playing, paused, stopped }: the
 // numeric values of Mpris.PlaybackStatus, handed in so this file needs no Plasma import.
 
 function text(value) {
@@ -25,27 +25,19 @@ function isBrowserish(player) {
     return name.indexOf("vivaldi") !== -1 || name.indexOf("chromium") !== -1 || name.indexOf("chrome") !== -1 || name.indexOf("firefox") !== -1 || name.indexOf("browser") !== -1;
 }
 
-// Higher wins; -1 means "not worth showing" (stopped, or idle without metadata).
-function score(player, status) {
+// Whether a player may be shown at all. Stopped players never are, and a player that is not playing needs some metadata
+// to be worth showing (an idle player with nothing to say is not).
+function eligible(player, status) {
     if (!player)
-        return -1;
+        return false;
+    if (player.playbackStatus === status.stopped)
+        return false;
+    return player.playbackStatus === status.playing || hasMetadata(player);
+}
 
-    const playback = player.playbackStatus;
-    const metadata = hasMetadata(player);
-    if (playback === status.stopped)
-        return -1;
-
-    if (playback !== status.playing && !metadata)
-        return -1;
-
+// How much the player has to show: a number used only as the last tie-break between otherwise equal players.
+function richness(player) {
     let points = 0;
-    if (playback === status.playing)
-        points += 1000;
-    else if (playback === status.paused)
-        points += 500;
-    else
-        points += 100;
-
     if (text(player.track).length > 0)
         points += 80;
     if (text(player.artist).length > 0)
@@ -60,30 +52,68 @@ function score(player, status) {
         points += 10;
     if (player.canPlay || player.canPause)
         points += 10;
-    if (isBrowserish(player) && !metadata)
-        points -= 400;
-
     return points;
 }
 
-// The best of the instantiated candidates and the model's own current player (the fallback). The first candidate wins
-// a tie; the fallback only when it scores strictly higher. Returns { source: "candidate", index } | { source:
-// "fallback" } | { source: "none" }.
-function pick(candidates, fallback, status) {
-    let best = { "source": "none" };
-    let bestScore = -1;
+// The player's recency: when it last started playing while it plays, when it last stopped once it does not
+// (`startedAt` / `stoppedAt`, ms, 0 when never seen playing).
+function activeAt(player, status) {
+    const t = player.playbackStatus === status.playing ? player.startedAt : player.stoppedAt;
+    return Utils.finiteNumber(t, 0);
+}
+
+// Orders two eligible players, negative when `a` comes first (D-39). The keys, in order:
+//   1. a browser with no metadata comes last (usually an idle tab; the old -400 penalty);
+//   2. a playing player before one that is not;
+//   3. the most recently active first: the one that started playing last, or among players that are not playing the
+//      one that stopped last, so a just-paused player stays up;
+//   4. a native player before a browser;
+//   5. the richer metadata first.
+// Anything still equal keeps the model's order (the caller picks the first).
+function compare(a, b, status) {
+    const bareA = isBrowserish(a) && !hasMetadata(a);
+    const bareB = isBrowserish(b) && !hasMetadata(b);
+    if (bareA !== bareB)
+        return bareA ? 1 : -1;
+    const playingA = a.playbackStatus === status.playing;
+    const playingB = b.playbackStatus === status.playing;
+    if (playingA !== playingB)
+        return playingA ? -1 : 1;
+    const recentA = activeAt(a, status);
+    const recentB = activeAt(b, status);
+    if (recentA !== recentB)
+        return recentB - recentA;
+    const browserA = isBrowserish(a);
+    const browserB = isBrowserish(b);
+    if (browserA !== browserB)
+        return browserA ? 1 : -1;
+    return richness(b) - richness(a);
+}
+
+// The player to show among the candidates: the first of the best by `compare`, among the eligible ones. Returns
+// { source: "candidate", index } or { source: "none" }.
+function pick(candidates, status) {
+    let best = -1;
     for (let i = 0; i < candidates.length; ++i) {
-        const points = score(candidates[i], status);
-        if (points > bestScore) {
-            best = { "source": "candidate", "index": i };
-            bestScore = points;
-        }
+        if (!eligible(candidates[i], status))
+            continue;
+        if (best < 0 || compare(candidates[i], candidates[best], status) < 0)
+            best = i;
     }
-    if (score(fallback, status) > bestScore) {
-        best = { "source": "fallback" };
-        bestScore = score(fallback, status);
-    }
-    return bestScore >= 0 ? best : { "source": "none" };
+    return best < 0 ? { "source": "none" } : { "source": "candidate", "index": best };
+}
+
+// A player's activity record after its playback status was seen: { playing, startedAt, stoppedAt }. A player first
+// seen already playing starts at the discovery time; one first seen not playing has never been seen playing (0). A change
+// into Playing stamps startedAt, a change out of it stamps stoppedAt; seeing the same state again changes nothing.
+function noteStatus(record, playing, nowMs) {
+    if (!record)
+        return { "playing": playing, "startedAt": playing ? nowMs : 0, "stoppedAt": 0 };
+    if (playing && !record.playing)
+        return { "playing": true, "startedAt": nowMs, "stoppedAt": record.stoppedAt };
+    if (!playing && record.playing)
+        return { "playing": false, "startedAt": record.startedAt, "stoppedAt": nowMs };
+    return record;
 }
 
 // Identifies one track on one player, so a length held across metadata updates never leaks to another (MediaLength.js).

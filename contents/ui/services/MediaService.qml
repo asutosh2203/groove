@@ -22,7 +22,11 @@ Item {
 
     // Bumped on any change that can alter which player is best or what it shows; the player and length re-read on it.
     property int revision: 0
-    readonly property var rawPlayer: mprisModel.currentPlayer
+    // When each player last started and stopped playing, by player key (MediaPlayers.noteStatus). Mutated in place and
+    // read through `revision`, so a change bumps the revision rather than notifying on its own.
+    property var activity: ({})
+    // The player entries, untyped on purpose: qmllint types objectAt() as a bare QObject and cannot see the delegate's members.
+    readonly property var entries: instantiator
     readonly property var player: {
         if (revision < 0) // never true: reading it re-evaluates this whenever a player changes
             return null;
@@ -44,16 +48,41 @@ Item {
         "stopped": Mpris.PlaybackStatus.Stopped
     })
 
+    // Records a player's playback status (when it started or stopped playing, D-39). `key` is the player's bus name.
+    function noteStatus(key, playbackStatus) {
+        activity[key] = MediaPlayers.noteStatus(activity[key], playbackStatus === Mpris.PlaybackStatus.Playing, Date.now());
+    }
+
+    // The player to show: every player Plasma knows (the model also lists the active player a second time, so a player
+    // already seen is skipped), ranked by MediaPlayers.pick with the recorded start and stop times.
     function best() {
-        const candidates = [];
-        for (let i = 0; instantiator && i < instantiator.count; ++i)
-            candidates.push(instantiator.objectAt(i));
+        const views = [];
+        const containers = [];
+        for (let i = 0; entries && i < entries.count; ++i) {
+            const entry = entries.objectAt(i);
+            if (!entry || !entry.playerContainer || containers.indexOf(entry.playerContainer) !== -1)
+                continue;
 
-        const pick = MediaPlayers.pick(candidates, rawPlayer, status);
-        if (pick.source === "candidate")
-            return candidates[pick.index].playerContainer;
-
-        return pick.source === "fallback" ? rawPlayer : null;
+            const record = activity[entry.key];
+            containers.push(entry.playerContainer);
+            views.push({
+                "playbackStatus": entry.playbackStatus,
+                "track": entry.track,
+                "artist": entry.artist,
+                "album": entry.album,
+                "artUrl": entry.artUrl,
+                "length": entry.length,
+                "identity": entry.identity,
+                "desktopEntry": entry.desktopEntry,
+                "canControl": entry.canControl,
+                "canPlay": entry.canPlay,
+                "canPause": entry.canPause,
+                "startedAt": record ? record.startedAt : 0,
+                "stoppedAt": record ? record.stoppedAt : 0
+            });
+        }
+        const pick = MediaPlayers.pick(views, status);
+        return pick.source === "candidate" ? containers[pick.index] : null;
     }
 
     function refreshLength() {
@@ -102,6 +131,12 @@ Item {
     }
 
     onRevisionChanged: refreshLength()
+    // The island now shows a different player (or the first one): let the activity know.
+    onPlayerChanged: {
+        if (hasPlayer)
+            mediaEvent();
+
+    }
     onHasPlayerChanged: syncIdle()
     onIsPlayingChanged: syncIdle()
     // Refresh right away so the bar is current the moment it appears.
@@ -135,16 +170,13 @@ Item {
     Mpris.Mpris2Model {
         id: mprisModel
 
-        onCurrentPlayerChanged: {
-            service.revision++;
-            service.mediaEvent();
-        }
+        onCurrentPlayerChanged: service.revision++
     }
 
     Instantiator {
         id: instantiator
 
-        model: Mpris.MultiplexerModel {}
+        model: mprisModel
         onObjectAdded: service.revision++
         onObjectRemoved: service.revision++
 
@@ -160,19 +192,19 @@ Item {
             readonly property string artUrl: entry.model.artUrl || ""
             readonly property real length: Utils.finiteNumber(entry.model.length, 0)
             readonly property string identity: entry.model.identity || ""
+            // The player's stable key: its bus name (the same for the duplicate row of the active player).
+            readonly property string key: playerContainer && playerContainer.objectName ? playerContainer.objectName : identity
             readonly property string desktopEntry: entry.model.desktopEntry || ""
             readonly property bool canControl: entry.model.canControl || false
             readonly property bool canPlay: entry.model.canPlay || false
             readonly property bool canPause: entry.model.canPause || false
 
+            Component.onCompleted: service.noteStatus(entry.key, entry.playbackStatus)
             onPlaybackStatusChanged: {
+                service.noteStatus(entry.key, entry.playbackStatus);
                 service.revision++;
-                service.mediaEvent();
             }
-            onTrackChanged: {
-                service.revision++;
-                service.mediaEvent();
-            }
+            onTrackChanged: service.revision++
             onArtistChanged: service.revision++
             onAlbumChanged: service.revision++
             onArtUrlChanged: service.revision++

@@ -48,4 +48,20 @@ TestCase {
         media.positionPolling = false;
         verify(!media.positionPolling);
     }
+
+    function test_activity_records_when_a_player_started_and_stopped_playing() {
+        const playing = media.status.playing;
+        const paused = media.status.paused;
+        media.noteStatus("test-player", paused);
+        compare(media.activity["test-player"].startedAt, 0); // never seen playing
+        media.noteStatus("test-player", playing);
+        const started = media.activity["test-player"].startedAt;
+        verify(started > 0);
+        media.noteStatus("test-player", playing); // a repeat changes nothing
+        compare(media.activity["test-player"].startedAt, started);
+        media.noteStatus("test-player", paused);
+        verify(media.activity["test-player"].stoppedAt >= started);
+        compare(media.activity["test-player"].startedAt, started);
+        delete media.activity["test-player"];
+    }
 }
