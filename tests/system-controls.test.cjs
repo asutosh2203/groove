@@ -47,14 +47,19 @@ test('keyboard backlight percent and target need a backlight', () => {
     assert.equal(S.keyboardTarget(false, 3, 40), null);
 });
 
-test('volume reads 0..100 and sets 0..150', () => {
+test('volume reads and sets 0..150 %, so a boosted sink shows above 100', () => {
+    assert.equal(S.volumePercent(0, 65536), 0);
+    assert.equal(S.volumePercent(49152, 65536), 75);
     assert.equal(S.volumePercent(65536, 65536), 100);
-    // Quirk, kept: percentFromRatio clamps at the sink's normal volume, so anything above 100 % still reads 100 even
-    // though setting accepts up to 150 %.
-    assert.equal(S.volumePercent(98304, 65536), 100);
-    assert.equal(S.volumePercent(1e9, 65536), 100);
-    assert.equal(S.volumePercent('x', 65536), 0);
+    assert.equal(S.volumePercent(80000, 65536), 122);
+    assert.equal(S.volumePercent(98304, 65536), 150);
+    assert.equal(S.volumePercent(1e9, 65536), 150); // capped at what the setter accepts
+    assert.equal(S.volumePercent(-5, 65536), 0);
+    assert.equal(S.volumePercent('junk', 65536), 0);
+    assert.equal(S.volumePercent(0, 0), 0); // a bad reference is floored at 1: no division by zero, no NaN
+    assert.equal(S.volumePercent(65536, 0), 150);
     assert.equal(S.volumeTarget(100, 65536), 65536);
+    assert.equal(S.volumeTarget(122, 65536), 79954);
     assert.equal(S.volumeTarget(500, 65536), 98304);
     assert.equal(S.volumeTarget(-3, 65536), 0);
 });

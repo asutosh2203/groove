@@ -71,9 +71,10 @@ function keyboardTarget(available, max, percentInput) {
 
 // --- volume ---------------------------------------------------------------------------------------------------------
 
-// 0..150, where `normal` is the sink's 100 % volume.
+// 0..150: the sink's volume as a percent of `normal` (its 100 % volume), so a boosted sink reads above 100.
 function volumePercent(volume, normal) {
-    return Math.max(0, Math.min(150, Utils.percentFromRatio(Utils.finiteNumber(volume, 0), normal)));
+    const reference = Math.max(1, Utils.finiteNumber(normal, 1));
+    return Math.max(0, Math.min(150, Math.round(Utils.finiteNumber(volume, 0) / reference * 100)));
 }
 
 function volumeTarget(percentInput, normal) {
