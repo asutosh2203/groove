@@ -42,14 +42,16 @@ Item {
     readonly property var displayModel: screenBrightnessControl.displays
     readonly property alias keyboardBrightness: keyboardBrightnessControl
     readonly property alias powerProfiles: powerProfilesControl
-    // Untyped on purpose (see toggleMute).
-    readonly property var globalService: Volume.GlobalService
+    // The default output sink, and Plasma's global volume actions. Untyped and overridable on purpose: qmllint cannot
+    // check this private module's members, and a test replaces both with stubs so no real output is ever touched.
+    property var preferredSink: Volume.PreferredDevice.sink
+    property var globalService: Volume.GlobalService
     // PulseAudio's 100 % volume (PA_VOLUME_NORM, fixed by its ABI); the same value PulseAudio.NormalVolume reports,
     // which qmllint cannot resolve.
     readonly property int normalVolume: 65536
     // Bound to the default sink, so external mute changes and sink switches update every user.
-    readonly property bool systemAudioAvailable: Volume.PreferredDevice.sink !== null && Volume.PreferredDevice.sink !== undefined
-    readonly property bool systemMuted: systemAudioAvailable && Volume.PreferredDevice.sink.muted === true
+    readonly property bool systemAudioAvailable: preferredSink !== null && preferredSink !== undefined
+    readonly property bool systemMuted: systemAudioAvailable && preferredSink.muted === true
     readonly property var layoutNames: Logic.layoutNames(keyboardLayout.layoutsList, keyboardLayout.layout)
     readonly property string layoutShortName: layoutNames.short
     readonly property string layoutDisplayName: layoutNames.display
@@ -137,7 +139,7 @@ Item {
     }
 
     function defaultSink() {
-        return Volume.PreferredDevice.sink || null;
+        return preferredSink || null;
     }
 
     function volumePercent() {
@@ -154,15 +156,14 @@ Item {
         sink.volume = Logic.volumeTarget(value, normalVolume);
     }
 
+    // Mutes the default output, or when there is none (no default sink yet) mutes every output sink. Outputs only: the
+    // microphones (globalMuteSources) are never touched.
     function toggleMute() {
         const sink = defaultSink();
         if (sink)
             sink.muted = !sink.muted;
         else
-            // Logged bug, behaviour kept: Plasma 6.8 has no globalMute() (only globalMuteSinks / globalMuteSources), so
-            // with no default sink this throws and nothing happens, exactly as it did in main.qml. Called by name so
-            // the linter does not flag the move.
-            globalService.globalMute();
+            globalService.globalMuteSinks();
     }
 
     // --- power -------------------------------------------------------------------------------------------------------

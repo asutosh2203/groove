@@ -31,6 +31,13 @@ TestCase {
         onLayoutAnnounced: tc.announced++
     }
 
+    // A second instance for the stubbed-sink tests, so the shared one keeps reading the real devices.
+    SystemControls {
+        id: muteService
+
+        runner: fakeRunner
+    }
+
     property int actions: 0
     property int announced: 0
 
@@ -115,5 +122,42 @@ TestCase {
         verify(["performance", "saver", "balanced"].indexOf(service.profileKind()) !== -1);
         verify(["percent", "ac", "power"].indexOf(service.batteryKind()) !== -1);
         verify(service.profileIcon().indexOf("battery-profile-") === 0);
+    }
+
+    QtObject {
+        id: stubGlobal
+
+        property var calls: []
+        function globalMuteSinks() { calls.push("sinks"); }
+        function globalMuteSources() { calls.push("sources"); }
+        function globalMute() { calls.push("globalMute"); }
+    }
+
+    QtObject {
+        id: stubSink
+
+        property bool muted: false
+    }
+
+    function test_mute_toggles_the_default_sink_and_touches_no_global_action() {
+        muteService.globalService = stubGlobal;
+        muteService.preferredSink = stubSink;
+        stubGlobal.calls = [];
+        stubSink.muted = false;
+        muteService.toggleMute();
+        verify(stubSink.muted);
+        muteService.toggleMute();
+        verify(!stubSink.muted);
+        compare(stubGlobal.calls.length, 0);
+    }
+
+    function test_with_no_default_sink_mute_falls_back_to_outputs_only() {
+        muteService.globalService = stubGlobal;
+        muteService.preferredSink = null;
+        stubGlobal.calls = [];
+        muteService.toggleMute();
+        compare(stubGlobal.calls, ["sinks"]); // outputs only: never microphones, never the missing globalMute()
+        verify(!muteService.systemAudioAvailable);
+        verify(!muteService.systemMuted);
     }
 }
