@@ -20,6 +20,14 @@ QtObject {
     readonly property string pause: i18n("Pause")
     readonly property string play: i18n("Play")
     readonly property string next: i18n("Next")
+    readonly property string themeSettings: i18n("Theme settings")
+    readonly property string themeSettingsDetail: i18n("Choose light and dark themes in System Settings")
+    readonly property string themeSettingsFooter: i18n("Click to open")
+
+    // The current colour scheme, read only (D-40): the widget never switches it.
+    function colorSchemeName(dark) {
+        return dark ? i18n("Dark") : i18n("Light");
+    }
 
     function notificationStatus(count) {
         if (count <= 0)

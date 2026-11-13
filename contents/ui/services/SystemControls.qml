@@ -52,6 +52,8 @@ Item {
     // Bound to the default sink, so external mute changes and sink switches update every user.
     readonly property bool systemAudioAvailable: preferredSink !== null && preferredSink !== undefined
     readonly property bool systemMuted: systemAudioAvailable && preferredSink.muted === true
+    // Whether the desktop's colour scheme is dark, as Qt reports it. Read only: the widget never applies a theme (D-40).
+    readonly property bool darkColorScheme: Application.styleHints.colorScheme === Qt.ColorScheme.Dark
     readonly property var layoutNames: Logic.layoutNames(keyboardLayout.layoutsList, keyboardLayout.layout)
     readonly property string layoutShortName: layoutNames.short
     readonly property string layoutDisplayName: layoutNames.display
@@ -179,10 +181,6 @@ Item {
             runner.run(command);
 
         actionRun();
-    }
-
-    function toggleAppearanceMode() {
-        Brightness.DarkModeControl.darkMode = !Brightness.DarkModeControl.darkMode;
     }
 
     function cycleProfile() {

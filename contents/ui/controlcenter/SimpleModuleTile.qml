@@ -11,6 +11,8 @@ MouseArea {
 
     required property var app
     property string iconName: ""
+    // Used when the theme has neither the symbolic glyph nor the icon itself (D-26: always give a fallback chain).
+    property string fallbackIconName: ""
     property string title: ""
     property string subtitle: ""
     property bool active: false
@@ -81,6 +83,7 @@ MouseArea {
                 width: Math.round(parent.width * 0.56)
                 height: width
                 source: T.symbolic(simpleTile.iconName)
+                fallback: simpleTile.fallbackIconName
                 isMask: true
                 color: simpleTile.glyphColor
             }

@@ -12,7 +12,7 @@ const modules = [
     { "id": "batteryStatus", "name": "Battery Status", "icon": "battery", "chargingIcon": "battery-charging", "defaultW": 2, "defaultH": 2 },
     { "id": "batteryPercent", "name": "Battery %", "icon": "battery", "chargingIcon": "battery-charging", "defaultW": 2, "defaultH": 2 },
     { "id": "powerMode", "name": "Power Mode", "icon": "battery-profile-balanced", "defaultW": 2, "defaultH": 2 },
-    { "id": "appearanceMode", "name": "Light / Dark", "icon": "preferences-desktop-theme", "defaultW": 2, "defaultH": 2 },
+    { "id": "appearanceMode", "name": "Theme settings", "icon": "preferences-desktop-theme", "defaultW": 2, "defaultH": 2 },
     { "id": "theme", "name": "Theme", "icon": "preferences-desktop-theme-global", "defaultW": 2, "defaultH": 2 },
     { "id": "media", "name": "Media", "icon": "multimedia-player", "defaultW": 6, "defaultH": 3, "minW": 2, "minH": 2 },
     { "id": "kdeConnect", "name": "KDE Connect", "icon": "kdeconnect", "defaultW": 8, "defaultH": 4 },

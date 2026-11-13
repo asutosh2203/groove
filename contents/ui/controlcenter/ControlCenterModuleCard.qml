@@ -1,5 +1,4 @@
 import QtQuick
-import org.kde.plasma.private.brightnesscontrolplugin as Brightness
 import ".."
 import "Tokens.js" as T
 
@@ -352,17 +351,24 @@ Rectangle {
             onTriggered: app.system.cycleProfile()
         }
     }
+    // "Theme settings" (D-40): opens Global Theme settings and closes the Control Center. The subtitle shows the current
+    // colour scheme, read only; the widget never switches a theme itself. The module id stays "appearanceMode" so saved
+    // layouts keep working.
     Component {
         id: appearanceModeModule
         SimpleModuleTile {
             app: moduleCard.app
             iconName: "preferences-desktop-theme"
-            title: Brightness.DarkModeControl.darkMode ? i18n("Dark") : i18n("Light")
-            subtitle: i18n("Appearance")
-            active: Brightness.DarkModeControl.darkMode
-            detailText: i18n("Desktop color scheme")
-            footerText: i18n("Click to switch")
-            onTriggered: app.system.toggleAppearanceMode()
+            fallbackIconName: "preferences-desktop-theme-global"
+            title: app.strings.themeSettings
+            subtitle: app.strings.colorSchemeName(app.system.darkColorScheme)
+            active: false
+            detailText: app.strings.themeSettingsDetail
+            footerText: app.strings.themeSettingsFooter
+            onTriggered: {
+                app.launcher.launchAppearanceSettings();
+                app.closeIsland();
+            }
         }
     }
     Component {

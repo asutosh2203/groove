@@ -11,7 +11,7 @@
 7 contents/ui/activities/NotificationExpanded.qml
 3 contents/ui/activities/NotificationVisual.qml
 108 contents/ui/controlcenter/ActivitySummaryTile.qml
-101 contents/ui/controlcenter/ControlCenterModuleCard.qml
+96 contents/ui/controlcenter/ControlCenterModuleCard.qml
 2 contents/ui/controlcenter/ControlSliderTile.qml
 9 contents/ui/ControlCenterEditor.qml
 16 contents/ui/controlcenter/IslandBars.qml
