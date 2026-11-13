@@ -80,7 +80,7 @@ TestCase {
         service.runKdeConnectDeviceAction("a'b", "ring");
         compare(fakeRunner.calls, ["kdeconnect-cli --device 'a'\"'\"'b' --ring"]);
         service.runKdeConnectDeviceAction("abc", "browse");
-        compare(fakeRunner.calls[1], "qdbus6 org.kde.kdeconnect /modules/kdeconnect/devices/abc/sftp org.kde.kdeconnect.device.sftp.startBrowsing");
+        compare(fakeRunner.calls[1], "qdbus6 org.kde.kdeconnect '/modules/kdeconnect/devices/abc/sftp' org.kde.kdeconnect.device.sftp.startBrowsing");
     }
 
     function test_kde_connect_devices_follow_the_paired_and_connected_lists() {

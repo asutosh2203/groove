@@ -110,10 +110,10 @@ Item {
         if (id.length <= 0)
             return ;
 
-        if (action === "ring")
-            runner.run("kdeconnect-cli --device " + Utils.shellQuote(id) + " --ring");
-        else if (action === "browse")
-            runner.run("qdbus6 org.kde.kdeconnect /modules/kdeconnect/devices/" + id + "/sftp org.kde.kdeconnect.device.sftp.startBrowsing");
+        const command = KdeConnectState.deviceCommand(action, id);
+        if (command !== null)
+            runner.run(command);
+
     }
 
     Timer {

@@ -1,4 +1,5 @@
 .pragma library
+.import "Utils.js" as Utils
 
 // Daemon queries (qdbus6 --literal). Each string must differ so the executable
 // engine never merges two in-flight sources.
@@ -58,4 +59,14 @@ function summaryKind(devices) {
     if ((devices || []).length === 0)
         return "none";
     return connectedCount(devices) > 0 ? "connected" : "away";
+}
+
+// The shell command for a device action ("ring" or "browse"), or null for anything else. The device id comes from another
+// device's name list, so it is shell-quoted in both commands (the whole object path in "browse"), never pasted in raw.
+function deviceCommand(action, deviceId) {
+    if (action === "ring")
+        return "kdeconnect-cli --device " + Utils.shellQuote(deviceId) + " --ring";
+    if (action === "browse")
+        return "qdbus6 org.kde.kdeconnect " + Utils.shellQuote("/modules/kdeconnect/devices/" + deviceId + "/sftp") + " org.kde.kdeconnect.device.sftp.startBrowsing";
+    return null;
 }
