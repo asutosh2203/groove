@@ -130,10 +130,6 @@ Item {
         return Utils.hasVisualValue(mainImage(row));
     }
 
-    function urgency(row) {
-        return Notif.urgency(rowValue(row, NotificationManager.Notifications.UrgencyRole, 1));
-    }
-
     // "low" | "normal" | "critical" (D-38), KDE's enum mapped explicitly.
     function urgencyKind(row) {
         return Notif.urgencyKind(rowValue(row, NotificationManager.Notifications.UrgencyRole, NotificationManager.Notifications.NormalUrgency), {
@@ -143,7 +139,7 @@ Item {
     }
 
     function accent(row) {
-        return Notif.accent(urgency(row));
+        return Notif.accent(urgencyKind(row));
     }
 
     // Colour of the small urgency dot in the expanded notification. Visual only: priority uses urgency().

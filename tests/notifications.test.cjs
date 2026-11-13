@@ -50,14 +50,14 @@ test('urgency uses KDE\'s enum and unknown values never read as critical', () =>
     assert.equal(N.urgencyColor(undefined, levels), '#3ac255');
 });
 
-test('urgency as a number and the accent colour', () => {
-    assert.equal(N.urgency(undefined), 1);
-    assert.equal(N.urgency('4'), 4);
-    assert.equal(N.urgency(NaN), 1);
-    assert.equal(N.accent(4), '#ff453a');
-    assert.equal(N.accent(2), '#ff453a');
-    assert.equal(N.accent(1), '#ff9f0a');
-    assert.equal(N.accent(0), '#8f9099');
+test('the accent colour comes from the urgency kind: Critical red, Normal orange (not red), Low grey', () => {
+    assert.equal(N.accent('critical'), '#ff453a');
+    assert.equal(N.accent('normal'), '#ff9f0a');
+    assert.equal(N.accent('low'), '#8f9099');
+    assert.equal(N.accent(undefined), '#ff9f0a'); // an unknown kind reads as Normal, never as Critical
+    assert.equal(N.accent(4), '#ff9f0a'); // a raw number is not a kind: only the kinds are mapped
+    // every kind the mapping can produce has a distinct colour except that Normal is not the Critical red
+    assert.notEqual(N.accent(N.urgencyKind(2, levels)), N.accent(N.urgencyKind(4, levels)));
 });
 
 test('created time accepts a Date or a number and returns 0 for anything unusable', () => {
@@ -154,4 +154,20 @@ test('only Normal and Critical notifications are shown as an activity', () => {
     assert.equal(N.kindShowsActivity('low'), false);
     assert.equal(N.kindShowsActivity(undefined), false);
     assert.equal(N.kindShowsActivity('urgent'), false);
+});
+
+test('no code compares an urgency number with <, <=, > or >= (D-38): kinds are mapped explicitly', () => {
+    const root = path.join(__dirname, '../contents');
+    const offenders = [];
+    const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).forEach((e) => {
+        const f = path.join(dir, e.name);
+        if (e.isDirectory()) return walk(f);
+        if (!/\.(qml|js)$/.test(e.name)) return;
+        fs.readFileSync(f, 'utf8').split('\n').forEach((line, n) => {
+            const code = line.replace(/\/\/.*$/, '');
+            if (/urgency\w*(\([^)]*\))?\s*(>=|<=|>|<)\s*[\w.(]/i.test(code)) offenders.push(`${path.relative(root, f)}:${n + 1}: ${line.trim()}`);
+        });
+    });
+    walk(root);
+    assert.deepEqual(offenders, []);
 });

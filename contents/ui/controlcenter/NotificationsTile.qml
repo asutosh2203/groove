@@ -294,7 +294,7 @@ Item {
 
                                     Rectangle {
                                         // Only urgent notifications get a coloured marker.
-                                        visible: notificationsContent.detailed && app.notifications.urgency(modelData) >= NotificationManager.Notifications.CriticalUrgency
+                                        visible: notificationsContent.detailed && app.notifications.urgencyKind(modelData) === "critical"
                                         Layout.preferredWidth: 6
                                         Layout.preferredHeight: 6
                                         radius: 3

@@ -47,17 +47,17 @@ function mainImage(image, urls) {
     return null;
 }
 
-// The number as given (Low 1 when missing), for the accent colour only; priority uses urgencyKind.
-function urgency(raw) {
-    return Utils.finiteNumber(raw, 1);
-}
-
-function accent(urgencyValue) {
-    if (urgencyValue >= 2)
+// The colour that stands for an urgency kind (D-18, D-38) where the notice has no image: Critical red, Normal orange,
+// Low grey. Mapped from the kind, never from a comparison of the raw KDE number.
+function accent(kind) {
+    switch (kind) {
+    case "critical":
         return "#ff453a";
-    if (urgencyValue <= 0)
+    case "low":
         return "#8f9099";
-    return "#ff9f0a";
+    default:
+        return "#ff9f0a";
+    }
 }
 
 // Colour of the small urgency dot in the expanded notification: grey / green / red for low / normal / critical.

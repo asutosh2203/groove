@@ -28,7 +28,7 @@ Item {
             function appIcon(row) { return ""; }
             function mainIcon(row) { return "notifications"; }
             function mainImage(row) { return null; }
-            function urgency(row) { return 1; }
+            function urgencyKind(row) { return row === 0 ? "critical" : "normal"; }
             function clearAll() {}
         }
     }
