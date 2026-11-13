@@ -22,17 +22,13 @@ Last updated: 13 November 2026. Decisions referenced as D-xx live in [DECISIONS.
 | — | Idle face after 30 s without playback (D-35) | `68605e5` |
 | CC7 | Notification click-through: open the live action, URL or app (D-31), TasksModel window activation (D-32), whole-island hover target, single right-hand slot, popup timers hold on hover | `fd8d57b` |
 | D-33 | Notification popup duration: app timeout shortens the setting (2 s floor), critical at least 6 s | `63eb31f` |
+| Q2 | `main.qml` breakup (D-37): services, tested logic, `Strings.qml`, `shell/` components; per-file qmllint ratchet and probe | `17a85d1` ... `7571027` |
 
 CC6 (notification list density/scrolling) was dropped.
 
 ## Now
-- **Q2: main.qml breakup** (services + tested logic, D-37). Done: foundation, AppLauncher, ControlLayout, MediaService,
-  NotificationService, JobService, ConnectivityService, SystemControls. To do: step 8 ActivityResolver, step 9
-  PanelController, then the final pass.
-- **Queued before the Q2 final pass: thin NotificationService.** qmllint is partly blind to any file that instantiates
-  `NotificationManager.Notifications` (an undefined call there is not flagged, see `docs/CI.md`), so move every pure
-  decision it still holds (which rows count, sorting and latest-row choice, freshness, urgency, the open target, the
-  presentation duration) into `logic/Notifications.js` with Node tests, leaving the service a thin model wrapper.
+- Q2 final pass: the performance check against D-34 (idle and media) and the final report.
+- **B1 bug batch** next (below), in an order the maintainer confirms.
 
 ## B1: bug batch (run right after Q2)
 Found while moving code in Q2; behaviour was kept during the moves.
@@ -44,9 +40,14 @@ Found while moving code in Q2; behaviour was kept during the moves.
    `globalMuteSinks` and `globalMuteSources`. Today the branch throws and does nothing.
 4. **Volume display above 100 %.** The slider reads at most 100 although setting accepts up to 150 (`percentFromRatio`
    clamps at the sink's normal volume).
-5. **Normal notifications get the urgent priority.** `noticePriority` gives priority 400 when KDE urgency >= 2, and KDE's
+5. **Normal notifications get the urgent priority (confirmed bug).** `noticePriority` gives priority 400 when KDE urgency >= 2, and KDE's
    enum is Low 1, Normal 2, Critical 4, so Normal and Critical both pre-empt jobs and keyboard announcements; only Low
-   gets 200 (below a job). Seen live. Decide whether Normal was meant to sit below a job (D-13, D-18).
+   gets 200 (below a job). Seen live. Confirmed as a bug: Normal must not share Critical's tier. Behaviour kept through Q2;
+   the fix and its order are pending the maintainer's confirmation.
+6. **A stale browser player can win over the one that is actually playing.** Seen live: Spotify was playing, but the island
+   showed a YouTube Short from a Chrome tab (via plasma-browser-integration) that reported `Playing` with no audio stream
+   (PipeWire had Spotify as the only uncorked stream; the tab vanished when it was closed). Decide a tie-break between
+   equal `Playing` players (candidates: most recently started, non-browser first, a live audio stream).
 
 ## Next
 1. **Quality pass**
@@ -77,6 +78,12 @@ Found while moving code in Q2; behaviour was kept during the moves.
 - Expired notifications can only open the app, not the exact chat: the chat target exists only as the live default action, which dies on expiry (Telegram, WhatsApp Web). Inherent to the notification protocol; revisit only if a sender exposes a URL
 - Smart reply suggestions (parked: privacy and resource cost; candidate for a future opt-in AI widget)
 - Notification queueing with "more waiting" indicator
+- **Q4: native data sources.** Bluetooth: `bluetoothctl` -> BluezQt; Wi-Fi and network: `nmcli` -> the plasma-nm model;
+  KDE Connect via its native QML module. The parsing and the "which line" decisions are already pure and tested
+  (`Bluetooth.js`, `NetworkState.js`, `KdeConnectState.js`), so only the sources change.
+- Found during Q2 (behaviour kept): `PlasmaNM.WirelessStatus` is instantiated in `ConnectivityService` but never read;
+  the inline `StatusChip` component was dead code and was deleted; `kdeconnect-cli`/qdbus ids are only quoted in the
+  "ring" command (B1 item 2).
 - Project-wide icon migration to theme symbolic names (D-26), incl. `IslandButton` Canvas glyphs
 - KDE Connect via its native QML module
 - File shelf, system HUD, Bluetooth/USB events
