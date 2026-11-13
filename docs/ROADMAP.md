@@ -27,45 +27,40 @@ Last updated: 13 November 2026. Decisions referenced as D-xx live in [DECISIONS.
 CC6 (notification list density/scrolling) was dropped.
 
 ## Now
-- Q2 final pass: the performance check against D-34 (idle and media) and the final report.
-- **B1 bug batch** next (below), in an order the maintainer confirms.
+- **B1, item 1 only:** the Light/Dark tile (findings reported; implementation waits for the maintainer's go, then a live
+  test after the preferences are set and the theme files are backed up).
+- Q2 final pass: the performance check against D-34 (idle and media), run when the maintainer is away, then the final report.
 
-## B1: bug batch (run right after Q2)
-Found while moving code in Q2; behaviour was kept during the moves.
-1. **Light/Dark tile applies stock Breeze and wipes custom setups.** It applies the Breeze Light/Dark global theme
-   (colour scheme, widget style, cursor, window decoration, GTK files). Investigate how Plasma 6.8 stores the user's
-   preferred light and dark themes and switch between THOSE (or only the colour scheme); never apply a stock global theme.
-2. **Quote the KDE Connect device id** in the "browse" command (`runKdeConnectDeviceAction`); the "ring" command already does.
-3. **Fix the mute "no default sink" path.** `GlobalService.globalMute()` does not exist in Plasma 6.8; it has
-   `globalMuteSinks` and `globalMuteSources`. Today the branch throws and does nothing.
-4. **Volume display above 100 %.** The slider reads at most 100 although setting accepts up to 150 (`percentFromRatio`
-   clamps at the sink's normal volume).
-5. **Normal notifications get the urgent priority (confirmed bug).** `noticePriority` gives priority 400 when KDE urgency >= 2, and KDE's
-   enum is Low 1, Normal 2, Critical 4, so Normal and Critical both pre-empt jobs and keyboard announcements; only Low
-   gets 200 (below a job). Seen live. Confirmed as a bug: Normal must not share Critical's tier. Behaviour kept through Q2;
-   the fix and its order are pending the maintainer's confirmation.
-6. **A stale browser player can win over the one that is actually playing.** Seen live: Spotify was playing, but the island
-   showed a YouTube Short from a Chrome tab (via plasma-browser-integration) that reported `Playing` with no audio stream
-   (PipeWire had Spotify as the only uncorked stream; the tab vanished when it was closed). Decide a tie-break between
-   equal `Playing` players (candidates: most recently started, non-browser first, a live audio stream).
+## B1: bug batch (done except item 1)
+Found while moving code in Q2; behaviour was kept during the moves, then fixed one commit per item.
+1. **Light/Dark tile applies stock Breeze and wipes custom setups.** *Open.* The tile flips `DarkModeControl.darkMode`, which
+   applies `DefaultLightLookAndFeel` / `DefaultDarkLookAndFeel` from `kdeglobals [KDE]`, and those fall back to the stock
+   Breeze packages when unset. Planned: read the preferences; if both are set toggle between those with
+   `plasma-apply-lookandfeel --apply <package> --keep-auto` (no `--resetLayout`); if either is unset show a hint and open
+   Global Theme settings; never apply a stock theme; state from `LookAndFeelPackage`, falling back to the Qt colour scheme.
+2. **Quote the KDE Connect device id** in "browse". *Done* (`f64e3aa`): both commands built by `KdeConnectState.deviceCommand`,
+   tested through a real shell with 14 hostile ids.
+3. **Mute with no default sink.** *Done* (`c6aa870`): calls `globalMuteSinks` (outputs only), tested with stubs.
+4. **Volume display above 100 %.** *Done* (`54ac49f`): the reading runs to 150, checked on the real tile at 100-125-150.
+5. **Notification priority (D-38).** *Done* (`34b653a`): explicit urgency mapping, new order, Low is not an activity.
+6. **Media player selection (D-39).** *Done* (`55b6732`): explicit filter and sort keys, most recently started wins, all
+   players seen.
 
 ## Next
-1. **Quality pass**
-   - Performance follow-ups (the main work is done, see `docs/PERFORMANCE.md`): re-measure the Control Center
-     while open now that its bars ride the shared clock; the "idle for 5 minutes" pause once an event-driven
-     idle source exists for QML; `IslandButton` Canvas glyph repaints.
-   - Test coverage: extract and test logic still inside `main.qml` (activity priority/pre-emption,
-     media player scoring, urgency mapping, click/double-click, weather caching).
-   - Launcher extraction: move the desktop-entry lookup, launch and TasksModel logic out of `main.qml`
-     into a standalone launcher component.
-   - Q2: reduce the qmllint "unqualified access" warnings (677 of the 687 baseline; `pragma ComponentBehavior: Bound`
-     and required properties), then lower `.github/qmllint-baseline.txt`; it only ever goes down.
-2. **Cursor gradient effect**: soft hover gradient on the compact shell, expanded views and Control
+1. **Cursor gradient effect**: soft hover gradient on the compact shell, expanded views and Control
    Center. Idle-silent; measured against the baseline.
-3. **Frosted-glass spike** (D-23): time-boxed prototype of real KWin blur with a shape-matched region.
-4. **Widget architecture note**: formalise the existing `ActivityProvider` / `ModuleRegistry` into a
-   widget contract (D-24, D-25); plan the `main.qml` breakup.
-5. **First new widget**: Mirror or AI Agent Status.
+2. **Frosted-glass spike** (D-23): time-boxed prototype of real KWin blur with a shape-matched region.
+3. **Widget architecture**: Q2 produced the services and logic layers (D-37); formalise them, together with
+   `ActivityProvider` / `ModuleRegistry`, into the widget contract (D-24, D-25).
+4. **First new widget**: Mirror or AI Agent Status.
+5. **What is left of the quality work:**
+   - Lint warnings: 471 remain (the baseline is per file, `.github/qmllint-baseline.txt`), almost all in the Control Center
+     tiles and a few views; move their translated text into `Strings.qml` the way `main.qml` did and give the views
+     required properties, then lower the baselines.
+   - Performance follow-ups (see `docs/PERFORMANCE.md`): re-measure the Control Center while open; the "idle for 5 minutes"
+     pause once an event-driven idle source exists for QML; `IslandButton` Canvas glyph repaints.
+   - Not covered by tests yet: the click versus double-click discrimination (it lives in `IslandCompact` and `main.qml`'s
+     click timer) and weather caching.
 
 ## Unscheduled
 - **N1: inline notification reply** via KDE's native reply action (only when the sending app offers
