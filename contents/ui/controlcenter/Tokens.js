@@ -65,8 +65,12 @@ const motionSlider = 90;
 const symbolicIcons = {
     "preferences-system-bluetooth": "network-bluetooth",
     "kdeconnect": "kdeconnect-tray",
-    "preferences-desktop-theme": "color-management",
-    "preferences-desktop-theme-global": "color-management",
+    "preferences-desktop-theme": "color-management-symbolic",
+    "preferences-desktop-theme-global": "color-management-symbolic",
+    "battery-profile-balanced": "battery-profile-balanced-symbolic",
+    "battery-profile-performance": "battery-profile-performance-symbolic",
+    "battery-profile-powersave": "battery-profile-powersave-symbolic",
+    "multimedia-player": "multimedia-player-symbolic",
     "systemsettings": "configure",
     "brightness-medium": "brightness-low",
     "battery-charging": "battery-060-charging"

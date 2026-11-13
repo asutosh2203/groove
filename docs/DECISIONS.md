@@ -55,7 +55,7 @@ DynamicNotch and NexNotch.
 | D-23 | Frosted glass deferred, not abandoned | Needs a reliable KWin/Wayland blur path; time-boxed spike first |
 | D-24 | Customisation follows a phone-style widget catalogue | Enable/disable, reorder, presets, few settings; no freeform editor |
 | D-25 | Built-in widget contract before third-party extensions | Stabilise API and permissions first; extensions must be GPL-compatible |
-| D-26 | Icons resolve through the system icon theme by symbolic name | Respects the user's theme (e.g. WhiteSur, Breeze); bundle only what themes can't cover (weather). Always provide a fallback chain |
+| D-26 | Icons resolve through the system icon theme by symbolic name | Respects the user's theme (e.g. WhiteSur, Breeze); bundle only what themes can't cover (weather). Always provide a fallback chain. Amended: an icon that is tinted as a mask (`isMask` / a set colour) must use a `-symbolic` name only, because a colour icon renders as a flat blob; check that the name resolves through the theme's folders, not just that a file exists |
 | D-27 | Integrations use D-Bus / machine-readable data, never human-readable CLI text | CLI output is translated and changes format; KDE Connect state comes from the daemon over D-Bus |
 | D-28 | KDE Connect card: one empty state; paired-but-away devices shown dimmed ("Not nearby"); unpaired hidden; no scroll list, "+N more" opens KDE Connect; Ring + Browse on hover/focus | CC5 |
 | D-29 | New logic ships with unit tests; decision logic lives in pure JS modules, QML executes | Testable without Plasma; slims `main.qml` |

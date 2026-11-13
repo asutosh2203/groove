@@ -734,7 +734,7 @@ Item {
             anchors.centerIn: parent
             width: Math.max(16, Math.min(30, parent.width - 18, parent.height - 18))
             height: width
-            source: control.iconName
+            source: T.symbolic(control.iconName)
             color: control.invalid ? "#ffb4ae" : T.textCaption
             opacity: 0.62
         }

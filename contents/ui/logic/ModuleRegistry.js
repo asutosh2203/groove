@@ -13,7 +13,7 @@ const modules = [
     { "id": "batteryPercent", "name": "Battery %", "icon": "battery", "chargingIcon": "battery-charging", "defaultW": 2, "defaultH": 2 },
     { "id": "powerMode", "name": "Power Mode", "icon": "battery-profile-balanced", "defaultW": 2, "defaultH": 2 },
     { "id": "appearanceMode", "name": "Theme settings", "icon": "preferences-desktop-theme", "defaultW": 2, "defaultH": 2 },
-    { "id": "theme", "name": "Theme", "icon": "preferences-desktop-theme-global", "defaultW": 2, "defaultH": 2 },
+    { "id": "theme", "name": "Theme", "icon": "preferences-desktop-theme-global", "retired": true, "defaultW": 2, "defaultH": 2 },
     { "id": "media", "name": "Media", "icon": "multimedia-player", "defaultW": 6, "defaultH": 3, "minW": 2, "minH": 2 },
     { "id": "kdeConnect", "name": "KDE Connect", "icon": "kdeconnect", "defaultW": 8, "defaultH": 4 },
     { "id": "settings", "name": "Settings", "icon": "systemsettings", "defaultW": 2, "defaultH": 1 }
@@ -34,6 +34,13 @@ const defaultLayoutItems = [
 function allModules() {
     return modules.map(function(module) {
         return Object.assign({}, module);
+    });
+}
+
+// What the editor offers. A retired module stays known (allModules) so saved layouts that contain it keep rendering.
+function paletteModules() {
+    return allModules().filter(function(module) {
+        return !module.retired;
     });
 }
 

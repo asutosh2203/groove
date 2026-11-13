@@ -12,7 +12,7 @@ const module_ = (file, names) => {
     return Object.fromEntries(names.map((n) => [n, ctx[n]]));
 };
 const Utils = module_('Utils.js', ['finiteNumber', 'clampNumber']);
-const ModuleRegistry = module_('ModuleRegistry.js', ['allModules', 'info', 'defaultLayout', 'minSize', 'maxSize', 'defaultSize']);
+const ModuleRegistry = module_('ModuleRegistry.js', ['allModules', 'paletteModules', 'info', 'defaultLayout', 'minSize', 'maxSize', 'defaultSize']);
 const ctx = vm.createContext({ Utils, ModuleRegistry, console: { warn() {} }, JSON, Math, Object, Array, isFinite, Number });
 vm.runInContext(read('ControlLayout.js'), ctx);
 const j = (v) => JSON.parse(JSON.stringify(v));
@@ -75,4 +75,12 @@ test('insertModule inserts at a valid target, appends otherwise, and refuses dup
     assert.equal(L.insertModule(layout, 'media', 0), null);
     assert.equal(layout.length, 2);
     assert.deepEqual(j(L.insertModule([], 'wifi', 0)), [{ id: 'wifi', w: 2, h: 2, v: 2 }]);
+});
+
+test('a retired module leaves the editor palette but a saved layout that has it still loads', () => {
+    const ids = (list) => j(list).map((m) => m.id);
+    assert.ok(!ids(ModuleRegistry.paletteModules()).includes('theme'));
+    assert.ok(ids(ModuleRegistry.paletteModules()).includes('appearanceMode'));
+    assert.ok(ids(ModuleRegistry.allModules()).includes('theme'));
+    assert.deepEqual(j(L.sanitize([{ id: 'theme', w: 2, h: 2, v: 2, col: 0, row: 0 }])).map((m) => m.id), ['theme']);
 });

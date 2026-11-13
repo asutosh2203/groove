@@ -42,7 +42,7 @@ QtObject {
     property int resizeIndex: -1
     property int resizeWidthUnits: 1
     property int resizeHeightUnits: 1
-    readonly property var modules: ModuleRegistry.allModules()
+    readonly property var modules: ModuleRegistry.paletteModules()
     readonly property bool dirty: editMode && revision >= 0 && !Logic.sameLayout(draft, committedLayout())
 
     onEditModeChanged: {
