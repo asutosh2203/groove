@@ -27,24 +27,24 @@ Last updated: 13 November 2026. Decisions referenced as D-xx live in [DECISIONS.
 CC6 (notification list density/scrolling) was dropped.
 
 ## Now
-- **B1, item 1 only:** the Light/Dark tile (findings reported; implementation waits for the maintainer's go, then a live
-  test after the preferences are set and the theme files are backed up).
-- Q2 final pass: the performance check against D-34 (idle and media), run when the maintainer is away, then the final report.
+- Q2 final pass: the performance check against D-34 (idle and media), run when the maintainer says he is away, then the
+  final report.
+- Nothing else is open in B1: the only remaining check is a live look at the new "Theme settings" tile and the notice accent
+  colours, which could not be captured while the display was asleep.
 
-## B1: bug batch (done except item 1)
+## B1: bug batch (done)
 Found while moving code in Q2; behaviour was kept during the moves, then fixed one commit per item.
-1. **Light/Dark tile applies stock Breeze and wipes custom setups.** *Open.* The tile flips `DarkModeControl.darkMode`, which
-   applies `DefaultLightLookAndFeel` / `DefaultDarkLookAndFeel` from `kdeglobals [KDE]`, and those fall back to the stock
-   Breeze packages when unset. Planned: read the preferences; if both are set toggle between those with
-   `plasma-apply-lookandfeel --apply <package> --keep-auto` (no `--resetLayout`); if either is unset show a hint and open
-   Global Theme settings; never apply a stock theme; state from `LookAndFeelPackage`, falling back to the Qt colour scheme.
+1. **Light/Dark tile applied stock Breeze and wiped custom setups.** *Done as D-40* (`b0ad920`): the tile is now "Theme
+   settings" and only opens Global Theme settings; the widget never applies a theme, and a test scans for any code that could.
 2. **Quote the KDE Connect device id** in "browse". *Done* (`f64e3aa`): both commands built by `KdeConnectState.deviceCommand`,
    tested through a real shell with 14 hostile ids.
 3. **Mute with no default sink.** *Done* (`c6aa870`): calls `globalMuteSinks` (outputs only), tested with stubs.
 4. **Volume display above 100 %.** *Done* (`54ac49f`): the reading runs to 150, checked on the real tile at 100-125-150.
 5. **Notification priority (D-38).** *Done* (`34b653a`): explicit urgency mapping, new order, Low is not an activity.
 6. **Media player selection (D-39).** *Done* (`55b6732`): explicit filter and sort keys, most recently started wins, all
-   players seen.
+   players seen. Follow-up (`3e178d4`): a ghost browser tab that claims to play no longer blocks the idle face (D-35).
+7. **Notice accent colour.** *Done* (`04c9a78`): mapped from the urgency kind (Critical red, Normal orange, Low grey); the
+   Control Center's critical marker no longer compares urgency numbers either, and a test guards against any such comparison.
 
 ## Next
 1. **Cursor gradient effect**: soft hover gradient on the compact shell, expanded views and Control
