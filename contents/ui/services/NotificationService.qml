@@ -44,7 +44,8 @@ Item {
     // Identity of the notification the island is presenting as a temporary activity. History alone must not keep it alive.
     property var activeNoticeId: null
     property bool clearing: false
-    readonly property bool activityActive: activityEnabled && noticeRowFor(activeNoticeId) >= 0
+    // A Low notification is never presented, so it is never an activity (D-38).
+    readonly property bool activityActive: activityEnabled && noticeRowFor(activeNoticeId) >= 0 && Notif.kindShowsActivity(urgencyKind(noticeRowFor(activeNoticeId)))
     readonly property bool hasNotifications: count() > 0
     readonly property int unreadCount: notifications.unreadNotificationsCount
     // How long the presented notification stays up (D-33): the user's setting, shortened by the app's own timeout
@@ -133,6 +134,14 @@ Item {
         return Notif.urgency(rowValue(row, NotificationManager.Notifications.UrgencyRole, 1));
     }
 
+    // "low" | "normal" | "critical" (D-38), KDE's enum mapped explicitly.
+    function urgencyKind(row) {
+        return Notif.urgencyKind(rowValue(row, NotificationManager.Notifications.UrgencyRole, NotificationManager.Notifications.NormalUrgency), {
+            "low": NotificationManager.Notifications.LowUrgency,
+            "critical": NotificationManager.Notifications.CriticalUrgency
+        });
+    }
+
     function accent(row) {
         return Notif.accent(urgency(row));
     }
@@ -170,6 +179,9 @@ Item {
     // A newer notification arrived: present it and (re)start its lifetime.
     function noticeArrived(row) {
         if (row === undefined || row < 0)
+            return ;
+        // A Low notification lands in the list only: it neither shows a popup nor replaces the one being presented.
+        if (!Notif.kindShowsActivity(urgencyKind(row)))
             return ;
         activeNoticeId = rowValue(row, NotificationManager.Notifications.IdRole, null);
         if (activeNoticeId === null)
@@ -281,7 +293,7 @@ Item {
                 const type = service.rowValue(row, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType);
                 if (type === NotificationManager.Notifications.JobType)
                     hasInsertedJob = true;
-                else if (type === NotificationManager.Notifications.NotificationType && freshNoticeRow < 0 && service.isFresh(row))
+                else if (type === NotificationManager.Notifications.NotificationType && freshNoticeRow < 0 && service.isFresh(row) && Notif.kindShowsActivity(service.urgencyKind(row)))
                     freshNoticeRow = row;
             }
             if (hasInsertedJob)

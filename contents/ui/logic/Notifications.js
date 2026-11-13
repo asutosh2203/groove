@@ -47,7 +47,7 @@ function mainImage(image, urls) {
     return null;
 }
 
-// Used by activity priority, which compares against a loose scale (>= 2 is urgent), so unknown values read as Low.
+// The number as given (Low 1 when missing), for the accent colour only; priority uses urgencyKind.
 function urgency(raw) {
     return Utils.finiteNumber(raw, 1);
 }
@@ -175,4 +175,25 @@ function openPlan(kind, closable) {
         "launchApp": kind === "app",
         "close": kind !== "action" && kind !== "none" && closable === true
     };
+}
+
+// --- urgency kind (D-38) --------------------------------------------------------------------------------------------
+
+// KDE's Notifications::Urgency mapped explicitly, never with a comparison: "low" | "normal" | "critical". `levels` is
+// { low, critical }, the enum values (Low 1, Critical 4); anything else, including a missing value, is "normal" (never
+// "critical" by accident).
+function urgencyKind(raw, levels) {
+    switch (raw) {
+    case levels.low:
+        return "low";
+    case levels.critical:
+        return "critical";
+    default:
+        return "normal";
+    }
+}
+
+// Only Normal and Critical notifications are shown as an activity: a Low one shows no popup and pre-empts nothing.
+function kindShowsActivity(kind) {
+    return kind === "normal" || kind === "critical";
 }

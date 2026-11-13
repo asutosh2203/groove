@@ -136,3 +136,22 @@ test('a click opens through the live action, or opens the target and then closes
     assert.deepEqual(JSON.parse(JSON.stringify(N.openPlan('app', false))), { invokeAction: false, openUrl: false, launchApp: true, close: false });
     assert.equal(N.openPlan('none', true).close, false);
 });
+
+// --- urgency kind (D-38) ----------------------------------------------------------------------------------------------
+
+test('KDE urgency maps explicitly: Low 1, Normal 2, Critical 4, and anything else is Normal', () => {
+    assert.equal(N.urgencyKind(1, levels), 'low');
+    assert.equal(N.urgencyKind(2, levels), 'normal');
+    assert.equal(N.urgencyKind(4, levels), 'critical');
+    // No range guessing: a value that is not one of the three is Normal, never Critical or Low by accident.
+    for (const odd of [0, 3, 5, 8, -1, 1.5, undefined, null, NaN, '4', '1', 'critical'])
+        assert.equal(N.urgencyKind(odd, levels), 'normal', String(odd));
+});
+
+test('only Normal and Critical notifications are shown as an activity', () => {
+    assert.equal(N.kindShowsActivity('critical'), true);
+    assert.equal(N.kindShowsActivity('normal'), true);
+    assert.equal(N.kindShowsActivity('low'), false);
+    assert.equal(N.kindShowsActivity(undefined), false);
+    assert.equal(N.kindShowsActivity('urgent'), false);
+});

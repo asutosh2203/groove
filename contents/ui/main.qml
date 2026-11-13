@@ -356,7 +356,7 @@ PlasmoidItem {
             Activities.ActivityProvider {
                 key: "notice"
                 active: notificationService.activityActive
-                priority: ActivityResolver.noticePriority(notificationService.urgency(notificationService.latestRow()))
+                priority: ActivityResolver.noticePriority(notificationService.urgencyKind(notificationService.latestRow()))
                 title: notificationService.title(notificationService.latestRow())
                 subtitle: notificationService.body(notificationService.latestRow())
                 artwork: notificationService.mainImage(notificationService.latestRow())

@@ -5,14 +5,24 @@
 // autoCloseMs); the controller hands in its live providers, a test hands in plain objects. Everything here is a pure
 // function of those, so pre-emption can be tested without a shell.
 
-// Priorities. A notification with KDE urgency >= 2 gets the top tier, and KDE's enum is Low = 1, Normal = 2,
-// Critical = 4, so in practice every Normal and Critical notification beats keyboard announcements and jobs; only a Low
-// one gets the middle tier, below a job. That is how the code has always behaved (logged for B1: is it intended?). Media
-// is the floor above idle, so a message pre-empts the music and the music returns when the message ends (D-13).
-const priority = { "idle": 0, "media": 100, "notice": 200, "job": 300, "keyboard": 350, "noticeUrgent": 400 };
+// Priorities (D-38), highest first: a Critical notification, a keyboard layout announcement, a Normal notification, a
+// job, media, then idle. A Low notification is not an activity at all (it shows no popup and pre-empts nothing; it only
+// lands in the Control Center list). Media is the floor above idle, so a message pre-empts the music and the music
+// returns when the message ends (D-13). The urgency kind comes from Notifications.urgencyKind, which maps KDE's enum
+// (Low 1, Normal 2, Critical 4) explicitly; nothing here compares urgency numbers.
+const priority = { "idle": 0, "media": 100, "job": 200, "noticeNormal": 300, "keyboard": 350, "noticeCritical": 400 };
 
-function noticePriority(urgency) {
-    return urgency >= 2 ? priority.noticeUrgent : priority.notice;
+// The priority of a presented notification of this urgency kind ("critical" or "normal"; anything else is not an
+// activity, so it has none).
+function noticePriority(kind) {
+    switch (kind) {
+    case "critical":
+        return priority.noticeCritical;
+    case "normal":
+        return priority.noticeNormal;
+    default:
+        return priority.idle;
+    }
 }
 
 function byKey(providers, key) {
