@@ -17,7 +17,8 @@ TestCase {
 
     function test_builds_and_stays_consistent() {
         compare(media.hasPlayer, media.player !== null && media.player !== undefined);
-        compare(media.isPlaying, media.hasPlayer && media.player.playbackStatus === media.status.playing);
+        verify(!media.isPlaying || media.hasPlayer);
+        verify(!media.isPlaying || media.player.playbackStatus === media.status.playing); // playing implies Playing (the reverse can fail for a demoted ghost tab)
         verify(media.length >= 0);
         compare(media.shown, media.hasPlayer && (media.isPlaying || !media.graceExpired));
     }

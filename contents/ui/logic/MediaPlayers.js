@@ -35,6 +35,17 @@ function eligible(player, status) {
     return player.playbackStatus === status.playing || hasMetadata(player);
 }
 
+// A browser with no metadata: usually an idle tab or a ghost (D-39 ranks it last).
+function isDemoted(player) {
+    return isBrowserish(player) && !hasMetadata(player);
+}
+
+// Whether the player really counts as playing, which is what the 30 s idle rule (D-35) asks: it is Playing, and it is not
+// a demoted browser tab. A ghost tab that claims to be playing therefore never keeps the media pill up.
+function countsAsPlaying(player, status) {
+    return !!player && player.playbackStatus === status.playing && !isDemoted(player);
+}
+
 // How much the player has to show: a number used only as the last tie-break between otherwise equal players.
 function richness(player) {
     let points = 0;
@@ -71,8 +82,8 @@ function activeAt(player, status) {
 //   5. the richer metadata first.
 // Anything still equal keeps the model's order (the caller picks the first).
 function compare(a, b, status) {
-    const bareA = isBrowserish(a) && !hasMetadata(a);
-    const bareB = isBrowserish(b) && !hasMetadata(b);
+    const bareA = isDemoted(a);
+    const bareB = isDemoted(b);
     if (bareA !== bareB)
         return bareA ? 1 : -1;
     const playingA = a.playbackStatus === status.playing;

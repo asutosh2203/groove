@@ -13,6 +13,9 @@ vm.runInContext(read('Utils.js'), uctx);
 const ctx = vm.createContext({ Utils: { finiteNumber: uctx.finiteNumber }, isFinite, Number, Math, String });
 vm.runInContext(read('MediaPlayers.js'), ctx);
 const M = ctx;
+const idleCtx = vm.createContext({});
+vm.runInContext(read('MediaIdle.js'), idleCtx);
+const Idle = idleCtx;
 const S = { playing: 2, paused: 3, stopped: 1 }; // Mpris.PlaybackStatus: Stopped 1, Playing 2, Paused 3
 const j = (v) => JSON.parse(JSON.stringify(v));
 const player = (o) => ({ playbackStatus: S.playing, track: '', artist: '', album: '', artUrl: '', length: 0, identity: '', desktopEntry: '', canControl: false, canPlay: false, canPause: false, startedAt: 0, stoppedAt: 0, ...o });
@@ -198,4 +201,46 @@ test('lengthKey ties a length to one track on one player', () => {
     assert.equal(M.lengthKey(spotify()), 'Spotify|Song|Band');
     assert.equal(M.lengthKey(null), '');
     assert.notEqual(M.lengthKey(player({ identity: 'A', track: 't' })), M.lengthKey(player({ identity: 'B', track: 't' })));
+});
+
+// --- D-35: a ghost tab must not hold the media pill up -------------------------------------------------------------------
+
+test('only a Playing player that is not a demoted browser counts as playing', () => {
+    assert.equal(M.countsAsPlaying(spotify(), S), true);
+    assert.equal(M.countsAsPlaying(youtube(), S), true); // a browser with metadata counts
+    assert.equal(M.countsAsPlaying(player({ identity: 'Google Chrome' }), S), false); // a bare browser tab: a ghost
+    assert.equal(M.countsAsPlaying(spotify({ playbackStatus: S.paused }), S), false);
+    assert.equal(M.countsAsPlaying(null, S), false);
+    assert.equal(M.isDemoted(player({ desktopEntry: 'firefox' })), true);
+    assert.equal(M.isDemoted(spotify()), false);
+});
+
+// Runs the service's idle rule for the chosen player: the event it would send, then the grace timeout.
+function idleAfterGrace(candidates) {
+    const r = M.pick(candidates, S);
+    const chosen = r.source === 'candidate' ? candidates[r.index] : null;
+    const event = !chosen ? 'gone' : M.countsAsPlaying(chosen, S) ? 'playing' : 'notPlaying';
+    let state = JSON.parse(JSON.stringify(Idle.reduce({ expired: false }, event)));
+    const shownAtOnce = Idle.shown(!!chosen, event === 'playing', state.expired);
+    if (state.scheduleMs !== null) state = JSON.parse(JSON.stringify(Idle.reduce(state, 'timeout')));
+    return { shownAtOnce, shownAfterGrace: Idle.shown(!!chosen, event === 'playing', state.expired) };
+}
+
+test('a ghost tab that only claims to play gives way to the idle face after the grace period', () => {
+    const ghost = player({ identity: 'Google Chrome', startedAt: 900 });
+    assert.equal(idx([ghost]), 0); // it is still the player shown at first...
+    assert.deepEqual(idleAfterGrace([ghost]), { shownAtOnce: true, shownAfterGrace: false }); // ...but 30 s later the island is idle
+});
+
+test('a ghost tab does not stop a paused real player from idling either', () => {
+    const ghost = player({ identity: 'Google Chrome', startedAt: 900 });
+    const paused = spotify({ playbackStatus: S.paused, stoppedAt: 100 });
+    assert.equal(idx([ghost, paused]), 1); // the real one is chosen (the ghost is demoted)
+    assert.deepEqual(idleAfterGrace([ghost, paused]), { shownAtOnce: true, shownAfterGrace: false });
+});
+
+test('a real playing player is never idled, and a ghost that gets metadata starts counting', () => {
+    assert.deepEqual(idleAfterGrace([spotify({ startedAt: 1 })]), { shownAtOnce: true, shownAfterGrace: true });
+    const wakes = player({ identity: 'Google Chrome', track: 'Now a real title', startedAt: 900 });
+    assert.deepEqual(idleAfterGrace([wakes]), { shownAtOnce: true, shownAfterGrace: true });
 });

@@ -34,7 +34,9 @@ Item {
         return best();
     }
     readonly property bool hasPlayer: player !== null && player !== undefined
-    readonly property bool isPlaying: hasPlayer && player.playbackStatus === Mpris.PlaybackStatus.Playing
+    // Playing for the idle rule (D-35): a demoted browser tab that claims to play does not count, so it cannot keep the
+    // media pill up.
+    readonly property bool isPlaying: hasPlayer && MediaPlayers.countsAsPlaying(player, status)
     // The track length in microseconds, held across metadata updates that omit it (MediaLength.js).
     property real length: 0
     property var heldLength: null
