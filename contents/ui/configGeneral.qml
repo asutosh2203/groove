@@ -56,6 +56,8 @@ KCM.SimpleKCM {
     property alias cfg_notificationActivityEnabled: notificationActivityEnabled.checked
     property alias cfg_jobActivityEnabled: jobActivityEnabled.checked
     property alias cfg_keyboardLayoutActivityEnabled: keyboardLayoutActivityEnabled.checked
+    property alias cfg_glowExpandedEnabled: glowExpandedEnabled.checked
+    property alias cfg_glowControlCenterEnabled: glowControlCenterEnabled.checked
     property alias cfg_notificationShowImages: notificationShowImages.checked
     property alias cfg_notificationBodyCharacterLimit: notificationBodyCharacterLimit.value
     property alias cfg_notificationBodyLineLimit: notificationBodyLineLimit.value
@@ -188,6 +190,23 @@ KCM.SimpleKCM {
             id: keyboardLayoutActivityEnabled
 
             text: i18n("Keyboard layout announcements")
+        }
+
+        Kirigami.Separator {
+            Kirigami.FormData.isSection: true
+        }
+
+        PlasmaCheckBox {
+            id: glowExpandedEnabled
+
+            Kirigami.FormData.label: i18n("Cursor glow:")
+            text: i18n("On expanded popups")
+        }
+
+        PlasmaCheckBox {
+            id: glowControlCenterEnabled
+
+            text: i18n("In the Control Center")
         }
 
         Kirigami.Separator {

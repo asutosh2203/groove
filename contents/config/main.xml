@@ -41,6 +41,12 @@
         <entry name="mediaActivityEnabled" type="Bool">
             <default>true</default>
         </entry>
+        <entry name="glowExpandedEnabled" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="glowControlCenterEnabled" type="Bool">
+            <default>true</default>
+        </entry>
         <entry name="notificationActivityEnabled" type="Bool">
             <default>true</default>
         </entry>

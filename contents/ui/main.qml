@@ -23,6 +23,8 @@ PlasmoidItem {
     readonly property bool verticalPanel: [PlasmaCore.Types.LeftEdge, PlasmaCore.Types.RightEdge].includes(Plasmoid.location)
     readonly property bool mediaActivityEnabled: root.settings.mediaActivityEnabled !== false
     readonly property bool notificationActivityEnabled: root.settings.notificationActivityEnabled !== false
+    readonly property bool glowExpandedEnabled: root.settings.glowExpandedEnabled !== false
+    readonly property bool glowControlCenterEnabled: root.settings.glowControlCenterEnabled !== false
     readonly property bool jobActivityEnabled: root.settings.jobActivityEnabled !== false
     readonly property bool keyboardLayoutActivityEnabled: root.settings.keyboardLayoutActivityEnabled !== false
     readonly property bool notificationImagesEnabled: root.settings.notificationShowImages !== false

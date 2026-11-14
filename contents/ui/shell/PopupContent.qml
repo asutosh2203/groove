@@ -23,7 +23,7 @@ MouseArea {
     readonly property real panelX: popupRoot.app.popupCollapsedX * (1 - morph)
     readonly property real panelY: popupRoot.app.popupCollapsedY * (1 - morph)
 
-    readonly property bool glowEnabled: popupRoot.app.islandOpen && (popupRoot.app.popupMode === "control" || (popupRoot.app.popupMode === "activity" && popupRoot.app.popupActivityMode() !== "idle"))
+    readonly property bool glowEnabled: popupRoot.app.islandOpen && (popupRoot.app.popupMode === "control" ? popupRoot.app.glowControlCenterEnabled : popupRoot.app.glowExpandedEnabled && popupRoot.app.popupMode === "activity" && popupRoot.app.popupActivityMode() !== "idle")
 
     implicitWidth: popupRoot.app.popupWidth
     implicitHeight: popupRoot.app.popupHeight
