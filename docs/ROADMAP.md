@@ -27,10 +27,9 @@ Last updated: 13 November 2026. Decisions referenced as D-xx live in [DECISIONS.
 CC6 (notification list density/scrolling) was dropped.
 
 ## Now
-- Q2 final pass: the performance check against D-34 (idle and media), run when the maintainer says he is away, then the
-  final report.
-- Nothing else is open in B1: the only remaining check is a live look at the new "Theme settings" tile and the notice accent
-  colours, which could not be captured while the display was asleep.
+- Q2 final pass: the performance check is done (see `docs/PERFORMANCE.md`, "After Q2"); the final Q2 report is left.
+- B1: still to look at live: the notice accent colours (Critical red, Normal orange, Low grey). The Theme settings tile and
+  icon fix were checked on screen.
 
 ## B1: bug batch (done)
 Found while moving code in Q2; behaviour was kept during the moves, then fixed one commit per item.
@@ -57,7 +56,7 @@ Found while moving code in Q2; behaviour was kept during the moves, then fixed o
    - Lint warnings: 471 remain (the baseline is per file, `.github/qmllint-baseline.txt`), almost all in the Control Center
      tiles and a few views; move their translated text into `Strings.qml` the way `main.qml` did and give the views
      required properties, then lower the baselines.
-   - Performance follow-ups (see `docs/PERFORMANCE.md`): re-measure the Control Center while open; the "idle for 5 minutes"
+   - Performance follow-ups (see `docs/PERFORMANCE.md`): the Control Center while open is measured (0.97%, see the Q2 section); still to re-measure: the expanded media and notification popups, Pill mode; the "idle for 5 minutes"
      pause once an event-driven idle source exists for QML; `IslandButton` Canvas glyph repaints.
    - Not covered by tests yet: the click versus double-click discrimination (it lives in `IslandCompact` and `main.qml`'s
      click timer) and weather caching.

@@ -62,8 +62,26 @@ window.
 | Screen locked | n/a | 0.0-0.2 fps, no rule needed |
 | Screen off (DPMS) | n/a | 0 fps, no rule needed |
 
-Not re-measured after the changes: the Control Center while open (7.25% before; its bars now ride the same
-8 fps clock, so it should be lower).
+## After Q2 (2026-11-14, after the main.qml split into services and logic, D-37)
+
+Same method, median of 3 runs of 60 s, Spotify at 8% volume for the media states, a browser playing YouTube in the
+background (the Q1 numbers were taken without it).
+
+| State | Runs | Median | Budget (D-34) |
+|---|---|---|---|
+| Idle face, weather icon animating | 0.50-0.64% | 0.52% | at most 0.5% added over idle: met (about 0.3-0.4% added) |
+| Media playing, compact | 0.92-1.42% | 1.23% | at most 1% added: met (about 0.7% added) |
+| Control Center open, media playing | 0.80-1.00% | 0.97% (7.25% before Q1) | may spike: it does not |
+| Control Center closed again, media still playing | 0.88-1.20% | 0.88% | returns to the playing level: met |
+
+- Q2 added no idle cost: idle matches the Q1 figure (0.60%).
+- The Control Center check Q1 skipped is now done. Its bars ride the shared 8 fps clock, so opening it costs about the
+  same as plain media playback.
+- Media playing read about 0.3 points above the Q1 real-Spotify figure (0.87-0.90%). The runs spread 0.92-1.42% and
+  the background video was not present in Q1, so this is most likely noise or load; it was not isolated.
+- Caveats: whole plasmashell on one machine, differences under about 0.3 points are not meaningful, frames per second
+  were not measured, and the closed-again state was measured with media still playing (not against the idle 0.52%).
+- Still not re-measured: the expanded media popup, the notification popup, Pill mode, the fullscreen-cover state.
 
 ## What changed (commits)
 
