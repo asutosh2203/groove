@@ -34,7 +34,7 @@ jobs:
           # The archive can be slow on large files; pacman resumes partial downloads, so a few retries are cheap.
           for attempt in 1 2 3 4; do
             if pacman -Syyuu --noconfirm --noprogressbar --needed --disable-download-timeout \
-                 qt6-declarative kirigami libplasma plasma-workspace plasma5support plasma-nm plasma-pa powerdevil kcmutils \
+                 qt6-declarative qt6-shadertools kirigami libplasma plasma-workspace plasma5support plasma-nm plasma-pa powerdevil kcmutils \
                  nodejs python zip unzip git; then
               break
             fi
@@ -51,7 +51,15 @@ jobs:
         run: |
           echo "node $(node --version)"
           qmllint --version
-          pacman -Q qt6-declarative plasma-workspace kirigami nodejs
+          pacman -Q qt6-declarative qt6-shadertools plasma-workspace kirigami nodejs
+
+      # Stamp-only: the container's qsb 6.12.0 compiles the same source to different bytes than a desktop's (checked on a
+      # throwaway PR), so a byte-for-byte rebuild comparison cannot be a gate. The source-hash stamp must match and the source
+      # must still compile.
+      - name: Shaders are current (source stamp matches and the source compiles)
+        env:
+          QSB_STAMP_ONLY: "1"
+        run: scripts/build-shaders.sh --check
 
       - name: Run Node tests
         run: node --test tests/*.test.cjs
