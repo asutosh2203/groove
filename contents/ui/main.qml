@@ -164,6 +164,7 @@ PlasmoidItem {
             "requestedExists": requestedProvider !== null,
             "requestedActive": requestedProvider !== null && requestedProvider.active,
             "hasActivity": hasActivity,
+            "suppressed": nextMode === "media" && dialogVisible && popupMode === "control",
             "activityPopupOpen": islandOpen && popupMode === "activity",
             "popupTimerRunning": activityPopupTimer.running,
             "nextPriority": activityController.priorityFor(nextMode),

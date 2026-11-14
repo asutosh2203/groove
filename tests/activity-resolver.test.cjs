@@ -174,3 +174,9 @@ test('D-38 changes the shown activity in exactly six of the 32 combinations, and
     // Intended: a Low notice used to show a popup; a Normal notice used to out-rank the keyboard announcement.
     assert.ok(differing.every((d) => (d.notice === 'low' && d.before === 'notice') || (d.notice === 'normal' && d.keyboard && d.after === 'keyboard')));
 });
+
+test('bump: a suppressed request (media change while the Control Center is open) is ignored', () => {
+    const base = { requestedExists: true, requestedActive: true, hasActivity: true, activityPopupOpen: false, popupTimerRunning: false, nextPriority: P.media, shownPriority: P.media };
+    assert.equal(R.bumpDecision(base), 'show');
+    assert.equal(R.bumpDecision({ ...base, suppressed: true }), 'ignore');
+});

@@ -77,14 +77,17 @@ function field(provider, name, fallback) {
 }
 
 // What to do when something asks for an activity popup (bump):
-//   "ignore"  - the requested activity is not active, or there is no activity at all;
+//   "ignore"  - the requested activity is not active, there is no activity at all, or the caller says it is suppressed
+//               (a media change while the Control Center is open: the user stays there until they close it);
 //   "extend"  - a higher-priority activity popup is open and still timing: keep it and restart its timer;
 //   "show"    - show the new activity's popup.
-// s: { requestedExists, requestedActive, hasActivity, activityPopupOpen, popupTimerRunning, nextPriority, shownPriority }
+// s: { suppressed, requestedExists, requestedActive, hasActivity, activityPopupOpen, popupTimerRunning, nextPriority, shownPriority }
 function bumpDecision(s) {
     if (s.requestedExists && !s.requestedActive)
         return "ignore";
     if (!s.hasActivity)
+        return "ignore";
+    if (s.suppressed)
         return "ignore";
     if (s.activityPopupOpen && s.popupTimerRunning && s.nextPriority < s.shownPriority)
         return "extend";
