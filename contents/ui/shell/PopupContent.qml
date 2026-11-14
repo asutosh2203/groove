@@ -23,6 +23,8 @@ MouseArea {
     readonly property real panelX: popupRoot.app.popupCollapsedX * (1 - morph)
     readonly property real panelY: popupRoot.app.popupCollapsedY * (1 - morph)
 
+    readonly property bool glowEnabled: popupRoot.app.islandOpen && (popupRoot.app.popupMode === "control" || (popupRoot.app.popupMode === "activity" && popupRoot.app.popupActivityMode() !== "idle"))
+
     implicitWidth: popupRoot.app.popupWidth
     implicitHeight: popupRoot.app.popupHeight
     width: popupRoot.app.popupWidth
@@ -82,6 +84,8 @@ MouseArea {
         clip: true
 
         RoundShape {
+            id: roundSurface
+
             anchors.fill: parent
             visible: !popupRoot.app.notchShape
             radius: popupRoot.panelRadius
@@ -93,6 +97,8 @@ MouseArea {
 
         // Notch mode: the same silhouette as the collapsed shell, grown downward.
         NotchShape {
+            id: notchSurface
+
             anchors.fill: parent
             visible: popupRoot.app.notchShape
             shoulder: popupRoot.app.notchShoulder
@@ -111,33 +117,6 @@ MouseArea {
                 popupRoot.app.closeIsland();
                 mouse.accepted = false;
             }
-        }
-
-        // Clickable notice popup (D-31): the whole island is the target, so the highlight and hit area
-        // follow the shell silhouette instead of the inset content area.
-        RoundShape {
-            anchors.fill: parent
-            visible: !popupRoot.app.notchShape && opacity > 0
-            opacity: noticeHover.hovered && noticeOpenArea.noticeClickable ? 1 : 0
-            radius: popupRoot.panelRadius
-            fillTop: "#14ffffff"
-            fillBottom: "#0cffffff"
-            strokeColor: "transparent"
-
-            Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-        }
-
-        NotchShape {
-            anchors.fill: parent
-            visible: popupRoot.app.notchShape && opacity > 0
-            opacity: noticeHover.hovered && noticeOpenArea.noticeClickable ? 1 : 0
-            shoulder: popupRoot.app.notchShoulder
-            bottomRadius: popupRoot.panelRadius
-            fillTop: "#14ffffff"
-            fillBottom: "#0cffffff"
-            strokeColor: "transparent"
-
-            Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
         }
 
         // A HoverHandler is passive, so items above the popup (labels, icons) can't take the hover away
@@ -231,6 +210,30 @@ MouseArea {
 
             }
 
+        }
+
+        // Cursor glow (D-41) on every expanded surface: the notice cue is this glow plus the open glyph. A passive HoverHandler, so children keep their own hover and clicks.
+        HoverHandler {
+            id: glowHover
+
+            enabled: popupRoot.glowEnabled
+        }
+
+        // HoverHandler gets no events while a button is held, so a passive PointHandler follows the pointer through
+        // slider and tile drags. It only observes (no exclusive grab), so the drag keeps behaving as before.
+        PointHandler {
+            id: glowPoint
+
+            enabled: popupRoot.glowEnabled
+            acceptedButtons: Qt.AllButtons
+            grabPermissions: PointerHandler.ApprovesTakeOverByAnything
+        }
+
+        CursorGlow {
+            anchors.fill: parent
+            mask: popupRoot.app.notchShape ? notchSurface : roundSurface
+            hovering: (glowHover.hovered || glowPoint.active) && popupRoot.glowEnabled
+            pointer: glowPoint.active ? glowPoint.point.position : glowHover.point.position
         }
 
         // The popup only takes keyboard focus after an explicit press inside it (never on hover: changing

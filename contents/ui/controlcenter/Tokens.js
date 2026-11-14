@@ -79,3 +79,11 @@ const symbolicIcons = {
 function symbolic(name) {
     return symbolicIcons[name] || name;
 }
+
+// Cursor glow (D-41), tunable. alpha(d) = intensity * exp(-falloff * (d / radius)^2): no visible edge, about 0 at radius.
+const glowRadius = 200;      // px
+const glowIntensity = 0.05;  // peak white alpha
+const glowFalloff = 11;
+const glowTauMs = 23;        // follow time constant, frame-rate independent
+const glowFadeMs = 350;
+const glowSettlePx = 0.3;    // stop asking for frames within this distance of the pointer
