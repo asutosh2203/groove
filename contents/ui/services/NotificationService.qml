@@ -245,6 +245,31 @@ Item {
         return true;
     }
 
+    // D-43: inline reply.
+    function replyInfo(row) {
+        const R = NotificationManager.Notifications;
+        return {
+            "has": rowValue(row, R.HasReplyActionRole, false) === true,
+            "placeholder": rowValue(row, R.ReplyPlaceholderTextRole, ""),
+            "submitIcon": rowValue(row, R.ReplySubmitButtonIconNameRole, "")
+        };
+    }
+
+    function canReply(id) {
+        const row = noticeRowFor(id);
+        return row >= 0 && replyInfo(row).has;
+    }
+
+    // Looked up by id at send time, so a model change since render can't retarget the reply.
+    function replyById(id, text) {
+        const row = noticeRowFor(id);
+        if (row < 0 || !replyInfo(row).has)
+            return false;
+
+        notifications.reply(notifications.index(row, 0), text, NotificationManager.Notifications.Close);
+        return true;
+    }
+
     // Close every closable notification currently in the model window. Returns how many were closed.
     function closeRows() {
         const rowsToClose = Notif.closableRows(items(), NotificationManager.Notifications.NotificationType);

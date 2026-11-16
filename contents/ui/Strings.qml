@@ -16,6 +16,12 @@ QtObject {
     readonly property string idleTitle: i18n("Control Center")
     readonly property string idleSubtitle: i18n("Brightness, audio, network, power")
     readonly property string notificationFallback: i18n("Notification")
+    readonly property string replySend: i18n("Send reply")
+    readonly property string replyFailed: i18n("Couldn't send: the notification is gone")
+
+    function replyPlaceholder(sender) {
+        return i18n("Reply to %1…", sender);
+    }
     readonly property string previous: i18n("Previous")
     readonly property string pause: i18n("Pause")
     readonly property string play: i18n("Play")

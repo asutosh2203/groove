@@ -41,7 +41,7 @@ PlasmoidItem {
     // dialog holding keyboard focus it freezes the popup's timers, which finish with the time left once the pointer
     // or focus is gone.
     property bool popupHovered: false
-    readonly property bool holdPopupTimers: dialogVisible && islandOpen && popupMode === "activity" && (popupHovered || dialogActive)
+    readonly property bool holdPopupTimers: dialogVisible && islandOpen && popupMode === "activity" && (popupHovered || dialogActive || replyShelfService.holding)
     readonly property bool holdNoticeLifetime: holdPopupTimers && activityPopupMode === "notice"
     readonly property bool hasActivity: systemControls.announcementActive || jobActivityEnabled && jobService.hasJobs || mediaActivityEnabled && mediaService.shown || notificationService.activityActive
     // Fixed allocation: the panel never resizes for visual transitions. The
@@ -61,11 +61,28 @@ PlasmoidItem {
     readonly property int mediaPopupWidth: 340
     readonly property int popupWidth: popupMode === "control" ? (controlLayoutService.editMode ? 620 : 430) : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupWidth : 294)
     readonly property int mediaPopupHeight: 120
-    readonly property int popupHeight: popupMode === "control" ? (controlLayoutService.editMode ? 570 : 540) : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupHeight : 104)
+    readonly property int popupBaseHeight: popupMode === "control" ? (controlLayoutService.editMode ? 570 : 540) : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupHeight : 104)
+    // D-43: a replyable notice gets a window with room for the shelf from before it first shows, and keeps it until the
+    // popup is hidden: resizing a visible window shows one stretched frame on Wayland.
+    readonly property int replyShelfHeight: 48
+    readonly property bool replyCapableNotice: islandExpandsDown && notificationService.canReply(notificationService.activeNoticeId)
+    property bool replyWindowReserved: false
+    readonly property int popupHeight: popupBaseHeight + (replyWindowReserved && popupMode === "activity" ? replyShelfHeight + 8 : 0)
+    readonly property bool replyEligible: islandExpandsDown && dialogVisible && islandOpen && popupMode === "activity" && popupActivityMode() === "notice" && notificationService.canReply(notificationService.activeNoticeId)
     readonly property int popupRadius: popupMode === "control" ? 28 : 26
     readonly property bool islandExpandsUp: Plasmoid.location === PlasmaCore.Types.BottomEdge
     readonly property bool islandExpandsDown: Plasmoid.location === PlasmaCore.Types.TopEdge
     property bool dialogVisible: false
+    onDialogVisibleChanged: {
+        if (!dialogVisible && !replyCapableNotice)
+            replyWindowReserved = false;
+    }
+    onReplyCapableNoticeChanged: {
+        if (replyCapableNotice)
+            replyWindowReserved = true;
+        else if (!dialogVisible)
+            replyWindowReserved = false;
+    }
     property bool islandOpen: false
     property bool panelHidden: false
     property bool popupAcceptsFocus: false
@@ -259,6 +276,7 @@ PlasmoidItem {
     readonly property alias layoutService: controlLayoutService
     readonly property alias media: mediaService
     readonly property alias notifications: notificationService
+    readonly property alias replyShelf: replyShelfService
     readonly property alias jobs: jobService
     readonly property alias connectivity: connectivityService
     readonly property alias system: systemControls
@@ -400,6 +418,15 @@ PlasmoidItem {
 
     CommandRunner {
         id: commands
+    }
+
+    ReplyShelf {
+        id: replyShelfService
+
+        notifications: notificationService
+        eligible: root.replyEligible
+        hovering: root.popupHovered
+        onPopupCloseRequested: root.closeIsland()
     }
 
     NotificationService {
@@ -620,13 +647,16 @@ PlasmoidItem {
                 root.dialogActive = true;
                 return;
             }
-            const shouldClose = root.dialogActive && root.dialogVisible && root.islandOpen && !root.popupMenuOpen;
+            const shouldClose = root.dialogActive && root.dialogVisible && root.islandOpen && !root.popupMenuOpen && !replyShelfService.holding;
             root.dialogActive = false;
             if (shouldClose)
                 root.closeIsland();
         }
         onWidthChanged: root.positionIslandDialog()
-        onHeightChanged: root.positionIslandDialog()
+        onHeightChanged: {
+            if (!root.islandExpandsDown)
+                root.positionIslandDialog();
+        }
 
         mainItem: Item {
             id: dialogHost

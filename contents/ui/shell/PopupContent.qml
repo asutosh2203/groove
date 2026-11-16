@@ -2,8 +2,10 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import org.kde.kirigami as Kirigami
 import ".."
 import "../weather"
+import "../logic/ReplyShelf.js" as ReplyShelf
 
 MouseArea {
     id: popupRoot
@@ -17,8 +19,12 @@ MouseArea {
     readonly property real collapsedWidth: popupRoot.app.realIslandWidth
     readonly property real collapsedHeight: popupRoot.app.realIslandHeight
     readonly property real panelWidth: collapsedWidth + (popupRoot.app.popupWidth - collapsedWidth) * morph
-    readonly property real panelHeight: collapsedHeight + (popupRoot.app.popupHeight - collapsedHeight) * morph
+    readonly property real panelHeight: collapsedHeight + (popupRoot.app.popupBaseHeight - collapsedHeight) * morph + popupRoot.shelfExtent
     readonly property real collapsedRadius: popupRoot.app.notchShape ? popupRoot.app.notchBottomRadius : collapsedHeight / 2
+    readonly property real shelfExtent: popupRoot.app.replyShelfHeight * popupRoot.app.replyShelf.progress
+    readonly property real contentLeft: (popupRoot.app.popupMode === "control" ? 14 : 12) + (popupRoot.app.notchShape ? popupRoot.app.notchShoulder + 2 : 0)
+    readonly property real contentRight: popupRoot.app.popupMode === "control" ? (popupRoot.app.notchShape ? 22 : contentLeft) : (contentLeft + (popupRoot.app.notchShape ? 0 : 3))
+    readonly property real contentBottom: popupRoot.app.popupMode === "control" ? 16 : (popupRoot.app.notchShape ? 14 : 10) - 2
     readonly property real panelRadius: collapsedRadius + (popupRoot.app.popupRadius - collapsedRadius) * morph
     readonly property real panelX: popupRoot.app.popupCollapsedX * (1 - morph)
     readonly property real panelY: popupRoot.app.popupCollapsedY * (1 - morph)
@@ -44,6 +50,12 @@ MouseArea {
     Keys.onPressed: (event) => {
         if (event.key !== Qt.Key_Escape)
             return ;
+
+        if (popupRoot.app.replyShelf.isOpen) {
+            popupRoot.app.replyShelf.escapePressed();
+            event.accepted = true;
+            return ;
+        }
 
         if (popupRoot.app.layoutService.dragActive || popupRoot.app.layoutService.resizeActive)
             popupRoot.app.layoutService.resetInteraction();
@@ -156,10 +168,10 @@ MouseArea {
             // The notch body is narrower than the window by its shoulders, so it
             // needs extra side padding (and a bit more top/bottom) to breathe.
             anchors.fill: parent
-            anchors.leftMargin: (popupRoot.app.popupMode === "control" ? 14 : 12) + (popupRoot.app.notchShape ? popupRoot.app.notchShoulder + 2 : 0)
-            anchors.rightMargin: popupRoot.app.popupMode === "control" ? (popupRoot.app.notchShape ? 22 : anchors.leftMargin) : (anchors.leftMargin + (popupRoot.app.notchShape ? 0 : 3))
+            anchors.leftMargin: popupRoot.contentLeft
+            anchors.rightMargin: popupRoot.contentRight
             anchors.topMargin: popupRoot.app.popupMode === "control" ? 12 : (popupRoot.app.notchShape ? 14 : 10)
-            anchors.bottomMargin: popupRoot.app.popupMode === "control" ? 16 : anchors.topMargin - 2
+            anchors.bottomMargin: popupRoot.contentBottom + popupRoot.shelfExtent
             opacity: popupRoot.contentOpacity
             visible: opacity > 0
             sourceComponent: popupRoot.app.popupMode === "control" ? popupRoot.controlPage : popupRoot.app.activities.expandedComponentFor(popupRoot.app.popupActivityMode())
@@ -210,6 +222,125 @@ MouseArea {
 
             }
 
+        }
+
+        // D-43: the reply shelf, below the message. It fades in a beat after the island starts growing.
+        Item {
+            id: shelfItem
+
+            readonly property real reveal: Math.max(0, Math.min(1, (popupRoot.app.replyShelf.progress - 0.35) / 0.5))
+
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.leftMargin: popupRoot.contentLeft
+            anchors.rightMargin: popupRoot.contentRight
+            anchors.bottomMargin: popupRoot.contentBottom
+            height: 34
+            opacity: reveal
+            visible: reveal > 0
+            transform: Translate {
+                y: (1 - shelfItem.reveal) * -8
+            }
+
+            Text {
+                anchors.right: parent.right
+                anchors.bottom: parent.top
+                anchors.bottomMargin: 1
+                visible: popupRoot.app.replyShelf.error.length > 0
+                text: popupRoot.app.strings.replyFailed
+                color: "#ff6b6b"
+                font.pixelSize: 10
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: height / 2
+                color: "#1b1b21"
+                border.width: 1
+                border.color: popupRoot.app.replyShelf.error.length > 0 ? "#ff6b6b" : replyField.activeFocus ? "#5a5a68" : "#2a2a31"
+            }
+
+            TextInput {
+                id: replyField
+
+                anchors.left: parent.left
+                anchors.right: sendButton.left
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: 14
+                anchors.rightMargin: 6
+                color: "#ffffff"
+                selectionColor: "#5a5a68"
+                font.pixelSize: 12
+                clip: true
+                activeFocusOnPress: true
+                Accessible.name: popupRoot.app.strings.replySend
+                onTextChanged: {
+                    popupRoot.app.replyShelf.draft = text;
+                    popupRoot.app.replyShelf.edited();
+                }
+                onActiveFocusChanged: popupRoot.app.replyShelf.fieldFocused = activeFocus
+                onAccepted: popupRoot.app.replyShelf.send()
+                Keys.onEscapePressed: popupRoot.app.replyShelf.escapePressed()
+
+                PlasmaLabel {
+                    anchors.fill: parent
+                    visible: replyField.text.length === 0
+                    verticalAlignment: Text.AlignVCenter
+                    text: ReplyShelf.placeholder(popupRoot.app.notifications.replyInfo(popupRoot.app.notifications.latestRow()).placeholder, popupRoot.app.strings.replyPlaceholder(popupRoot.app.notifications.title(popupRoot.app.notifications.latestRow())))
+                    color: "#6e707a"
+                    font.pixelSize: 12
+                    elide: Text.ElideRight
+                }
+
+                Connections {
+                    function onCleared() {
+                        replyField.clear();
+                    }
+
+                    target: popupRoot.app.replyShelf
+                }
+            }
+
+            Item {
+                id: sendButton
+
+                readonly property bool ready: ReplyShelf.canSend(popupRoot.app.replyShelf.draft)
+
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.rightMargin: 4
+                width: 26
+                height: 26
+                opacity: ready ? 1 : 0.4
+                Accessible.role: Accessible.Button
+                Accessible.name: popupRoot.app.strings.replySend
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: sendArea.pressed ? "#484852" : sendArea.containsMouse && sendButton.ready ? "#2d2d35" : "#23232a"
+                }
+
+                Kirigami.Icon {
+                    anchors.centerIn: parent
+                    width: 14
+                    height: 14
+                    source: ReplyShelf.symbolicName(popupRoot.app.notifications.replyInfo(popupRoot.app.notifications.latestRow()).submitIcon) || "mail-send-symbolic"
+                    fallback: "mail-send-symbolic"
+                    isMask: true
+                    color: "#ffffff"
+                }
+
+                MouseArea {
+                    id: sendArea
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    enabled: sendButton.ready
+                    onClicked: popupRoot.app.replyShelf.send()
+                }
+            }
         }
 
         // Cursor glow (D-41) on every expanded surface: the notice cue is this glow plus the open glyph. A passive HoverHandler, so children keep their own hover and clicks.
