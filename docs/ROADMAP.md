@@ -48,6 +48,7 @@ Found while moving code in Q2; behaviour was kept during the moves, then fixed o
 
 ## Next
 1. **Frosted-glass spike** (D-23): time-boxed prototype of real KWin blur with a shape-matched region.
+   - A small native C++ helper could provide both blur-behind (`KWindowEffects`) and input-region trimming (`QWindow::setMask`, which would remove the click-swallowing reply strip, D-43).
 2. **Widget architecture**: Q2 produced the services and logic layers (D-37); formalise them, together with
    `ActivityProvider` / `ModuleRegistry`, into the widget contract (D-24, D-25).
 3. **First new widget**: Mirror or AI Agent Status.
@@ -61,11 +62,46 @@ Found while moving code in Q2; behaviour was kept during the moves, then fixed o
      click timer) and weather caching.
 
 ## Unscheduled
-- **N1: inline notification reply** via KDE's native reply action (only when the sending app offers
-  it). Needs a keyboard-focus spike on the Wayland dock dialog first. Order relative to the quality
-  pass is undecided.
+- **N1: inline notification reply: done on `feat/n1-inline-reply`, awaiting review** (D-43, D-44). Live-checked in Notch and
+  Pill with a D-Bus test sender (`tests/tools/`); a real Telegram or KDE Connect check needs a test conversation.
+
+## Widget library
+
+### Design notes (draft, from planning chat)
+- One expanded surface ("the deck"): [Live] -> [Presets 1-5] -> [Control Center, always last].
+- Live page: ALL running long-running activities (media, jobs) stacked with their own controls; shown only when
+  something is live. Notifications and keyboard layout stay as pop-ins over the deck, not pages.
+- Presets: max 5; each is a user-picked set of widgets in a template (size classes S/M/L per widget, no freeform
+  editor, D-24); the user picks which presets are in the cycle and their order. Preset sizes: small or large.
+- Navigation: a single horizontal axis. Grouped indicator: pill = Live, dots = presets, gear = Control Center. Dots are
+  clickable, plus horizontal touchpad swipe. No vertical page switching (it conflicts with scrolling content).
+- Entry: click the capsule opens the deck (lands on Live if something is running, else the last-used page); idle hot
+  zones keep calendar and forecast (D-12); double-click opens the Control Center page; Esc or an outside click closes.
+- No presets configured: the deck is [Live] + [Control Center], about today's behaviour.
+- The indicator hides when the deck has a single page (no live activity and no presets: the deck is just the Control
+  Center, identical to the current behaviour).
+- Transitions: silhouette morph plus content cross-fade; the window is pre-sized for the largest page in the cycle
+  before the deck shows (the N1 resize lesson, D-43); only the visible page's widgets are loaded (principle 9).
+- Open questions: the widget contract (sizes, settings, lifecycle, permissions), the preset editor UX, and
+  context-aware presets (later).
+
+### W1: Claude Code progress integration
+An adapter script (`integrations/claude-code/`) that turns Claude Code hook events into KDE-standard signals; the island
+needs no new code for v1 (it already renders jobs and notifications).
+- Progress: TaskCreated/TaskCompleted become a KDE job ("3 of 7 steps"); PreToolUse becomes the job's status text
+  ("Editing main.qml", "Running tests") plus elapsed time when there is no task list.
+- Attention: Notification (permission_prompt / agent_needs_input) becomes a Critical-urgency notification (D-38) that
+  opens the terminal or IDE on click (D-31); Stop becomes a "Done" notification.
+- Hooks are synchronous: the script must return in milliseconds (fire the D-Bus calls in the background).
+- State file per session_id; clean up on Stop/SessionEnd; stale-job timeout if Claude crashes.
+- Multiple sessions are multiple jobs; the job is non-cancellable in v1.
+- Ship a README and a hooks snippet to paste into Claude Code settings.
+- Later: a dedicated AI Agent widget (multiple sessions, last message, subagents) once the widget contract exists.
 
 ## Backlog
+- Glow 60 fps cap ready on `perf/glow-60fps`; needs a real-pointer before/after measurement.
+- Reply shelf: multi-line input (v1 is a single line); host the notification's other actions (Mark as read, Mute) in the shelf.
+- **Native popup coexistence:** detect whether Plasma's own notification popups are active; never change it automatically (D-05). Show a one-time dismissible hint and a permanent note in settings with an "Open notification settings" button; document in the README. Investigate the officially supported way to disable Plasma popups without stopping the notification server. Also verify the island respects Do Not Disturb (no popups while DND is on); if it does not, that is a bug.
 - **Enhancement (low priority, revisit before a public release): icon fallback chains for the Control Center tiles (D-26).** Tiles tint glyphs as flat masks, so a theme that lacks a `-symbolic` name (or draws it in colour) shows a blob or nothing. Give each tile an ordered list of names (symbolic, then an alternative symbolic, then a plain icon drawn unmasked) and test with Breeze and Adwaita. Today only the Theme settings tile has a fallback, and `Tokens.js` `symbolic()` maps names to Breeze-style symbolics.
 - The old "Theme" tile is retired from the editor palette (it opened the same page as "Theme settings"); the id stays known so saved layouts keep it.
 - Known upstream issue, not fixed here: Firefox's MPRIS support is still maturing. After a seek on YouTube it drops `mpris:length` from its metadata update (we hold the last length for the same track and player, `MediaLength.js`) and then reports `Position` 0 until a pause or play, so the progress time sticks at 0:00. Related Firefox bugs: 1949425 (signals on position state changes), 1950461 (position advancing while paused), 1896774 (`mpris:length` only recently exposed). Seen on Firefox ESR, so the fixes may not have shipped there yet. A position workaround would guess wrong on a real restart from 0, so it is deliberately not done; revisit if Firefox keeps it
