@@ -114,7 +114,7 @@ Item {
 
             ProgressBar {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 5
+                Layout.preferredHeight: 3
                 Layout.topMargin: 2
                 from: 0
                 to: 100
