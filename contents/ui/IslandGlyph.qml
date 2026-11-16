@@ -62,7 +62,7 @@ Item {
                 return ;
             }
             if (glyph.mode === "media") {
-                ctx.fillStyle = "#5ac8fa";
+                ctx.fillStyle = T.fill;
                 const bars = [0.42, 0.78, 0.58];
                 for (let i = 0; i < 3; ++i) {
                     const bw = w / 7;

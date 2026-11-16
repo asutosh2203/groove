@@ -395,13 +395,13 @@ PlasmoidItem {
                 key: "media"
                 active: root.mediaActivityEnabled && mediaService.shown
                 priority: ActivityResolver.priority.media
-                title: mediaService.hasPlayer ? mediaService.player.track || mediaService.player.identity || "Media" : "Media"
-                subtitle: mediaService.hasPlayer ? mediaService.player.artist || mediaService.player.album || mediaService.player.identity || "" : ""
+                title: mediaService.card.title
+                subtitle: mediaService.card.subtitle
                 artwork: mediaService.hasPlayer ? mediaService.player.artUrl : ""
                 progressVisible: mediaService.hasPlayer && mediaService.length > 0
                 progressTo: Math.max(1, mediaService.hasPlayer ? mediaService.length : 1)
                 progressValue: mediaService.hasPlayer ? mediaService.player.position : 0
-                progressAccent: "#5ac8fa"
+                progressAccent: T.fillSoft
                 mediaControlsVisible: mediaService.hasPlayer
                 autoCloseMs: root.ongoingPopupDurationMs
                 visualComponent: mediaVisualComponent

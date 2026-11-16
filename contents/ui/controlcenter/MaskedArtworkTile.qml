@@ -8,6 +8,7 @@ Item {
     property var artworkSource: ""
     property real cornerRadius: height / 2
     property string mode: "idle"
+    property string kind: "music"
     property real progress: 0
     property bool playing: false
     property real glyphSize: width * 0.74
@@ -40,6 +41,13 @@ Item {
         }
     }
 
+    MediaPlaceholder {
+        anchors.fill: parent
+        kind: maskedArtwork.kind
+        cornerRadius: maskedArtwork.cornerRadius
+        visible: maskedArtwork.mode === "media" && !maskedArtwork.hasArtwork
+    }
+
     IslandGlyph {
         anchors.centerIn: parent
         width: maskedArtwork.glyphSize
@@ -47,6 +55,6 @@ Item {
         mode: maskedArtwork.mode
         progress: maskedArtwork.safeProgress
         playing: maskedArtwork.playing
-        visible: !maskedArtwork.hasArtwork
+        visible: maskedArtwork.mode !== "media" && !maskedArtwork.hasArtwork
     }
 }

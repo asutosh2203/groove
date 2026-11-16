@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import "../logic/ActivityResolver.js" as Resolver
+import "../controlcenter/Tokens.js" as T
 
 // Holds the island's activity providers and answers "which one, and what does it say". The decisions are pure
 // (logic/ActivityResolver.js, D-13 and D-35); this object feeds them the live providers.
@@ -72,7 +73,7 @@ QtObject {
     }
 
     function progressAccentFor(requestedKey) {
-        return Resolver.field(providerFor(requestedKey), "progressAccent", "#5ac8fa");
+        return Resolver.field(providerFor(requestedKey), "progressAccent", T.fill);
     }
 
     function mediaControlsFor(requestedKey) {

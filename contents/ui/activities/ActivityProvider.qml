@@ -1,4 +1,5 @@
 import QtQuick
+import "../controlcenter/Tokens.js" as T
 
 QtObject {
     property string key: ""
@@ -11,7 +12,7 @@ QtObject {
     property real progressFrom: 0
     property real progressTo: 1
     property real progressValue: 0
-    property color progressAccent: "#5ac8fa"
+    property color progressAccent: T.fill
     property bool mediaControlsVisible: false
     property int autoCloseMs: 3000
     property Component visualComponent

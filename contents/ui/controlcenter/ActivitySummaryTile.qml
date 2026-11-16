@@ -15,6 +15,9 @@ Rectangle {
     readonly property bool showAnyActivity: mediaOnly ? showMedia : app.hasActivity
     readonly property string summaryMode: mediaOnly ? app.media.hasPlayer ? "media" : "idle" : app.activityMode()
     readonly property color activityColor: app.media.isPlaying || app.jobs.hasJobs || app.notifications.hasNotifications ? T.textCaption : T.textTertiary
+    // D-46: the media-only card reads the shown player, not whichever activity owns the capsule.
+    readonly property string titleText: mediaOnly ? (showMedia ? app.media.card.title : i18n("Nothing playing")) : (app.hasActivity ? app.primaryText() : i18n("Ready"))
+    readonly property string subtitleText: mediaOnly ? (showMedia ? app.media.card.subtitle : "") : (app.hasActivity ? app.secondaryText() : i18n("Media, notifications and jobs"))
     readonly property bool iconOnly: width < 100 || height < 62
     readonly property bool compact: width < 190 || height < 112
     // Media card with room for artwork + controls on the left and track info on the right.
@@ -39,7 +42,7 @@ Rectangle {
     border.width: 1
     clip: true
     Accessible.role: Accessible.Grouping
-    Accessible.name: activitySummary.showAnyActivity ? app.primaryText() + ". " + app.secondaryText() : i18n("No activity")
+    Accessible.name: activitySummary.showAnyActivity ? activitySummary.titleText + ". " + activitySummary.subtitleText : i18n("No activity")
 
     RowLayout {
         visible: !activitySummary.iconOnly && !activitySummary.twoColumn
@@ -54,6 +57,7 @@ Rectangle {
             cornerRadius: activitySummary.compact ? 10 : T.radiusInner
             glyphSize: activitySummary.compact ? 28 : 36
             mode: activitySummary.summaryMode
+            kind: app.media.kind
             progress: Math.max(0, notificationsSource.jobsPercentage) / 100
             playing: app.media.isPlaying
         }
@@ -71,7 +75,7 @@ Rectangle {
                     spacing: 1
                     PlasmaLabel {
                         Layout.fillWidth: true
-                        text: activitySummary.showAnyActivity ? app.primaryText() : activitySummary.mediaOnly ? i18n("Nothing playing") : i18n("Ready")
+                        text: activitySummary.titleText
                         color: T.textPrimary
                         font.pixelSize: activitySummary.compact ? T.fontBody + 1 : T.fontTitle
                         font.weight: Font.DemiBold
@@ -80,7 +84,7 @@ Rectangle {
                     }
                     PlasmaLabel {
                         Layout.fillWidth: true
-                        text: activitySummary.showAnyActivity ? app.secondaryText() : activitySummary.mediaOnly ? "" : i18n("Media, notifications and jobs")
+                        text: activitySummary.subtitleText
                         color: T.textSecondary
                         font.pixelSize: activitySummary.compact ? T.fontCaption : T.fontBody
                         elide: Text.ElideRight
@@ -234,6 +238,7 @@ Rectangle {
                 cornerRadius: Math.max(6, T.radiusCard - twoColumnLayout.inset)
                 glyphSize: 36
                 mode: "media"
+                kind: app.media.kind
                 playing: app.media.isPlaying
             }
         }
@@ -293,7 +298,7 @@ Rectangle {
 
             PlasmaLabel {
                 Layout.fillWidth: true
-                text: activitySummary.showAnyActivity ? app.primaryText() : i18n("Nothing playing")
+                text: activitySummary.titleText
                 color: T.textPrimary
                 font.pixelSize: T.fontTitle
                 font.weight: Font.DemiBold
@@ -304,7 +309,7 @@ Rectangle {
             PlasmaLabel {
                 Layout.fillWidth: true
                 Layout.topMargin: 1
-                text: activitySummary.showAnyActivity ? app.secondaryText() : ""
+                text: activitySummary.subtitleText
                 color: T.textSecondary
                 font.pixelSize: T.fontBody
                 elide: Text.ElideRight
@@ -359,6 +364,7 @@ Rectangle {
         cornerRadius: 10
         glyphSize: width * 0.7
         mode: activitySummary.summaryMode
+        kind: app.media.kind
         progress: Math.max(0, notificationsSource.jobsPercentage) / 100
         playing: app.media.isPlaying
     }

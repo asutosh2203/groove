@@ -8,6 +8,7 @@ Item {
     property var source: ""
     property real cornerRadius: Math.min(width, height) / 2
     property string fallbackMode: "media"
+    property string kind: "music"
     property real progress: 0
     property bool playing: false
     property real glyphSize: width * 0.7
@@ -51,6 +52,13 @@ Item {
         }
     }
 
+    MediaPlaceholder {
+        anchors.fill: parent
+        kind: artwork.kind
+        cornerRadius: artwork.cornerRadius
+        visible: artwork.fallbackMode === "media" && !artwork.ready
+    }
+
     IslandGlyph {
         anchors.centerIn: parent
         width: artwork.glyphSize
@@ -58,6 +66,6 @@ Item {
         mode: artwork.fallbackMode
         progress: artwork.safeProgress
         playing: artwork.playing
-        visible: !artwork.ready
+        visible: artwork.fallbackMode !== "media" && !artwork.ready
     }
 }

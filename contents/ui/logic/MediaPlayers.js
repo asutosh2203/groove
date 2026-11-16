@@ -143,3 +143,30 @@ function formatTime(value) {
 function formatProgress(position, length) {
     return formatTime(position) + " / " + formatTime(length);
 }
+
+// What the media card says: the shown player's own track and artist, whichever activity owns the capsule (D-46).
+function cardText(player) {
+    if (!player)
+        return { "title": "Media", "subtitle": "" };
+    return {
+        "title": player.track || player.identity || "Media",
+        "subtitle": player.artist || player.album || player.identity || ""
+    };
+}
+
+const videoPlayers = ["haruna", "vlc", "mpv", "celluloid", "totem", "smplayer", "mplayer", "dragon", "kaffeine", "parole"];
+
+// "video" or "music", for the placeholder shown when there is no artwork. The model exposes no stream URL, so this goes by
+// the player (a known video player), a video file name as the title, or a browser whose art is a YouTube thumbnail.
+function mediaKind(player) {
+    if (!player)
+        return "music";
+    const name = (text(player.identity) + " " + text(player.desktopEntry)).toLowerCase();
+    if (videoPlayers.some(v => name.indexOf(v) !== -1))
+        return "video";
+    if (/\.(mkv|mp4|m4v|webm|avi|mov|wmv|flv|ts|mpg|mpeg)$/i.test(text(player.track)))
+        return "video";
+    if (isBrowserish(player) && /(^|[/.])(ytimg\.com|youtube\.com)\//i.test(text(player.artUrl)))
+        return "video";
+    return "music";
+}

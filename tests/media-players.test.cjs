@@ -244,3 +244,21 @@ test('a real playing player is never idled, and a ghost that gets metadata start
     const wakes = player({ identity: 'Google Chrome', track: 'Now a real title', startedAt: 900 });
     assert.deepEqual(idleAfterGrace([wakes]), { shownAtOnce: true, shownAfterGrace: true });
 });
+
+test('the media card reads the shown player, never a competing activity (D-46)', () => {
+    assert.deepEqual(j(M.cardText(spotify())), { title: 'Song', subtitle: 'Band' });
+    assert.deepEqual(j(M.cardText(player({ identity: 'Spotify', album: 'LP' }))), { title: 'Spotify', subtitle: 'LP' });
+    assert.deepEqual(j(M.cardText(null)), { title: 'Media', subtitle: '' });
+});
+
+test('placeholder kind: video players, video file names and YouTube art are video, the rest music', () => {
+    assert.equal(M.mediaKind(null), 'music');
+    assert.equal(M.mediaKind(spotify()), 'music');
+    assert.equal(M.mediaKind(player({ identity: 'VLC media player', desktopEntry: 'vlc' })), 'video');
+    assert.equal(M.mediaKind(player({ identity: 'Haruna' })), 'video');
+    assert.equal(M.mediaKind(player({ identity: 'mpv', desktopEntry: 'mpv' })), 'video');
+    assert.equal(M.mediaKind(player({ identity: 'Some player', track: 'Holiday 2024.MKV' })), 'video');
+    assert.equal(M.mediaKind(youtube({ artUrl: 'https://i.ytimg.com/vi/abc/hq.jpg' })), 'video');
+    assert.equal(M.mediaKind(youtube({ artUrl: 'https://lh3.googleusercontent.com/x' })), 'music');
+    assert.equal(M.mediaKind(player({ identity: 'Some player', artUrl: 'https://i.ytimg.com/vi/abc/hq.jpg' })), 'music');
+});
