@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQml.Models
 import org.kde.notificationmanager as NotificationManager
 import ".."
 import "../logic/NoticeDuration.js" as NoticeDuration
@@ -63,6 +64,9 @@ Item {
 
         if (row < 0 || notifications.count <= row)
             return fallbackValue;
+
+        if (role === NotificationManager.Notifications.JobDetailsRole)
+            return jobDetailsHolder.objectAt(row)?.jobDetails ?? fallbackValue;
 
         const value = notifications.data(notifications.index(row, 0), role);
         return value === undefined || value === null ? fallbackValue : value;
@@ -288,6 +292,22 @@ Item {
         guardTimer.restart();
         closeRows();
         dismissNotice(true);
+    }
+
+    // The Job object must reach QML through a model role: returned from data() it gets JavaScript ownership and the
+    // garbage collector deletes it while Plasma still uses it (plasmashell crash, D-50).
+    Instantiator {
+        id: jobDetailsHolder
+
+        model: notifications
+
+        // Delegates are created after rowsInserted, so readers must re-evaluate once they exist.
+        onObjectAdded: service.revision++
+        onObjectRemoved: service.revision++
+
+        delegate: QtObject {
+            required property var jobDetails
+        }
     }
 
     NotificationManager.Notifications {
