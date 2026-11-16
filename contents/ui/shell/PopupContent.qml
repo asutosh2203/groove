@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import ".."
 import "../weather"
+import "../controlcenter/Tokens.js" as T
 import "../logic/ReplyShelf.js" as ReplyShelf
 
 MouseArea {
@@ -101,8 +102,8 @@ MouseArea {
             anchors.fill: parent
             visible: !popupRoot.app.notchShape
             radius: popupRoot.panelRadius
-            fillTop: popupRoot.app.popupMode === "control" ? "#141419" : "#121216"
-            fillBottom: popupRoot.app.popupMode === "control" ? "#09090c" : "#060608"
+            fillTop: popupRoot.app.popupMode === "control" ? T.surfaceControlTop : "#121216"
+            fillBottom: popupRoot.app.popupMode === "control" ? T.surfaceControlBottom : "#060608"
             strokeColor: popupRoot.app.popupMode === "control" ? "#25252b" : "#202027"
             rimOpacity: popupRoot.app.rimLight
         }
@@ -115,8 +116,8 @@ MouseArea {
             visible: popupRoot.app.notchShape
             shoulder: popupRoot.app.notchShoulder
             bottomRadius: popupRoot.panelRadius
-            fillTop: popupRoot.app.popupMode === "control" ? "#141419" : "#121216"
-            fillBottom: popupRoot.app.popupMode === "control" ? "#09090c" : "#060608"
+            fillTop: popupRoot.app.popupMode === "control" ? T.surfaceControlTop : "#121216"
+            fillBottom: popupRoot.app.popupMode === "control" ? T.surfaceControlBottom : "#060608"
             strokeColor: popupRoot.app.popupMode === "control" ? "#25252b" : "#202027"
         }
 

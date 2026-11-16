@@ -19,7 +19,7 @@
 3 contents/ui/controlcenter/MaskedArtworkTile.qml
 2 contents/ui/controlcenter/NetworkListTile.qml
 1 contents/ui/controlcenter/NotificationRowSlot.qml
-73 contents/ui/controlcenter/NotificationsTile.qml
+72 contents/ui/controlcenter/NotificationsTile.qml
 1 contents/ui/controlcenter/SimpleModuleTile.qml
 2 contents/ui/controlcenter/ThemeGlyph.qml
 35 contents/ui/controlcenter/UserPowerTile.qml

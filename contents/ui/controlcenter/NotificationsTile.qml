@@ -7,6 +7,7 @@ import org.kde.notificationmanager as NotificationManager
 import ".."
 import "../activities" as Activities
 import "Tokens.js" as T
+import "../logic/EdgeFade.js" as EdgeFade
 
 Item {
     id: notificationsContent
@@ -151,21 +152,28 @@ Item {
             contentHeight: listColumn.height
             boundsBehavior: Flickable.StopAtBounds
             bottomMargin: 6
-            // Clip the scrolling content to a rounded shape, not just a rectangle.
+            // D-44: one mask clips to the rounded shape and fades the edges that have more content beyond them.
+            readonly property real fadeTop: EdgeFade.strengths(contentY, contentHeight, height, bottomMargin, T.edgeFadePx).top
+            readonly property real fadeBottom: EdgeFade.strengths(contentY, contentHeight, height, bottomMargin, T.edgeFadePx).bottom
+            readonly property real fadeInner0: EdgeFade.stops(height, T.edgeFadePx).inner0
+            readonly property real fadeInner1: EdgeFade.stops(height, T.edgeFadePx).inner1
+            readonly property Item fadeMask: Rectangle {
+                width: listView.width
+                height: listView.height
+                radius: T.radiusInner
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 1 - listView.fadeTop) }
+                    GradientStop { position: listView.fadeInner0; color: "#ffffff" }
+                    GradientStop { position: listView.fadeInner1; color: "#ffffff" }
+                    GradientStop { position: 1; color: Qt.rgba(1, 1, 1, 1 - listView.fadeBottom) }
+                }
+            }
             layer.enabled: true
             layer.effect: MultiEffect {
                 maskEnabled: true
-                maskSpreadAtMax: 1
-                maskSpreadAtMin: 1
-                maskThresholdMin: 0.5
 
                 maskSource: ShaderEffectSource {
-                    sourceItem: Rectangle {
-                        width: listView.width
-                        height: listView.height
-                        radius: T.radiusInner
-                        color: "#ffffff"
-                    }
+                    sourceItem: listView.fadeMask
                 }
             }
             QQC2.ScrollBar.vertical: QQC2.ScrollBar {

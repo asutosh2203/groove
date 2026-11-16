@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import "controlcenter/Tokens.js" as T
+import "logic/EdgeFade.js" as EdgeFade
 import "logic/Utils.js" as Utils
 
 Item {
@@ -540,6 +541,40 @@ Item {
             emphasized: app.layoutService.dirty
             tooltipText: app.layoutService.dirty ? i18n("Save layout") : i18n("No changes")
             onClicked: app.layoutService.saveEdit()
+        }
+    }
+
+    // D-44: the page fades into the surface at an edge with more content beyond it. A gradient over the surface colour,
+    // so it needs no layer; PopupContent's control margin is 12.
+    Repeater {
+        model: 2
+
+        delegate: Rectangle {
+            id: fadeEdge
+
+            required property int index
+            readonly property bool atTop: index === 0
+            readonly property var strength: EdgeFade.strengths(moduleFlickable.contentY, moduleFlickable.contentHeight, moduleFlickable.height, 0, T.edgeFadePx)
+            readonly property real edgeStrength: atTop ? strength.top : strength.bottom
+            readonly property real surfaceY: 12 + moduleFlickable.y + (atTop ? 0 : moduleFlickable.height - T.edgeFadePx)
+
+            function surfaceAt(y, alpha) {
+                const top = Qt.color(T.surfaceControlTop);
+                const bottom = Qt.color(T.surfaceControlBottom);
+                const c = EdgeFade.mix([top.r, top.g, top.b], [bottom.r, bottom.g, bottom.b], y / Math.max(1, editor.app.popupHeight));
+                return Qt.rgba(c[0], c[1], c[2], alpha);
+            }
+
+            z: 1
+            x: moduleFlickable.x
+            y: moduleFlickable.y + (atTop ? 0 : moduleFlickable.height - T.edgeFadePx)
+            width: moduleFlickable.width
+            height: T.edgeFadePx
+            visible: edgeStrength > 0
+            gradient: Gradient {
+                GradientStop { position: 0; color: fadeEdge.surfaceAt(fadeEdge.surfaceY, fadeEdge.atTop ? fadeEdge.edgeStrength : 0) }
+                GradientStop { position: 1; color: fadeEdge.surfaceAt(fadeEdge.surfaceY + T.edgeFadePx, fadeEdge.atTop ? 0 : fadeEdge.edgeStrength) }
+            }
         }
     }
 

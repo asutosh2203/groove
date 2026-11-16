@@ -40,6 +40,9 @@ const critical = "#ff453a";
 // Radii
 const radiusCard = 20;
 const radiusInner = 14;
+const edgeFadePx = 28;       // D-44
+const surfaceControlTop = "#141419";     // the Control Center surface gradient (PopupContent)
+const surfaceControlBottom = "#09090c";
 
 // Icons and states
 const iconHeader = 18;       // leading icon of a card header
