@@ -25,6 +25,10 @@ DynamicNotch and NexNotch.
    made through review of findings, screenshots and trade-offs.
 9. **Lightweight by default.** When nothing changes, nothing renders. No background subprocesses while
    idle. Every timer and animation has a stop condition. Beauty never at the cost of stutter.
+10. **Cut the least important element, not the clarity.** When a feature clutters the UI, remove its least
+    important element; do not blur what the feature is for.
+11. **Users choose what; Kove decides how.** Widgets, presets and their order are the user's; transitions,
+    gestures, sizes and defaults are Kove's. Resist adding a setting when a good default will do.
 
 ## Register
 
