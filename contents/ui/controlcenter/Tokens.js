@@ -34,6 +34,19 @@ const iconActive = "#ffffff";
 const iconIdle = "#9a9ca6";
 const iconOnFill = "#17171b";
 
+// Job progress (D-45): the fill brightens toward the tip, and a static glow sits on the leading edge. Tune here.
+const progressTipFrom = "#8d8f96";
+const progressTipMid = "#d1d3d8";
+const progressTipEnd = "#ffffff";
+const progressTipMidStop = 0.6;     // position of the mid colour along the fill
+const progressGlowW = 46;           // px, head of the glow (an ellipse centred on the tip)
+const progressGlowH = 18;
+const progressGlowCore = 0.825;     // white alpha at the centre
+const progressGlowMid = 0.27;       // white alpha at progressGlowMidStop
+const progressGlowMidStop = 0.3;    // fraction of the radius
+const progressGlowEndStop = 0.7;    // alpha is 0 from here out
+const progressGlowBlur = 1;         // px
+
 // Semantic (the only non-neutral colour)
 const critical = "#ff453a";
 

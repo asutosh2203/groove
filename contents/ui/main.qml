@@ -9,6 +9,7 @@ import org.kde.plasma.plasmoid
 import "services"
 import "logic/KdeConnectState.js" as KdeConnectState
 import "logic/Utils.js" as Utils
+import "controlcenter/Tokens.js" as T
 import "logic/ActivityResolver.js" as ActivityResolver
 import "activities" as Activities
 import "shell"
@@ -235,11 +236,15 @@ PlasmoidItem {
     }
 
     function jobTitle(row) {
-        return translations.jobTitle(jobService.titleText(row));
+        return translations.jobTitle(jobService.titleText(row), jobService.fileCount(row));
     }
 
-    function jobDetailsText(row) {
-        return translations.jobDetails(jobService.detailsParts(row));
+    function jobSubtitle(row) {
+        return translations.jobSubtitle(jobService.destination(row), jobService.text(row));
+    }
+
+    function jobMetaText(row) {
+        return translations.jobMeta(jobService.meta(row));
     }
 
     function primaryTextFor(kind) {
@@ -368,7 +373,7 @@ PlasmoidItem {
                 progressVisible: jobService.percentage(jobService.activeRow()) >= 0
                 progressTo: 100
                 progressValue: Math.max(0, jobService.percentage(jobService.activeRow()))
-                progressAccent: "#42d77d"
+                progressAccent: T.fill
                 autoCloseMs: root.ongoingPopupDurationMs
                 visualComponent: jobVisualComponent
                 compactComponent: jobCompactComponent

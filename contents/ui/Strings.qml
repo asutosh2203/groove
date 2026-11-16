@@ -43,25 +43,32 @@ QtObject {
         return i18np("%1 notification", "%1 notifications", count);
     }
 
-    // The job's own title, or "Working" when it has none.
-    function jobTitle(title) {
-        return title.length > 0 ? title : i18n("Working");
+    // The job's own title, or "Working" when it has none; more than one file adds the count.
+    function jobTitle(title, files) {
+        const base = title.length > 0 ? title : i18n("Working");
+        return files > 1 ? base + " " + i18np("%1 file", "%1 files", files) : base;
     }
 
-    // parts: Jobs.detailsParts
-    function jobDetails(parts) {
-        switch (parts.kind) {
-        case "paused":
+    function jobSubtitle(destination, fallback) {
+        return destination.length > 0 ? i18n("to %1", destination) : fallback;
+    }
+
+    function duration(seconds) {
+        if (seconds < 60)
+            return i18n("%1 s", seconds);
+        if (seconds < 3600)
+            return i18n("%1 min", Math.ceil(seconds / 60));
+        return i18n("%1 h %2 min", Math.floor(seconds / 3600), Math.floor(seconds % 3600 / 60));
+    }
+
+    // meta: Jobs.meta
+    function jobMeta(meta) {
+        if (meta.kind === "paused")
             return i18n("Paused");
-        case "speed":
-            return Utils.formatByteSize(parts.speed) + "/s";
-        case "progress":
-            return i18n("%1 of %2", Utils.formatByteSize(parts.processed), Utils.formatByteSize(parts.total));
-        case "app":
-            return parts.text;
-        default:
+        if (meta.kind !== "speed")
             return "";
-        }
+        const speed = Utils.formatByteSize(meta.speed) + "/s";
+        return meta.remaining >= 0 ? speed + " · " + i18n("%1 left", duration(meta.remaining)) : speed;
     }
 
     function wifiTitle(hardwareEnabled, enabled) {

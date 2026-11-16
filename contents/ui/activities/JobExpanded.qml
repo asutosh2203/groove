@@ -1,112 +1,150 @@
 import QtQuick
 import QtQuick.Layouts
-import org.kde.kirigami as Kirigami
 import ".."
+import "../controlcenter" as CC
+import "../controlcenter/Tokens.js" as T
 
 Item {
     id: jobPage
 
     property var app: null
     readonly property int row: app ? app.jobs.activeRow() : -1
-    readonly property var details: app ? app.jobs.details(row) : null
     readonly property int percentage: app ? app.jobs.percentage(row) : -1
     readonly property bool suspended: app ? app.jobs.isSuspended(row) : false
+    readonly property var glyphNames: app ? app.jobs.glyphNames(row) : ["folder-download-symbolic"]
+
+    // Muted manage-zone icon that brightens on hover, like the notification's open and dismiss glyphs.
+    component GhostIcon: Item {
+        id: ghost
+
+        property var names: []
+        property string tooltipText: ""
+
+        signal clicked()
+
+        implicitWidth: 16
+        implicitHeight: 16
+        Accessible.role: Accessible.Button
+        Accessible.name: tooltipText
+        Accessible.onPressAction: clicked()
+
+        CC.ThemeGlyph {
+            anchors.fill: parent
+            names: ghost.names
+            color: area.containsMouse ? T.textPrimary : T.textTertiary
+
+            Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+        }
+
+        MouseArea {
+            id: area
+
+            anchors.fill: parent
+            anchors.margins: -4
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: ghost.clicked()
+        }
+    }
 
     RowLayout {
         anchors.fill: parent
         spacing: 10
 
         Rectangle {
-            Layout.preferredWidth: 58
-            Layout.preferredHeight: 58
-            Layout.alignment: Qt.AlignVCenter
-            radius: 16
-            color: "#101714"
-            border.color: "#243a2b"
+            Layout.preferredWidth: 40
+            Layout.preferredHeight: 40
+            Layout.alignment: Qt.AlignTop
+            radius: 12
+            color: T.card
+            border.color: T.border
             border.width: 1
 
-            Kirigami.Icon {
+            CC.ThemeGlyph {
                 anchors.centerIn: parent
-                width: 34
-                height: 34
-                source: jobPage.row >= 0 ? jobPage.app.jobs.icon(jobPage.row) : "folder-download"
-                fallback: "folder-download"
+                width: 24
+                height: 24
+                names: jobPage.glyphNames
+                color: T.iconIdle
             }
         }
 
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 3
+            Layout.alignment: Qt.AlignTop
+            spacing: 4
 
-            PlasmaLabel {
+            RowLayout {
                 Layout.fillWidth: true
-                text: jobPage.row >= 0 ? jobPage.app.jobTitle(jobPage.row) : i18n("Working")
-                color: "#ffffff"
-                font.pixelSize: 12
-                font.weight: Font.Bold
-                elide: Text.ElideRight
-                maximumLineCount: 1
+                spacing: 8
+
+                PlasmaLabel {
+                    Layout.fillWidth: true
+                    text: jobPage.row >= 0 ? jobPage.app.jobTitle(jobPage.row) : i18n("Working")
+                    color: T.textPrimary
+                    font.pixelSize: 12
+                    font.weight: Font.Bold
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                }
+
+                GhostIcon {
+                    visible: jobPage.row >= 0 && jobPage.app.jobs.suspendable(jobPage.row)
+                    names: jobPage.suspended ? ["media-playback-start-symbolic", "media-playback-start"] : ["media-playback-pause-symbolic", "media-playback-pause"]
+                    tooltipText: jobPage.suspended ? i18n("Resume") : i18n("Pause")
+                    onClicked: jobPage.app.jobs.toggleSuspended(jobPage.row)
+                }
+
+                GhostIcon {
+                    visible: jobPage.row >= 0 && jobPage.app.jobs.killable(jobPage.row)
+                    names: ["window-close-symbolic", "dialog-close", "window-close"]
+                    tooltipText: i18n("Cancel")
+                    onClicked: jobPage.app.jobs.cancel(jobPage.row)
+                }
             }
 
             PlasmaLabel {
                 Layout.fillWidth: true
-                text: jobPage.row >= 0 ? jobPage.app.jobs.text(jobPage.row) : ""
-                color: "#a7aaa9"
+                text: jobPage.row >= 0 ? jobPage.app.jobSubtitle(jobPage.row) : ""
+                color: T.textSecondary
                 font.pixelSize: 9
                 elide: Text.ElideRight
                 maximumLineCount: 1
             }
 
+            ProgressBar {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 5
+                Layout.topMargin: 2
+                from: 0
+                to: 100
+                value: Math.max(0, jobPage.percentage)
+                accent: T.fill
+                trackColor: T.track
+                tipGradient: true
+                glow: true
+                dimmed: jobPage.suspended
+            }
+
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 5
 
-                ProgressBar {
+                PlasmaLabel {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 5
-                    from: 0
-                    to: 100
-                    value: Math.max(0, jobPage.percentage)
-                    accent: jobPage.suspended ? "#ff9f0a" : "#42d77d"
+                    text: jobPage.row >= 0 ? jobPage.app.jobMetaText(jobPage.row) : ""
+                    color: T.textTertiary
+                    font.pixelSize: 9
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
                 }
 
                 PlasmaLabel {
                     visible: jobPage.percentage >= 0
                     text: jobPage.percentage + "%"
-                    color: jobPage.suspended ? "#ffd7a1" : "#c7f9d4"
+                    color: T.textCaption
                     font.pixelSize: 9
                     font.weight: Font.Bold
                 }
-            }
-
-            PlasmaLabel {
-                Layout.fillWidth: true
-                text: jobPage.row >= 0 ? jobPage.app.jobDetailsText(jobPage.row) : ""
-                color: "#777f7a"
-                font.pixelSize: 8
-                elide: Text.ElideRight
-                maximumLineCount: 1
-            }
-        }
-
-        RowLayout {
-            spacing: 5
-
-            IslandButton {
-                visible: jobPage.row >= 0 && jobPage.app.jobs.suspendable(jobPage.row)
-                iconName: jobPage.suspended ? "media-playback-start" : "media-playback-pause"
-                tooltipText: jobPage.suspended ? i18n("Resume") : i18n("Pause")
-                compact: true
-                emphasized: jobPage.suspended
-                onClicked: jobPage.app.jobs.toggleSuspended(jobPage.row)
-            }
-
-            IslandButton {
-                visible: jobPage.row >= 0 && jobPage.app.jobs.killable(jobPage.row)
-                iconName: "process-stop"
-                tooltipText: i18n("Cancel")
-                compact: true
-                onClicked: jobPage.app.jobs.cancel(jobPage.row)
             }
         }
     }

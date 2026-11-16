@@ -1,4 +1,5 @@
 import QtQuick
+import "controlcenter/Tokens.js" as T
 
 Item {
     id: glyph
@@ -47,11 +48,11 @@ Item {
                 ctx.beginPath();
                 ctx.arc(cx, cy, r, -Math.PI / 2, Math.PI * 1.5);
                 ctx.stroke();
-                ctx.strokeStyle = "#42d77d";
+                ctx.strokeStyle = T.fill;
                 ctx.beginPath();
                 ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.02, glyph.safeProgress));
                 ctx.stroke();
-                ctx.fillStyle = "#42d77d";
+                ctx.fillStyle = T.fill;
                 ctx.fillRect(cx - 2, cy - 7, 4, 10);
                 ctx.beginPath();
                 ctx.moveTo(cx - 6, cy);

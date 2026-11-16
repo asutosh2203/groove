@@ -44,7 +44,7 @@ TestCase {
         verify(!jobs.suspendable(-1));
         verify(!jobs.killable(-1));
         verify(!jobs.isSuspended(-1));
-        compare(jobs.detailsParts(-1).kind, "none");
+        compare(jobs.meta(-1).kind, "none");
     }
 
     function test_actions_on_a_missing_row_do_nothing() {

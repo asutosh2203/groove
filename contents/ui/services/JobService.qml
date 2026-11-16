@@ -40,6 +40,10 @@ Item {
         return Jobs.icon(details(row), notifications.rowValue(row, NotificationManager.Notifications.ApplicationIconNameRole, ""), notifications.rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
     }
 
+    function glyphNames(row) {
+        return Jobs.glyphNames(details(row), icon(row));
+    }
+
     function jobState(row) {
         return Jobs.state(details(row), notifications.rowValue(row, NotificationManager.Notifications.JobStateRole, NotificationManager.Notifications.JobStateRunning));
     }
@@ -60,9 +64,16 @@ Item {
         return jobState(row) === NotificationManager.Notifications.JobStateSuspended;
     }
 
-    // Which detail line applies; see Jobs.detailsParts.
-    function detailsParts(row) {
-        return Jobs.detailsParts(details(row), isSuspended(row));
+    function meta(row) {
+        return Jobs.meta(details(row), isSuspended(row));
+    }
+
+    function fileCount(row) {
+        return Jobs.fileCount(details(row));
+    }
+
+    function destination(row) {
+        return Jobs.destination(details(row));
     }
 
     function toggleSuspended(row) {
