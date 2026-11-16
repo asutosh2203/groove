@@ -72,23 +72,10 @@ Found while moving code in Q2; behaviour was kept during the moves, then fixed o
 
 ## Widget library
 
-### Design notes (draft, from planning chat)
-- One expanded surface ("the deck"): [Live] -> [Presets 1-5] -> [Control Center, always last].
-- Live page: ALL running long-running activities (media, jobs) stacked with their own controls; shown only when
-  something is live. Notifications and keyboard layout stay as pop-ins over the deck, not pages.
-- Presets: max 5; each is a user-picked set of widgets in a template (size classes S/M/L per widget, no freeform
-  editor, D-24); the user picks which presets are in the cycle and their order. Preset sizes: small or large.
-- Navigation: a single horizontal axis. Grouped indicator: pill = Live, dots = presets, gear = Control Center. Dots are
-  clickable, plus horizontal touchpad swipe. No vertical page switching (it conflicts with scrolling content).
-- Entry: click the capsule opens the deck (lands on Live if something is running, else the last-used page); idle hot
-  zones keep calendar and forecast (D-12); double-click opens the Control Center page; Esc or an outside click closes.
-- No presets configured: the deck is [Live] + [Control Center], about today's behaviour.
-- The indicator hides when the deck has a single page (no live activity and no presets: the deck is just the Control
-  Center, identical to the current behaviour).
-- Transitions: silhouette morph plus content cross-fade; the window is pre-sized for the largest page in the cycle
-  before the deck shows (the N1 resize lesson, D-43); only the visible page's widgets are loaded (principle 9).
-- Open questions: the widget contract (sizes, settings, lifecycle, permissions), the preset editor UX, and
-  context-aware presets (later).
+### Design notes
+Full design in [`WIDGET-ARCHITECTURE.md`](WIDGET-ARCHITECTURE.md): the deck ([Live] -> presets -> [Control Center]), the
+cell-span grid (D-48), the preset editor, ref-counted services (WeatherService migrated), the widget contract and
+persistence. Still open there: the proposed contract details and context-aware presets.
 
 ### W1: Claude Code progress integration
 An adapter script (`integrations/claude-code/`) that turns Claude Code hook events into KDE-standard signals; the island
