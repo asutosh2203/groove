@@ -37,7 +37,7 @@ Item {
         // Without any icon the age is always shown.
         opacity: slot.iconCount > 0 && slot.revealed ? 0 : 1
 
-        Behavior on opacity { NumberAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
     }
 
     Row {
@@ -46,7 +46,7 @@ Item {
         spacing: 8
         opacity: slot.revealed ? 1 : 0
 
-        Behavior on opacity { NumberAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
 
         ThemeGlyph {
             visible: slot.clickable
@@ -73,7 +73,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 anchors.margins: -3
-                radius: 5
+                radius: T.radiusSmall
                 color: "transparent"
                 border.color: dismissItem.activeFocus ? T.focusRing : "transparent"
                 border.width: 1
@@ -84,7 +84,7 @@ Item {
                 names: ["window-close-symbolic", "dialog-close", "window-close"]
                 color: dismissArea.containsMouse ? T.textPrimary : slot.iconColor
 
-                Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+                Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
             }
 
             // Larger than the glyph so it is easy to hit; it sits above the row's own click area.

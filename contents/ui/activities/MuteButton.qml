@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls as QQC2
+import "../controlcenter/Tokens.js" as T
 
 // System-wide (default sink) mute toggle. State comes from the sink, never kept here.
 MouseArea {
@@ -51,7 +52,7 @@ MouseArea {
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width
             height: button.large ? 2 : 1.5
-            radius: 1
+            radius: T.radiusSmall
             color: "#e9e9ef"
         }
     }

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import ".."
 import "../logic/MediaPlayers.js" as MediaPlayers
+import "../controlcenter/Tokens.js" as T
 
 Item {
     id: musicPage
@@ -117,7 +118,7 @@ Item {
                     Layout.rightMargin: 8
                     iconName: "media-skip-backward"
                     flat: true
-                    glyphSize: 17
+                    glyphSize: T.iconTransport
                     implicitWidth: 34
                     // No hover tooltip; screen readers still get the name.
                     Accessible.name: i18n("Previous")
@@ -128,7 +129,7 @@ Item {
                 IslandButton {
                     iconName: musicPage.playing ? "media-playback-pause" : "media-playback-start"
                     flat: true
-                    glyphSize: 23
+                    glyphSize: T.iconTransportPrimary
                     implicitWidth: 40
                     Accessible.name: musicPage.playing ? i18n("Pause") : i18n("Play")
                     enabled: musicPage.hasPlayer && (musicPage.app.media.player.canPlay || musicPage.app.media.player.canPause)
@@ -139,7 +140,7 @@ Item {
                     Layout.leftMargin: 8
                     iconName: "media-skip-forward"
                     flat: true
-                    glyphSize: 17
+                    glyphSize: T.iconTransport
                     implicitWidth: 34
                     Accessible.name: i18n("Next")
                     enabled: musicPage.hasPlayer && musicPage.app.media.player.canGoNext

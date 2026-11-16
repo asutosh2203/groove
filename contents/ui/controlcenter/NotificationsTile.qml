@@ -225,7 +225,7 @@ Item {
                             border.color: rowArea.activeFocus ? T.focusRing : T.border
                             border.width: 1
 
-                            Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
                         }
 
                         HoverHandler {
@@ -305,7 +305,7 @@ Item {
                                         visible: notificationsContent.detailed && app.notifications.urgencyKind(modelData) === "critical"
                                         Layout.preferredWidth: 6
                                         Layout.preferredHeight: 6
-                                        radius: 3
+                                        radius: T.radiusSmall
                                         color: T.critical
                                     }
 

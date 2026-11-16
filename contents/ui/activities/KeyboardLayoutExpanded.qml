@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import ".."
+import "../controlcenter/Tokens.js" as T
 
 Item {
     id: keyboardPage
@@ -16,7 +17,7 @@ Item {
             Layout.preferredWidth: 58
             Layout.preferredHeight: 58
             Layout.alignment: Qt.AlignVCenter
-            radius: 16
+            radius: T.radiusInner
             color: "#14141c"
             border.color: "#353546"
             border.width: 1
@@ -37,7 +38,7 @@ Item {
                 Layout.fillWidth: true
                 text: i18n("Keyboard layout")
                 color: "#9999a6"
-                font.pixelSize: 9
+                font.pixelSize: T.fontCaption
                 font.weight: Font.DemiBold
             }
 

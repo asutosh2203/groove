@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import ".."
+import "../controlcenter/Tokens.js" as T
 
 Item {
     id: musicCompact
@@ -23,7 +24,7 @@ Item {
                 Layout.fillWidth: true
                 text: musicCompact.hasPlayer ? musicCompact.app.media.player.track || musicCompact.app.media.player.identity || i18n("Media") : i18n("Media")
                 color: "#e9e9ef"
-                font.pixelSize: 9
+                font.pixelSize: T.fontCaption
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
                 maximumLineCount: 1

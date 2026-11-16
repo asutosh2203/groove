@@ -147,7 +147,7 @@ Rectangle {
                     Layout.rightMargin: 8
                     iconName: "media-skip-backward"
                     flat: true
-                    glyphSize: 17
+                    glyphSize: T.iconTransport
                     implicitWidth: 34
                     focusColor: T.focusRing
                     tooltipText: i18n("Previous")
@@ -157,7 +157,7 @@ Rectangle {
                 IslandButton {
                     iconName: app.media.isPlaying ? "media-playback-pause" : "media-playback-start"
                     flat: true
-                    glyphSize: 23
+                    glyphSize: T.iconTransportPrimary
                     implicitWidth: 40
                     focusColor: T.focusRing
                     tooltipText: app.media.isPlaying ? i18n("Pause") : i18n("Play")
@@ -168,7 +168,7 @@ Rectangle {
                     Layout.leftMargin: 8
                     iconName: "media-skip-forward"
                     flat: true
-                    glyphSize: 17
+                    glyphSize: T.iconTransport
                     implicitWidth: 34
                     focusColor: T.focusRing
                     tooltipText: i18n("Next")
@@ -255,7 +255,7 @@ Rectangle {
                 height: parent.height
                 iconName: "media-skip-backward"
                 flat: true
-                glyphSize: 15
+                glyphSize: T.iconTransport
                 focusColor: T.focusRing
                 tooltipText: i18n("Previous")
                 enabled: app.media.player && app.media.player.canGoPrevious
@@ -267,7 +267,7 @@ Rectangle {
                 height: parent.height
                 iconName: app.media.isPlaying ? "media-playback-pause" : "media-playback-start"
                 flat: true
-                glyphSize: 20
+                glyphSize: T.iconTransportPrimary
                 focusColor: T.focusRing
                 tooltipText: app.media.isPlaying ? i18n("Pause") : i18n("Play")
                 enabled: app.media.player && (app.media.player.canPlay || app.media.player.canPause)
@@ -279,7 +279,7 @@ Rectangle {
                 height: parent.height
                 iconName: "media-skip-forward"
                 flat: true
-                glyphSize: 15
+                glyphSize: T.iconTransport
                 focusColor: T.focusRing
                 tooltipText: i18n("Next")
                 enabled: app.media.player && app.media.player.canGoNext

@@ -33,7 +33,7 @@ Item {
             names: ghost.names
             color: area.containsMouse ? T.textPrimary : T.textTertiary
 
-            Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+            Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
         }
 
         MouseArea {
@@ -55,7 +55,7 @@ Item {
             Layout.preferredWidth: 40
             Layout.preferredHeight: 40
             Layout.alignment: Qt.AlignTop
-            radius: 12
+            radius: T.radiusInner
             color: T.card
             border.color: T.border
             border.width: 1
@@ -107,7 +107,7 @@ Item {
                 Layout.fillWidth: true
                 text: jobPage.row >= 0 ? jobPage.app.jobSubtitle(jobPage.row) : ""
                 color: T.textSecondary
-                font.pixelSize: 9
+                font.pixelSize: T.fontCaption
                 elide: Text.ElideRight
                 maximumLineCount: 1
             }
@@ -133,7 +133,7 @@ Item {
                     Layout.fillWidth: true
                     text: jobPage.row >= 0 ? jobPage.app.jobMetaText(jobPage.row) : ""
                     color: T.textTertiary
-                    font.pixelSize: 9
+                    font.pixelSize: T.fontCaption
                     elide: Text.ElideRight
                     maximumLineCount: 1
                 }
@@ -142,7 +142,7 @@ Item {
                     visible: jobPage.percentage >= 0
                     text: jobPage.percentage + "%"
                     color: T.textCaption
-                    font.pixelSize: 9
+                    font.pixelSize: T.fontCaption
                     font.weight: Font.Bold
                 }
             }

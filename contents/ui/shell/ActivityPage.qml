@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import ".."
+import "../controlcenter/Tokens.js" as T
 
 RowLayout {
     id: self
@@ -15,13 +16,13 @@ RowLayout {
     Rectangle {
         Layout.preferredWidth: 58
         Layout.preferredHeight: 58
-        radius: 16
+        radius: T.radiusInner
         color: "transparent"
 
         MaskedArtwork {
             anchors.fill: parent
             artworkSource: self.app.activities.artworkFor(self.app.popupActivityMode())
-            cornerRadius: 16
+            cornerRadius: T.radiusInner
             glyphSize: 32
             mode: self.app.popupActivityMode()
             kind: self.app.media.kind

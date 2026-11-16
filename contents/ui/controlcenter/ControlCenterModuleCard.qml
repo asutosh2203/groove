@@ -30,12 +30,12 @@ Rectangle {
     z: 2
     scale: 1
 
-    Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-    Behavior on opacity { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
-    Behavior on x { enabled: app.layoutService.editMode; NumberAnimation { duration: 105; easing.type: Easing.OutCubic } }
-    Behavior on y { enabled: app.layoutService.editMode; NumberAnimation { duration: 105; easing.type: Easing.OutCubic } }
-    Behavior on width { NumberAnimation { duration: 105; easing.type: Easing.OutCubic } }
-    Behavior on height { NumberAnimation { duration: 105; easing.type: Easing.OutCubic } }
+    Behavior on scale { NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
+    Behavior on opacity { NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
+    Behavior on x { enabled: app.layoutService.editMode; NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
+    Behavior on y { enabled: app.layoutService.editMode; NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
+    Behavior on width { NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
+    Behavior on height { NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
 
     Loader {
         anchors.fill: parent

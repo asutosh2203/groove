@@ -52,13 +52,16 @@ const critical = "#ff453a";
 
 // Radii
 const radiusCard = 20;
-const radiusInner = 14;
+const radiusInner = 14;         // also the radius of the activity tiles (job, keyboard, activity page)
+const radiusSmall = 4;          // bar, dot and pill ends; a Rectangle clamps it to half its smaller side
 const edgeFadePx = 28;       // D-44
 const surfaceControlTop = "#141419";     // the Control Center surface gradient (PopupContent)
 const surfaceControlBottom = "#09090c";
 
 // Icons and states
 const iconHeader = 18;       // leading icon of a card header
+const iconTransport = 16;    // previous and next
+const iconTransportPrimary = 22;  // play and pause
 const disabledOpacity = 0.45;
 
 // Spacing
@@ -75,6 +78,7 @@ const fontCaption = 10;
 // Motion (ms)
 const motionFast = 120;
 const motionSlider = 90;
+const easingStandard = 6;    // Easing.OutCubic; the Easing enum is not reachable from a library script
 
 // Several theme icons used by the modules are full-colour and opaque, so they
 // cannot be tinted monochrome. Map them to symbolic/monochrome equivalents.

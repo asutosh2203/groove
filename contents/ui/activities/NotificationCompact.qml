@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import ".."
+import "../controlcenter/Tokens.js" as T
 
 Item {
     id: notificationCompact
@@ -19,7 +20,7 @@ Item {
             Layout.fillWidth: true
             text: notificationCompact.row >= 0 ? notificationCompact.app.notifications.title(notificationCompact.row) : i18n("Notification")
             color: "#f2f2f7"
-            font.pixelSize: 9
+            font.pixelSize: T.fontCaption
             font.weight: Font.DemiBold
             elide: Text.ElideRight
             maximumLineCount: 1
@@ -82,7 +83,7 @@ Item {
                 anchors.centerIn: parent
                 text: notificationCompact.unreadCount > 0 ? String(notificationCompact.unreadCount) : "!"
                 color: "#ffd7a1"
-                font.pixelSize: 9
+                font.pixelSize: T.fontCaption
                 font.weight: Font.Bold
             }
         }

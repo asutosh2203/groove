@@ -173,7 +173,7 @@ Item {
                 Rectangle {
                     Layout.preferredWidth: 5
                     Layout.preferredHeight: 5
-                    radius: 2.5
+                    radius: T.radiusSmall
                     color: notificationPage.hasNotification ? notificationPage.app.notifications.urgencyColor(notificationPage.notificationRow) : "#D1D3D8"
                 }
             }

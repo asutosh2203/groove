@@ -78,8 +78,8 @@ Item {
             color: T.fill
             opacity: controlSlider.sliderAvailable ? (app.layoutService.editMode ? 0.7 : 1) : 0.16
 
-            Behavior on width { NumberAnimation { duration: T.motionSlider; easing.type: Easing.OutCubic } }
-            Behavior on height { NumberAnimation { duration: T.motionSlider; easing.type: Easing.OutCubic } }
+            Behavior on width { NumberAnimation { duration: T.motionSlider; easing.type: T.easingStandard } }
+            Behavior on height { NumberAnimation { duration: T.motionSlider; easing.type: T.easingStandard } }
         }
     }
 

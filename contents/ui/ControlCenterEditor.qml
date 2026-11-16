@@ -736,23 +736,23 @@ Item {
         border.width: 1
 
         Behavior on x {
-            NumberAnimation { duration: 105; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard }
         }
 
         Behavior on y {
-            NumberAnimation { duration: 105; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard }
         }
 
         Behavior on width {
-            NumberAnimation { duration: 105; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard }
         }
 
         Behavior on height {
-            NumberAnimation { duration: 105; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard }
         }
 
         Behavior on border.color {
-            ColorAnimation { duration: 110 }
+            ColorAnimation { duration: T.motionFast }
         }
 
         Rectangle {

@@ -28,7 +28,7 @@ Row {
             width: 4
             height: Math.max(5, islandBars.height * level)
             y: (islandBars.height - height) / 2
-            radius: 2
+            radius: T.radiusSmall
             color: islandBars.color
             opacity: islandBars.playing ? 1 : 0.45
             readonly property real lowLevel: Math.max(0.24, 1 - modelData * 0.35)

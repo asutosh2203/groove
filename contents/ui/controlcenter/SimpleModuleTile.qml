@@ -59,7 +59,7 @@ MouseArea {
         border.color: simpleTile.activeFocus ? T.focusRing : "transparent"
         border.width: 1
 
-        Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+        Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
     }
 
     RowLayout {
@@ -76,7 +76,7 @@ MouseArea {
             color: simpleTile.active || simpleTile.critical ? T.chip : T.raised
             opacity: simpleTile.available ? 1 : T.disabledOpacity
 
-            Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+            Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
 
             Kirigami.Icon {
                 anchors.centerIn: parent
@@ -127,7 +127,7 @@ MouseArea {
                 visible: simpleTile.showProgressFill
                 Layout.fillWidth: true
                 Layout.preferredHeight: 3
-                radius: 2
+                radius: T.radiusSmall
                 color: T.track
 
                 Rectangle {
@@ -138,7 +138,7 @@ MouseArea {
                     radius: parent.radius
                     color: simpleTile.barColor
 
-                    Behavior on width { NumberAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+                    Behavior on width { NumberAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
                 }
             }
 

@@ -196,3 +196,19 @@ the space (`review/notch/11-control-center.png`); in the Pill frames the extra l
 (`review/b3/pill/music-3-control-center.png`). The tile is `SimpleModuleTile` in `controlcenter/ControlCenterModuleCard.qml`
 (`wifiModule`, `detailed` at 142 x 88 or larger). Cause not isolated: the header and the text stack are separate layouts, and
 the stack is bottom-aligned. No token is involved (nothing here is a spacing literal); it is a layout decision.
+
+## After T1
+The top findings were fixed in T1; the literals the ratchet counts went from 232 to 170 (`scripts/check-tokens.cjs`, baseline
+`.github/token-baseline.txt`). The scan in this document counted a line once; the ratchet counts every literal on a line, so its
+motion figure is higher than the table above (60 before, 27 after) and `Easing.OutCubic` was really 23 sites, not 12.
+
+| Kind | Before | After | What changed |
+|---|---|---|---|
+| Radius | 16 | 5 | Activity tiles use `radiusInner` (job 12, keyboard and activity page 16 became 14); bar, dot and pill ends use `radiusSmall` (4) |
+| Font size | 27 | 18 | 9 px text raised to `fontCaption` (10), 8 sites |
+| Icon size | 23 | 14 | Transport buttons: `iconTransport` 16 and `iconTransportPrimary` 22 (were 17/23 and 15/20) |
+| Motion | 60 | 27 | `easingStandard` replaces `Easing.OutCubic` at 22 sites; the 100/105/110 ms Control Center durations and the card's 120 now use `motionFast` |
+| Spacing, margins, opacity | 106 | 106 | untouched (not in T1) |
+
+Left alone on purpose: `NetworkListTile.qml` and the Wi-Fi and Bluetooth tiles (C8), the 7 px and 5 px spacing, the 17/23-style
+sizes outside the transport buttons, the long timers and polling intervals, and `ReplyShelf.qml`'s spring easing.

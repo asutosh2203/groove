@@ -25,7 +25,7 @@ Item {
                 Layout.fillWidth: true
                 text: jobCompact.row >= 0 ? jobCompact.app.jobTitle(jobCompact.row) : i18n("Working")
                 color: T.textPrimary
-                font.pixelSize: 9
+                font.pixelSize: T.fontCaption
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
                 maximumLineCount: 1
@@ -35,7 +35,7 @@ Item {
                 visible: jobCompact.percentage >= 0 || jobCompact.suspended
                 text: jobCompact.suspended ? jobCompact.app.jobMetaText(jobCompact.row) : jobCompact.percentage + "%"
                 color: T.textCaption
-                font.pixelSize: 9
+                font.pixelSize: T.fontCaption
                 font.weight: Font.Bold
             }
         }

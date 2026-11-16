@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import ".."
 import "../weather"
+import "../controlcenter/Tokens.js" as T
 
 Item {
     id: island
@@ -69,7 +70,7 @@ Item {
         visible: opacity > 0
 
         Behavior on opacity {
-            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: 180; easing.type: T.easingStandard }
         }
     }
 

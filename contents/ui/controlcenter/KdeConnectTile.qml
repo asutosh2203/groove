@@ -51,7 +51,7 @@ MouseArea {
         border.color: kdeTile.activeFocus ? T.focusRing : "transparent"
         border.width: 1
 
-        Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: Easing.OutCubic } }
+        Behavior on color { ColorAnimation { duration: T.motionFast; easing.type: T.easingStandard } }
     }
 
     ColumnLayout {
@@ -151,7 +151,7 @@ MouseArea {
                     Rectangle {
                         Layout.preferredWidth: 7
                         Layout.preferredHeight: 7
-                        radius: 4
+                        radius: T.radiusSmall
                         color: deviceRow.online ? T.fill : T.textTertiary
                     }
 
@@ -295,7 +295,7 @@ MouseArea {
         anchors.margins: 7
         width: 8
         height: 8
-        radius: 4
+        radius: T.radiusSmall
         color: kdeTile.reachableDevices > 0 ? T.fill : T.textTertiary
     }
 
