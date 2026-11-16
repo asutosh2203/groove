@@ -88,6 +88,26 @@ Item {
             restart();
         }
     }
+    // The panel face is the only subscriber; the popup copy (primary: false) never keeps weather polling.
+    readonly property bool wantsWeather: primary && visible && weather !== null
+    property bool subscribed: false
+
+    function syncSubscription() {
+        if (wantsWeather === subscribed)
+            return ;
+        subscribed = wantsWeather;
+        if (subscribed)
+            weather.subscribe();
+        else
+            weather.unsubscribe();
+    }
+
+    onWantsWeatherChanged: syncSubscription()
+    Component.onCompleted: syncSubscription()
+    Component.onDestruction: {
+        if (subscribed)
+            weather.unsubscribe();
+    }
     onVisibleChanged: {
         if (visible) {
             now = new Date();

@@ -41,3 +41,11 @@ test('validCurrent rejects malformed responses', () => {
     assert.equal(codes.validCurrent({ current: { temperature_2m: '3', weather_code: 1 } }), false);
     assert.equal(codes.validCurrent(null), false);
 });
+
+test('a reading is stale when missing or within a minute of expiring', () => {
+    const refresh = 30 * 60 * 1000;
+    assert.equal(codes.isStale(false, 0, 0, refresh), true);
+    assert.equal(codes.isStale(true, 1000, 1000 + 10 * 60 * 1000, refresh), false);
+    assert.equal(codes.isStale(true, 0, refresh - 60000, refresh), false);
+    assert.equal(codes.isStale(true, 0, refresh - 60000 + 1, refresh), true);
+});

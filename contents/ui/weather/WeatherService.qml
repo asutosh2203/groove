@@ -1,9 +1,11 @@
 import QtQuick
 import org.kde.plasma.plasmoid
 import "../logic/WeatherCodes.js" as Codes
+import "../logic/Subscribers.js" as Subs
 
 // Open-Meteo current conditions for the location chosen in the settings (no IP/GPS lookup).
 // The last good response is cached in the widget config and kept when a refresh fails.
+// It fetches only while a view is subscribed (plus a grace period after the last leaves).
 Item {
     id: service
 
@@ -25,6 +27,31 @@ Item {
     readonly property string forecastUrl: configured ? Codes.forecastUrl(latitude, longitude) : ""
     readonly property int refreshMs: 30 * 60 * 1000
     property bool busy: false
+    property var subscribers: Subs.create()
+    property bool active: false
+
+    function syncActive() {
+        active = Subs.isActive(subscribers, Date.now());
+        if (!active)
+            retryTimer.stop();
+        else if (subscribers.count === 0)
+            graceTimer.restart();
+    }
+
+    // A visible view calls these in pairs; the first subscriber triggers a refresh only if stale.
+    function subscribe() {
+        subscribers = Subs.add(subscribers);
+        graceTimer.stop();
+        syncActive();
+        if (subscribers.count === 1)
+            refreshIfStale();
+    }
+
+    function unsubscribe() {
+        subscribers = Subs.remove(subscribers, Date.now());
+        graceTimer.interval = Math.max(1, Subs.graceLeft(subscribers, Date.now()));
+        syncActive();
+    }
 
     function coordsMatch(a, b) {
         return Math.abs(Number(a) - Number(b)) < 0.0001;
@@ -97,14 +124,11 @@ Item {
     }
 
     function refreshIfStale() {
-        if (configured && (!hasData || Date.now() - updatedMs > refreshMs - 60000))
+        if (configured && Codes.isStale(hasData, updatedMs, Date.now(), refreshMs))
             refresh();
     }
 
-    Component.onCompleted: {
-        loadCache();
-        refreshIfStale();
-    }
+    Component.onCompleted: loadCache()
 
     Connections {
         target: Plasmoid.configuration
@@ -117,7 +141,8 @@ Item {
     function doRelocate() {
         loadCache();
         busy = false;
-        refresh();
+        if (active)
+            refresh();
     }
 
     // callLater with a function reference coalesces the three config change signals into one fetch.
@@ -128,8 +153,14 @@ Item {
     Timer {
         interval: service.refreshMs
         repeat: true
-        running: service.configured
+        running: service.configured && service.active
         onTriggered: service.refresh()
+    }
+
+    Timer {
+        id: graceTimer
+
+        onTriggered: service.syncActive()
     }
 
     Timer {

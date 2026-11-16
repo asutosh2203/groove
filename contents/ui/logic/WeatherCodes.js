@@ -51,3 +51,8 @@ function validCurrent(json) {
     const cur = json && json.current;
     return !!cur && typeof cur.temperature_2m === "number" && isFinite(cur.temperature_2m) && typeof cur.weather_code === "number";
 }
+
+// A reading is refreshed when missing or within one minute of expiring.
+function isStale(hasData, updatedMs, now, refreshMs) {
+    return !hasData || now - updatedMs > refreshMs - 60000;
+}
