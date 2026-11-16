@@ -77,17 +77,12 @@ Full design in [`WIDGET-ARCHITECTURE.md`](WIDGET-ARCHITECTURE.md): the deck ([Li
 cell-span grid (D-48), the preset editor, ref-counted services (WeatherService migrated), the widget contract and
 persistence. Still open there: the proposed contract details and context-aware presets.
 
-### W1: Claude Code progress integration
-An adapter script (`integrations/claude-code/`) that turns Claude Code hook events into KDE-standard signals; the island
-needs no new code for v1 (it already renders jobs and notifications).
-- Progress: TaskCreated/TaskCompleted become a KDE job ("3 of 7 steps"); PreToolUse becomes the job's status text
-  ("Editing main.qml", "Running tests") plus elapsed time when there is no task list.
-- Attention: Notification (permission_prompt / agent_needs_input) becomes a Critical-urgency notification (D-38) that
-  opens the terminal or IDE on click (D-31); Stop becomes a "Done" notification.
-- Hooks are synchronous: the script must return in milliseconds (fire the D-Bus calls in the background).
-- State file per session_id; clean up on Stop/SessionEnd; stale-job timeout if Claude crashes.
-- Multiple sessions are multiple jobs; the job is non-cancellable in v1.
-- Ship a README and a hooks snippet to paste into Claude Code settings.
+### W1: Claude Code progress integration (parked)
+Built in `integrations/claude-code/` (D-49): hook client, per-session daemon, pure logic with 16 Python
+tests, install script and README. Notifications work (Needs your OK, Done, two sessions, idle cleanup, about 15 ms per
+hook). Jobs are opt-in (`KOVE_CLAUDE_JOBS=1`) and were parked after a plasmashell crash that Kove's code triggered
+(inherited from upstream; the library makes it easy to hit; D-50, fixed). Still to do: a live run of the job path with the fix (grace/reuse and the cooldown), confirm the
+click opens VS Code and a real task-list run once a Claude Code version has the task tools.
 - Later: a dedicated AI Agent widget (multiple sessions, last message, subagents) once the widget contract exists.
 
 ## Backlog
