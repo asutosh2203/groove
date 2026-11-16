@@ -25,18 +25,32 @@ Item {
     readonly property var input: ({ "tx": pointer.x, "ty": pointer.y, "hover": hovering, "off": animationsOff })
     readonly property bool needsFrames: Glow.needsFrames({ "x": glowX, "y": glowY, "s": fade }, input, cfg)
     readonly property alias animating: frames.running
+    property var bloomState: Glow.bloomIdle()
+    readonly property bool blooming: Glow.bloomActive(bloomState)
 
-    visible: fade > 0
+    // D-43: a bloom plays on the reply shelf's opening; none when animations are off.
+    function bloom() {
+        if (animationsOff)
+            return ;
+
+        glowX = pointer.x;
+        glowY = pointer.y;
+        bloomState = Glow.bloomStart(T.glowIntensity);
+    }
+
+    visible: fade > 0 || blooming
 
     FrameAnimation {
         id: frames
 
-        running: glow.needsFrames
+        running: glow.needsFrames || glow.blooming
         onTriggered: {
             const next = Glow.advance({ "x": glow.glowX, "y": glow.glowY, "s": glow.fade }, glow.input, frames.frameTime * 1000, glow.cfg);
             glow.glowX = next.x;
             glow.glowY = next.y;
             glow.fade = next.s;
+            if (glow.blooming)
+                glow.bloomState = Glow.bloomAdvance(glow.bloomState, frames.frameTime * 1000);
         }
     }
 
@@ -46,10 +60,10 @@ Item {
         property var mask: glow.mask
         property point center: Qt.point(glow.glowX, glow.glowY)
         property size size: Qt.size(width, height)
-        property real radius: T.glowRadius
-        property real intensity: T.glowIntensity
+        property real radius: T.glowRadius * (glow.blooming ? glow.bloomState.r : 1)
+        property real intensity: glow.blooming ? glow.bloomState.i : T.glowIntensity
         property real falloff: T.glowFalloff
-        property real strength: Glow.eased(glow.fade)
+        property real strength: glow.blooming ? 1 : Glow.eased(glow.fade)
 
         fragmentShader: "../shaders/glow.frag.qsb"
     }

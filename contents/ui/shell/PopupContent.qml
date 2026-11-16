@@ -361,10 +361,21 @@ MouseArea {
         }
 
         CursorGlow {
+            id: cursorGlow
+
             anchors.fill: parent
             mask: popupRoot.app.notchShape ? notchSurface : roundSurface
-            hovering: (glowHover.hovered || glowPoint.active) && popupRoot.glowEnabled
+            hovering: (glowHover.hovered || glowPoint.active) && popupRoot.glowEnabled && !popupRoot.app.replyShelf.isOpen
             pointer: glowPoint.active ? glowPoint.point.position : glowHover.point.position
+
+            Connections {
+                function onOpening() {
+                    if (popupRoot.glowEnabled)
+                        cursorGlow.bloom();
+                }
+
+                target: popupRoot.app.replyShelf
+            }
         }
 
         // The popup only takes keyboard focus after an explicit press inside it (never on hover: changing
