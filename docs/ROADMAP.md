@@ -51,8 +51,13 @@ Found while moving code in Q2; behaviour was kept during the moves, then fixed o
    - A small native C++ helper could provide both blur-behind (`KWindowEffects`) and input-region trimming (`QWindow::setMask`, which would remove the click-swallowing reply strip, D-43).
 2. **Widget architecture**: Q2 produced the services and logic layers (D-37); formalise them, together with
    `ActivityProvider` / `ModuleRegistry`, into the widget contract (D-24, D-25).
-3. **First new widget**: Mirror or AI Agent Status.
-4. **What is left of the quality work:**
+3. **T1: token pass, before W1.** Fix only the top findings of `docs/TOKEN-AUDIT.md`: an `easingStandard` token for the
+   `Easing.OutCubic` sites; fold the 100/105/110 ms Control Center durations into `motionFast`; raise 9 px text to the smallest
+   token; one size for the transport buttons; one radius for the activity tiles (job, keyboard, activity pages); a
+   `radiusSmall` for bar and pill ends. The Wi-Fi and Bluetooth tiles are left to C8. Adds a token ratchet (a Node test) that
+   fails when a file gains hardcoded layout or motion literals.
+4. **First new widget**: Mirror or AI Agent Status.
+5. **What is left of the quality work:**
    - Lint warnings: 471 remain (the baseline is per file, `.github/qmllint-baseline.txt`), almost all in the Control Center
      tiles and a few views; move their translated text into `Strings.qml` the way `main.qml` did and give the views
      required properties, then lower the baselines.
@@ -109,9 +114,13 @@ needs no new code for v1 (it already renders jobs and notifications).
 - Expired notifications can only open the app, not the exact chat: the chat target exists only as the live default action, which dies on expiry (Telegram, WhatsApp Web). Inherent to the notification protocol; revisit only if a sender exposes a URL
 - Smart reply suggestions (parked: privacy and resource cost; candidate for a future opt-in AI widget)
 - Notification queueing with "more waiting" indicator
-- **Q4: native data sources.** Bluetooth: `bluetoothctl` -> BluezQt; Wi-Fi and network: `nmcli` -> the plasma-nm model;
-  KDE Connect via its native QML module. The parsing and the "which line" decisions are already pure and tested
-  (`Bluetooth.js`, `NetworkState.js`, `KdeConnectState.js`), so only the sources change.
+- **C8: Wi-Fi and Bluetooth panels** (replaces Q4). Clicking the Wi-Fi or Bluetooth tile opens an in-island list instead of
+  KDE settings: available networks or devices, connect and disconnect, signal strength, paired and connected state. Built on
+  the native models (plasma-nm for Wi-Fi and networks, BluezQt for Bluetooth) in place of `nmcli` and `bluetoothctl` text
+  parsing (D-27). The parsing and the "which line" decisions are already pure and tested (`Bluetooth.js`, `NetworkState.js`),
+  so mostly the sources change. It absorbs two open items: the Bluetooth tile's "Discover" title (the tile is
+  `bluetoothDiscovery`; it reads "Connected" or "Discover" by device count) and the Wi-Fi tile's empty gap between the header
+  and the network name (`docs/TOKEN-AUDIT.md`). KDE Connect on its native QML module stays its own item below.
 - Found during Q2 (behaviour kept): `PlasmaNM.WirelessStatus` is instantiated in `ConnectivityService` but never read;
   the inline `StatusChip` component was dead code and was deleted; `kdeconnect-cli`/qdbus ids are only quoted in the
   "ring" command (B1 item 2).
