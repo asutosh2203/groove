@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated: 13 November 2026. Decisions referenced as D-xx live in [DECISIONS.md](DECISIONS.md).
+Last updated: 16 November 2026. Decisions referenced as D-xx live in [DECISIONS.md](DECISIONS.md).
 
 ## Done
 | Milestone | Scope | Commit |
@@ -23,6 +23,7 @@ Last updated: 13 November 2026. Decisions referenced as D-xx live in [DECISIONS.
 | CC7 | Notification click-through: open the live action, URL or app (D-31), TasksModel window activation (D-32), whole-island hover target, single right-hand slot, popup timers hold on hover | `fd8d57b` |
 | D-33 | Notification popup duration: app timeout shortens the setting (2 s floor), critical at least 6 s | `63eb31f` |
 | Q2 | `main.qml` breakup (D-37): services, tested logic, `Strings.qml`, `shell/` components; per-file qmllint ratchet and probe | `17a85d1` ... `7571027` |
+| G1 | Cursor glow on expanded surfaces and the Control Center (D-41, D-42): shader pipeline with a CI check, settings toggles, Control Center stays put on media changes; measured in `docs/PERFORMANCE.md` ("After G1") | `0184e1d`, `b59a6bd`, `cc482ff`, `4990889` |
 
 CC6 (notification list density/scrolling) was dropped.
 
@@ -46,17 +47,15 @@ Found while moving code in Q2; behaviour was kept during the moves, then fixed o
    Control Center's critical marker no longer compares urgency numbers either, and a test guards against any such comparison.
 
 ## Next
-1. **Cursor gradient effect**: soft hover gradient on the compact shell, expanded views and Control
-   Center. Idle-silent; measured against the baseline.
-2. **Frosted-glass spike** (D-23): time-boxed prototype of real KWin blur with a shape-matched region.
-3. **Widget architecture**: Q2 produced the services and logic layers (D-37); formalise them, together with
+1. **Frosted-glass spike** (D-23): time-boxed prototype of real KWin blur with a shape-matched region.
+2. **Widget architecture**: Q2 produced the services and logic layers (D-37); formalise them, together with
    `ActivityProvider` / `ModuleRegistry`, into the widget contract (D-24, D-25).
-4. **First new widget**: Mirror or AI Agent Status.
-5. **What is left of the quality work:**
+3. **First new widget**: Mirror or AI Agent Status.
+4. **What is left of the quality work:**
    - Lint warnings: 471 remain (the baseline is per file, `.github/qmllint-baseline.txt`), almost all in the Control Center
      tiles and a few views; move their translated text into `Strings.qml` the way `main.qml` did and give the views
      required properties, then lower the baselines.
-   - Performance follow-ups (see `docs/PERFORMANCE.md`): the Control Center while open is measured (0.97%, see the Q2 section); still to re-measure: the expanded media and notification popups, Pill mode; the "idle for 5 minutes"
+   - Performance follow-ups (see `docs/PERFORMANCE.md`): the Control Center while open is measured (0.97%, see the Q2 section); the expanded media popup is re-measured (G1); still to re-measure: the notification popup, Pill mode; the "idle for 5 minutes"
      pause once an event-driven idle source exists for QML; `IslandButton` Canvas glyph repaints.
    - Not covered by tests yet: the click versus double-click discrimination (it lives in `IslandCompact` and `main.qml`'s
      click timer) and weather caching.

@@ -83,6 +83,35 @@ background (the Q1 numbers were taken without it).
   were not measured, and the closed-again state was measured with media still playing (not against the idle 0.52%).
 - Still not re-measured: the expanded media popup, the notification popup, Pill mode, the fullscreen-cover state.
 
+## After G1 (2026-11-15, cursor glow, D-41)
+
+Main at `4990889`, frame logging on (`frames-on`), Spotify playing at 8% sink volume, nothing else playing. Medians of
+2 runs of 40 s (idle and moving: 1 run of 40 s and 28 s). The expanded media popup was held open with a temporary
+debug hook (not in the repository), because any media event restarts its auto-close timer.
+
+| State | CPU | Frames/s | Budget (D-34) |
+|---|---|---|---|
+| Idle face, weather icon animating | 0.50% | 8.0 | at most 0.5% added over idle: met |
+| Compact, media playing | 0.64% (0.63, 0.65) | 9.0 | at most 1% added: met (about 0.14 added) |
+| Expanded media popup, no hover | 0.74% (0.72, 0.75, 0.75, 0.73) | 10.0 (popup 9.0, panel 1.0) | Q1 figure 1.20% at 10 fps: no regression |
+| Popup, pointer resting (emulated) | 0.75% (0.72, 0.78) | 10.15 (popup 9.0-9.1, panel 1.0-1.1) | **zero extra frames** vs no hover |
+| Popup, pointer moving (emulated) | 7.26% | 101.8 (popup 101.1) | within the D-41 carve-out; only while moving |
+
+- **Resting pointer costs nothing:** the glow settles and its frame animation stops, so the popup window stays at the
+  media popup's own 9 fps. A control run of the no-hover state after the resting one read the same (0.74%, 10.0 fps).
+- **Moving pointer:** about 6.5 CPU points above the popup at rest, and about 100 frames per second in the popup window,
+  for as long as the pointer moves; it returns to the resting figures once the glow has caught up (about 0.4 s).
+- **Emulation caveat:** the pointer states are emulated. A debug override feeds the glow component a constant point
+  (resting) or a point on an ellipse updated every 16 ms (moving); no real pointer was used, so the `HoverHandler` and
+  `PointHandler` plumbing was not exercised, and neither was Pill mode. The glow's own frame behaviour (fade, follow,
+  settle, stop) is what the numbers describe.
+- **Invalid earlier runs, not used:** a first run found the popup closed in the pointer states (a media event had
+  restarted its auto-close timer); a second showed an extra 5.3 fps window and 1.78% in the resting state while the
+  sink volume was being changed by hand (most likely the volume OSD; it did not recur with a constant volume); a
+  third had no media playing. Their raw files are in `perf/results/` (`g1-*`, `g1b-*`, `g1c-*`; the valid ones are `g1d-*`).
+- Still not measured: Pill mode, the notification popup, the Control Center with the glow (it shares the component),
+  and a real pointer.
+
 ## What changed (commits)
 
 | Change | Commit |
@@ -95,6 +124,7 @@ background (the Q1 numbers were taken without it).
 | Pause under a fullscreen window | `298c3a8` |
 | Covered compact pill no longer repaints the panel | `8802d5d` |
 | Idle face after 30 s without playback (D-35) | `68605e5` |
+| Cursor glow (D-41): shader pipeline, expanded surfaces, settings toggles, Control Center stays put | `0184e1d`, `b59a6bd`, `cc482ff`, `4990889` |
 
 ## Lessons
 
