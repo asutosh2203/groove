@@ -65,7 +65,7 @@ PlasmoidItem {
     readonly property int popupBaseHeight: popupMode === "control" ? (controlLayoutService.editMode ? 570 : 540) : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupHeight : 104)
     // D-43: a replyable notice gets a window with room for the shelf from before it first shows, and keeps it until the
     // popup is hidden: resizing a visible window shows one stretched frame on Wayland.
-    readonly property int replyShelfHeight: 48
+    readonly property int replyShelfHeight: 30
     readonly property bool replyCapableNotice: islandExpandsDown && notificationService.canReply(notificationService.activeNoticeId)
     property bool replyWindowReserved: false
     readonly property int popupHeight: popupBaseHeight + (replyWindowReserved && popupMode === "activity" ? replyShelfHeight + 8 : 0)
