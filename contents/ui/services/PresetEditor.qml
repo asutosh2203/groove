@@ -27,6 +27,8 @@ QtObject {
     // "grid" or "form"; the form edits the placement at formIndex.
     property string pane: "grid"
     property int formIndex: -1
+    // The free cell chosen for "Add widget" (the insertion index a widget put there would take), or -1.
+    property int cellIndex: -1
     property bool promptOpen: false
     // Why the last change or save was refused: "nofit", "cap", "unreadable" or a preset id's problem; "" when none.
     property string hint: ""
@@ -90,6 +92,7 @@ QtObject {
 
     function selectPreset(id) {
         editor.view = "preset";
+        editor.cellIndex = -1;
         editor.presetId = id;
         editor.pane = "grid";
         editor.formIndex = -1;
@@ -124,6 +127,21 @@ QtObject {
 
     function setSetting(key, value) {
         editor.apply(PresetEdit.setSetting(editor.draft, editor.presetId, editor.formIndex, key, value, editor.registry));
+    }
+
+    // A click on a free cell chooses it for the catalogue; a second click lets go.
+    function pickCell(index) {
+        editor.cellIndex = editor.cellIndex === index ? -1 : index;
+    }
+
+    // `at` is the insertion index (a cell's), or null for the first free spot that fits.
+    function addWidget(widgetId, at) {
+        if (editor.apply(PresetEdit.addPlacement(editor.draft, editor.presetId, widgetId, at, editor.registry)))
+            editor.cellIndex = -1;
+    }
+
+    function moveWidget(from, to) {
+        editor.apply(PresetEdit.movePlacement(editor.draft, editor.presetId, from, to));
     }
 
     function removePlacement(index) {

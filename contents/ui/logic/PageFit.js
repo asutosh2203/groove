@@ -65,3 +65,34 @@ function move(page, spans, from, to) {
     next.splice(to, 0, next.splice(from, 1)[0]);
     return fits(page, next) ? next : null;
 }
+
+function inside(box, point, slack) {
+    return point.x >= box.x - slack && point.x <= box.x + box.w + slack && point.y >= box.y - slack && point.y <= box.y + box.h + slack;
+}
+
+// What lies under a point of the page content area (w x h): a placed widget ({ kind: "tile", index }), a free cell
+// ({ kind: "cell", index, col, row }: index is where a widget put there would go) or nothing.
+function dropTarget(page, spans, w, h, gap, point) {
+    const none = { "kind": "none", "index": -1 };
+    const packed = Presets.pack(page, spans);
+    const grid = Presets.gridOf(page);
+    if (!packed || !grid)
+        return none;
+    const boxes = Presets.boxes(page, w, h, gap, packed);
+    for (let i = 0; i < boxes.length; ++i) {
+        if (inside(boxes[i], point, gap / 2))
+            return { "kind": "tile", "index": i };
+    }
+    const cw = (w - gap * (grid.cols - 1)) / grid.cols;
+    const ch = (h - gap * (grid.rows - 1)) / grid.rows;
+    for (const c of emptyCells(page, spans)) {
+        if (inside({ "x": c.col * (cw + gap), "y": c.row * (ch + gap), "w": cw, "h": ch }, point, gap / 2))
+            return { "kind": "cell", "index": c.index, "col": c.col, "row": c.row };
+    }
+    return none;
+}
+
+// Where the dragged placement `from` ends up in the list when dropped on `target`.
+function moveIndex(from, target) {
+    return target.kind === "tile" ? target.index : target.index - (from < target.index ? 1 : 0);
+}

@@ -41,3 +41,19 @@ test('move reflows the list, and refuses an order that no longer fits', () => {
     assert.equal(F.move('tall', ['2x1', '1x1'], 1, 0) === null, false);
     assert.equal(F.move('small', ['1x1', '2x1'], 1, 0), null); // too tall already: the list never fit
 });
+
+test('dropTarget finds the widget or the free cell under a point, with slack for the gap', () => {
+    const w = 316, h = 96, gap = 8;
+    assert.deepEqual(j(F.dropTarget('small', ['1x1'], w, h, gap, { x: 10, y: 10 })), { kind: 'tile', index: 0 });
+    assert.deepEqual(j(F.dropTarget('small', ['1x1'], w, h, gap, { x: 250, y: 50 })), { kind: 'cell', index: 1, col: 1, row: 0 });
+    assert.deepEqual(j(F.dropTarget('small', ['1x1'], w, h, gap, { x: 156, y: 50 })).kind, 'tile'); // the gap belongs to its neighbour
+    assert.equal(F.dropTarget('small', ['1x1'], w, h, gap, { x: 500, y: 50 }).kind, 'none');
+    assert.equal(F.dropTarget('small', ['1x1', '1x1', '1x1'], w, h, gap, { x: 10, y: 10 }).kind, 'none'); // does not fit
+    assert.equal(F.dropTarget('tall', ['1x1', '2x1'], 316, 216, gap, { x: 250, y: 20 }).kind, 'cell');
+});
+
+test('moveIndex: a tile is its own index; a free cell counts the dragged one out when it came earlier', () => {
+    assert.equal(F.moveIndex(0, { kind: 'tile', index: 2 }), 2);
+    assert.equal(F.moveIndex(0, { kind: 'cell', index: 2 }), 1);
+    assert.equal(F.moveIndex(2, { kind: 'cell', index: 1 }), 1);
+});

@@ -41,7 +41,7 @@ QtObject {
     readonly property string editWontFit: i18n("won't fit")
     readonly property string editDoesntFit: i18n("Doesn't fit")
     readonly property string editRemoveWidget: i18n("Remove widget")
-    readonly property string editGridHint: i18n("Click a widget for its settings")
+    readonly property string editGridHint: i18n("Click a widget for its settings · drag to reorder")
     readonly property string editDiscardTitle: i18n("Discard your changes?")
     readonly property string editKeep: i18n("Keep editing")
     readonly property string editDiscard: i18n("Discard")
