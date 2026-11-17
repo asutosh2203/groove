@@ -5,8 +5,8 @@ set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 dest="${XDG_DATA_HOME:-$HOME/.local/share}/kove/claude-code"
 
-python3 -c 'import dbus' 2>/dev/null || {
-  echo "python-dbus is missing. Install: Arch: python-dbus | Debian/Ubuntu: python3-dbus | Fedora: python3-dbus | openSUSE: python3-dbus-python" >&2
+python3 -c "import dbus, gi" 2>/dev/null || {
+  echo "python-dbus or PyGObject is missing. Install: Arch: python-dbus python-gobject | Debian/Ubuntu: python3-dbus python3-gi | Fedora: python3-dbus python3-gobject | openSUSE: python3-dbus-python python3-gobject" >&2
   exit 1
 }
 mkdir -p "$dest"
@@ -16,7 +16,7 @@ python3 - "$dest" "${1:-}" <<'PY'
 import json, os, shutil, sys, time
 dest, merge = sys.argv[1], sys.argv[2] == "--merge"
 cmd = "python3 -S %s/kove_hook.py" % dest
-events = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "PermissionRequest", "Notification", "TaskCreated", "TaskCompleted", "Stop", "SessionEnd"]
+events = ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PermissionRequest", "Notification", "TaskCreated", "TaskCompleted", "Stop", "SessionEnd"]
 snippet = {"hooks": {e: [{"hooks": [{"type": "command", "command": cmd}]}] for e in events}}
 if not merge:
     print(json.dumps(snippet, indent=2))

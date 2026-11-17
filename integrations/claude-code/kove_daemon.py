@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Per-session helper: owns the KDE job (its lifetime is this D-Bus connection) and sends notifications (D-49).
-First event arrives on stdin from the spawning hook; later ones over the Unix socket."""
+"""The per-user agent aggregator (D-57): owns io.github.asutosh2203.Kove.Agents on the session bus, takes hook events on
+one Unix socket and publishes every session as a JSON snapshot. Started by the first hook, exits when idle.
+The first event arrives on stdin from the spawning hook; later ones over the socket. Content stays in memory."""
 import json
 import os
 import socket
@@ -11,116 +12,127 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kove_logic as L
 from kove_hook import log, sock_path
 
-
-
-def _installed(entry):
-    dirs = [os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")]
-    dirs += (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":")
-    return any(os.path.exists(os.path.join(d, "applications", entry + ".desktop")) for d in dirs)
-
-
-DESKTOP_ENTRY = L.pick_entry(os.environ.get("KOVE_CLAUDE_DESKTOP_ENTRY", ""), _installed)
-L.IDLE_TIMEOUT = float(os.environ.get("KOVE_CLAUDE_IDLE_SECONDS", L.IDLE_TIMEOUT))
-JOBS = os.environ.get("KOVE_CLAUDE_JOBS") == "1"  # off by default: plasmashell can crash on rapid job churn (D-49)
+BUS_NAME = "io.github.asutosh2203.Kove.Agents"
+OBJ_PATH = "/io/github/asutosh2203/Kove/Agents"
+IFACE = "io.github.asutosh2203.Kove.Agents1"
+IDLE_EXIT = float(os.environ.get("KOVE_CLAUDE_IDLE_EXIT_SECONDS", "60"))
+DRY = os.environ.get("KOVE_TEST_NO_NOTIFY") == "1"  # tests only: no real notification
 DONE_MIN = float(os.environ.get("KOVE_CLAUDE_DONE_MIN_SECONDS", "30"))
 
 
-class Kde:
-    """Notifications always; the job only with KOVE_CLAUDE_JOBS=1 and never within the cooldown of any job's end."""
-
-    def __init__(self, title):
-        import dbus
-        self.dbus = dbus
-        self.bus = dbus.SessionBus()
-        self.notes = dbus.Interface(self.bus.get_object("org.freedesktop.Notifications", "/org/freedesktop/Notifications"),
-                                    "org.freedesktop.Notifications")
-        self.title, self.job, self.suspended, self.percent = title, None, None, None
-
-    def _ensure_job(self):
-        if self.job is not None:
-            return True
-        if not JOBS or L.cooldown_remaining(read_last_end(), time.time()) > 0:
-            return False  # tried again on the next update
-        d = self.dbus
-        server = d.Interface(self.bus.get_object("org.kde.kuiserver", "/JobViewServer"), "org.kde.JobViewServerV2")
-        path = server.requestView(DESKTOP_ENTRY, 0, {})  # first arg is the desktop file, not a title
-        self.job = d.Interface(self.bus.get_object("org.kde.kuiserver", path), "org.kde.JobViewV2")
-        self.job.setInfoMessage(self.title)
-        self.suspended = self.percent = None
-        return True
-
-    def apply(self, a):
-        d = self.dbus
-        if a["op"] == "notify":
-            hints = {"desktop-entry": DESKTOP_ENTRY, "urgency": d.Byte(2 if a["urgent"] else 1)}
-            self.notes.Notify("Claude Code", d.UInt32(0), "", a["summary"], a["body"], [], hints, -1)
-        elif a["op"] == "job" and self._ensure_job():
-            if a["percent"] is not None and a["percent"] != self.percent:
-                self.job.setPercent(d.UInt32(a["percent"]))
-                self.percent = a["percent"]
-            self.job.setInfoMessage("%s · %s" % (self.title, a["info"]))
-            if a["suspended"] != self.suspended:
-                self.job.setSuspended(a["suspended"])
-                self.suspended = a["suspended"]
-        elif a["op"] == "end" and self.job is not None:
-            self.job.terminate("")
-            self.job = None
-            write_last_end(time.time())
-
-
-def _stamp():
-    return os.path.join(os.path.dirname(sock_path("x")), "last-job-end")
-
-
-def read_last_end():
-    try:
-        return float(open(_stamp()).read())
-    except (OSError, ValueError):
-        return None
-
-
-def write_last_end(t):
-    try:
-        with open(_stamp(), "w") as f:
-            f.write(repr(t))
-    except OSError as e:
-        log("stamp: %r" % e)
+def forward(data):
+    """Lost the bus-name race: hand the first event to the winner once its socket is up."""
+    for _ in range(20):
+        try:
+            s = socket.socket(socket.AF_UNIX)
+            s.connect(sock_path())
+            s.sendall(data)
+            s.close()
+            return
+        except OSError:
+            time.sleep(0.1)
 
 
 def main():
-    first = json.loads(sys.stdin.read())
-    path = sock_path(first["session_id"])
+    import dbus
+    import dbus.mainloop.glib
+    import dbus.service
+    from gi.repository import GLib
+    first = sys.stdin.buffer.read()
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    bus = dbus.SessionBus()
+    if bus.request_name(BUS_NAME, dbus.bus.NAME_FLAG_DO_NOT_QUEUE) != dbus.bus.REQUEST_NAME_REPLY_PRIMARY_OWNER:
+        return forward(first)
+
+    hub, last, routes = L.Hub(DONE_MIN), [None], L.Routes()
+    notes = dbus.Interface(bus.get_object("org.freedesktop.Notifications", "/org/freedesktop/Notifications"),
+                           "org.freedesktop.Notifications")
+
+    class Agents(dbus.service.Object):
+        @dbus.service.method(IFACE, out_signature="s")
+        def List(self):
+            return json.dumps(hub.snapshot())
+
+        @dbus.service.signal(IFACE, signature="s")
+        def Changed(self, snapshot):
+            pass
+
+        @dbus.service.signal(IFACE, signature="s")
+        def RaiseRequested(self, session_id):
+            pass
+
+    svc = Agents(bus, OBJ_PATH)
+
+    def publish():
+        snap = json.dumps(hub.snapshot())
+        key = json.dumps([{k: v for k, v in s.items() if k != "updatedAt"} for s in hub.snapshot()["sessions"]])
+        if key != last[0]:
+            last[0] = key
+            svc.Changed(snap)
+
+    def apply(actions):
+        for a in actions:
+            hints = {"urgency": dbus.Byte(2 if a["urgent"] else 1)}  # no desktop entry: a guessed app is never opened (D-57)
+            if DRY:
+                nid = 1000 + len(routes.ids)
+            else:
+                nid = int(notes.Notify("Claude Code", dbus.UInt32(0), "", a["summary"], a["body"],
+                                       ["default", "Open"], hints, -1))
+            routes.remember(nid, a["sid"])
+
+    def on_action(nid, key):
+        sid = routes.session_for(int(nid), str(key))
+        if sid:
+            svc.RaiseRequested(sid)  # Kove matches the window; with no Kove running the click only dismisses
+
+    bus.add_signal_receiver(on_action, "ActionInvoked", "org.freedesktop.Notifications")
+
+    def on_event(data):
+        try:
+            apply(L.ingest(hub, data, time.time(), log))
+        except Exception as e:
+            log("notify: %s" % type(e).__name__)
+        publish()
+
+    path = sock_path()
     os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
-    if os.path.exists(path):
+    if os.path.exists(path):  # owning the bus name proves no other aggregator is alive
         os.unlink(path)
     srv = socket.socket(socket.AF_UNIX)
     srv.bind(path)
     os.chmod(path, 0o600)
     srv.listen(8)
+    srv.setblocking(False)
+    loop = GLib.MainLoop()
+
+    def on_connect(*_):
+        try:
+            conn, _a = srv.accept()
+            conn.settimeout(1)
+            with conn:
+                data = b""
+                while chunk := conn.recv(65536):
+                    data += chunk
+            on_event(data)
+        except OSError as e:
+            log("socket: %s" % type(e).__name__)
+        return True
+
+    def tick():
+        now = time.time()
+        if hub.tick(now):
+            publish()
+        if hub.idle_for(now) >= IDLE_EXIT:
+            loop.quit()
+            return False
+        return True
+
+    GLib.io_add_watch(srv.fileno(), GLib.IO_IN, on_connect)
+    GLib.timeout_add_seconds(1, tick)
+    if first:
+        on_event(first)
     try:
-        run = L.Run(first.get("cwd"), time.time(), DONE_MIN)
-        kde = Kde("Claude · " + run.project)
-        events = [first]
-        srv.settimeout(1)
-        while not run.ended:
-            for ev in events:
-                for a in run.handle(ev, time.time()):
-                    kde.apply(a)
-            events = []
-            while not events and not run.ended:
-                if run.expired(time.time()):
-                    kde.apply({"op": "end"})
-                    return
-                try:
-                    conn, _ = srv.accept()
-                except socket.timeout:
-                    continue
-                with conn:
-                    conn.settimeout(1)
-                    data = b""
-                    while chunk := conn.recv(65536):
-                        data += chunk
-                    events.append(json.loads(data))
+        loop.run()
     finally:
         srv.close()
         if os.path.exists(path):
@@ -131,4 +143,4 @@ if __name__ == "__main__":
     try:
         main()
     except BaseException as e:  # a daemon must never leave a traceback anywhere but the log
-        log("daemon: %r" % e)
+        log("daemon: %s" % type(e).__name__)

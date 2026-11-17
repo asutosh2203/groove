@@ -5,13 +5,16 @@ import os
 import socket
 import sys
 
+SPAWN_ON = ("SessionStart", "UserPromptSubmit")
 KEEP = ("session_id", "cwd", "hook_event_name", "tool_name", "tool_input", "notification_type", "message",
         "task_id", "task_subject", "last_assistant_message")
 
 
-def sock_path(session_id):
-    base = os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
-    return os.path.join(base, "kove-claude", "".join(c for c in session_id if c.isalnum() or c in "-_") + ".sock")
+FLATPAK_INFO = os.environ.get("KOVE_FLATPAK_INFO", "/.flatpak-info")  # overridable so tests can fake a sandbox
+
+
+def sock_path():
+    return os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "kove", "agents.sock")
 
 
 def log(msg):
@@ -40,34 +43,75 @@ def tool_input_slim(ti):
     return out
 
 
+def ancestors(pid, proc="/proc"):
+    """Claude Code's process chain upwards, so Kove can find the window that hosts it. Pids only, no names.
+    Stops before the systemd --user manager: it hosts every app, so it identifies none."""
+    chain = []
+    while pid > 1 and len(chain) < 32:
+        with open("%s/%d/stat" % (proc, pid)) as f:
+            stat = f.read()
+        if stat[stat.index("(") + 1:stat.rindex(")")] == "systemd":
+            break
+        chain.append(pid)
+        pid = int(stat.rsplit(")", 1)[1].split()[1])
+    return chain
+
+
+def where():
+    ppid = os.getppid()
+    try:
+        scope = open("/proc/%d/cgroup" % ppid).read().strip().rsplit("/", 1)[-1]
+    except OSError:
+        scope = ""
+    try:
+        return ancestors(ppid), scope
+    except (OSError, ValueError, IndexError):
+        return [ppid], scope
+
+
 def main():
     ev = json.load(sys.stdin)
     msg = {k: ev[k] for k in KEEP if k in ev}
     if "tool_input" in msg:
         msg["tool_input"] = tool_input_slim(msg["tool_input"])
-    if "last_assistant_message" in msg:  # the daemon only shows the first sentence
+    if "last_assistant_message" in msg:  # only the first sentence is shown
         msg["last_assistant_message"] = str(msg["last_assistant_message"])[:600]
+    if msg.get("hook_event_name") in SPAWN_ON:
+        msg["pids"], msg["scope"] = where()
     data = json.dumps(msg).encode()
-    path = sock_path(msg["session_id"])
     try:
         s = socket.socket(socket.AF_UNIX)
         s.settimeout(1)
-        s.connect(path)
+        s.connect(sock_path())
         s.sendall(data)
         s.close()
     except OSError:
-        if msg.get("hook_event_name") == "UserPromptSubmit":
-            import subprocess  # only on the spawn path: 3 ms off every other hook call
-            here = os.path.dirname(os.path.abspath(__file__))
-            p = subprocess.Popen([sys.executable, os.path.join(here, "kove_daemon.py")], stdin=subprocess.PIPE,
-                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-            p.stdin.write(data)
-            p.stdin.close()
+        if msg.get("hook_event_name") not in SPAWN_ON:
+            return
+        if os.path.exists(FLATPAK_INFO):  # a sandbox must not start host processes
+            hint_once()
+            return
+        import subprocess  # only on the spawn path: 3 ms off every other hook call
+        here = os.path.dirname(os.path.abspath(__file__))
+        p = subprocess.Popen([sys.executable, os.path.join(here, "kove_daemon.py")], stdin=subprocess.PIPE,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        p.stdin.write(data)
+        p.stdin.close()
+
+
+def hint_once():
+    flag = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "kove", "flatpak-hint")
+    if not os.path.exists(flag):
+        log("sandboxed: Kove is not running or the socket is hidden; see the README (flatpak override --filesystem=xdg-run/kove)")
+        try:
+            open(flag, "w").close()
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":
     try:
         main()
     except BaseException as e:
-        log("hook: %r" % e)
+        log("hook: %s" % type(e).__name__)
     sys.exit(0)
