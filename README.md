@@ -42,6 +42,24 @@ This package is in alpha state. It is usable, but bugs, visual glitches, missing
 - Control center modules include user/host/power options, media summary, notifications, volume control, brightness control, Wi-Fi, Bluetooth, battery, power mode, light/dark appearance, Theme shortcut, KDE Connect, and Settings.
 - The Network module shows an active connection and its address, with signal strength for connected Wi-Fi. Its indicator describes a network connection; it does not check Internet reachability.
 
+## Claude Code integration
+
+Kove can show your [Claude Code](https://claude.com/claude-code) sessions in the island, so you can leave the editor and still see what Claude is doing:
+
+- **Live tile per session:** the project, what Claude is doing right now ("Editing main.qml", "Running: npm test…"), elapsed minutes, and progress ("3 of 7") when it keeps a task list.
+- **Needs your OK:** when Claude waits for permission, the island says so in an accent colour with the command it wants to run, and sends a notification.
+- **Done:** a short summary of Claude's last message, then it fades.
+- **Click to jump back:** clicking a tile or notification raises the window the session runs in. If that window can't be identified, nothing is clickable rather than guessed.
+- Nothing is stored or logged, and nothing runs while no session is active.
+
+It is optional and lives in the repository, not in the widget package. To set it up from a clone:
+
+```sh
+./integrations/claude-code/install.sh --merge
+```
+
+This needs `python-dbus` and PyGObject, copies a few scripts to `~/.local/share/kove/claude-code/`, and adds hooks to `~/.claude/settings.json` after backing it up. Leave out `--merge` to print the hooks instead. Details, limits (tmux, Flatpak) and uninstall: [integrations/claude-code/README.md](integrations/claude-code/README.md).
+
 ## Install
 
 For the best visual result, install **Panel Colorizer** (`luisbocanegra.panel.colorizer`) first.

@@ -1,35 +1,53 @@
 # Claude Code → Kove
 
-Shows a Claude Code run as a KDE job (progress in the island) and sends notifications. Kove already renders KDE jobs and
-notifications, so there is no island code. Design: D-49 in `docs/DECISIONS.md`.
+Shows your Claude Code sessions in the island as a native Live activity, and sends notifications. Design: D-57 in
+`docs/DECISIONS.md` (it replaces the KDE-job version of D-49).
 
-- **Job** (opt-in, `KOVE_CLAUDE_JOBS=1`): "Claude · <project> · <status>", one per session. Percent from the task list when
-  there is one, otherwise no percent. Not cancellable. Shown as paused while Claude waits for you. Off by default: Plasma
-  can crash on rapid job churn, see D-49 / D-50.
-- **Needs your OK** (permission prompt, input request): immediate Critical notification.
-- **Done**: only if the run took at least `KOVE_CLAUDE_DONE_MIN_SECONDS` (default 30); shows the first sentence of
-  Claude's last message (markdown stripped, ~80 characters). Nothing else from the transcript is read or stored.
-- Clicking a notification opens `KOVE_CLAUDE_DESKTOP_ENTRY` (default: the first installed of VS Code's common entries, else Konsole) through the island's click-through chain.
+## What shows where
+- **Live page:** a tile per session. Working shows what Claude is doing ("Editing PresetEditor.qml", "Running: npm test…") and
+  the elapsed minutes; with a task list it also shows the current task, "3 of 7" and a progress bar. Waiting shows
+  "Needs your OK" in an accent colour with a dot on the glyph and "Wants to run: <command>". Done shows "Done · 18 min" and the
+  first sentence of Claude's last message, and fades after 10 s. A busy page turns agents into compact rows above the transfers.
+- **Closed island:** the agent glyph and "project · 3 of 7" (or the minutes). While Claude waits for you it shows
+  "Needs your OK" with the accent dot.
+- **Click** a tile or an opened row to raise the window Claude runs in. Kove finds it from the process chain (and, for a
+  Flatpak, the app id); it never guesses. If no window is found the tile is simply not clickable.
+- **Notifications** (work without Kove): "Needs your OK" immediately at Critical urgency, and "Done" for runs of at least
+  `KOVE_CLAUDE_DONE_MIN_SECONDS` (default 30) with Claude's first sentence. Clicking one raises the same window when Kove is running.
+- There are **no approve/reject buttons** in v1; that is deliberately deferred.
 
 ## Install
-Needs `python-dbus` (Arch `python-dbus`, Debian/Ubuntu/Fedora `python3-dbus`, openSUSE `python3-dbus-python`).
-`./install.sh` copies the scripts to `~/.local/share/kove/claude-code/` and prints the hooks snippet.
-`./install.sh --merge` also adds it to `~/.claude/settings.json` after a timestamped backup.
+Needs `python-dbus` and PyGObject (Arch `python-dbus python-gobject`, Debian/Ubuntu `python3-dbus python3-gi`, Fedora
+`python3-dbus python3-gobject`, openSUSE `python3-dbus-python python3-gobject`). `./install.sh` copies the scripts to
+`~/.local/share/kove/claude-code/` and prints the hooks snippet; `./install.sh --merge` also adds it to
+`~/.claude/settings.json` after a timestamped backup. A session that was already running picked the hooks up on a later
+tool call in testing; if yours does not, start a new session. Check that a prompt creates a tile.
+
+## Privacy
+Command text, file names, the task list and Claude's message are held in memory to be displayed and never stored or logged.
+The logs (`${XDG_STATE_HOME:-~/.local/state}/kove/claude-code.log`) carry error types only. The aggregator also records each
+session's process ids (no names or command lines) so Kove can find the right window.
+
+## How it works
+Hooks write one JSON event to `$XDG_RUNTIME_DIR/kove/agents.sock` (about 15 ms, always exit 0 and print nothing). The first
+SessionStart or UserPromptSubmit starts one aggregator per user. It owns `io.github.asutosh2203.Kove.Agents` on the session
+bus (`Agents1`: `List`, `Changed`, `RaiseRequested`, versioned JSON), and exits 60 s after its last session. Kove only
+watches that name, so nothing runs while no session does. The protocol is agent-agnostic (kind "agent"): another agent can
+use the same interface with no Kove change.
+
+## Limits
+- **tmux, screen, systemd services:** a session whose process chain has no window (and no app scope) is not clickable.
+  It still shows, and notifications still work.
+- **Flatpak terminals and editors** are sandboxed: their hooks never start the aggregator, and they can only reach it if you
+  expose the socket directory, once per app:
+  `flatpak override --user --filesystem=xdg-run/kove <app-id>`. Without it they log a one-time hint and do nothing.
+- An event fired within milliseconds of the prompt that starts the aggregator can be dropped; real prompts and tool calls are
+  seconds apart.
 
 ## Uninstall
-Remove the hook entries pointing at `kove_hook.py` from `~/.claude/settings.json` (or restore the `.bak-kove-*` file),
-then `rm -r ~/.local/share/kove/claude-code`.
-
-## Behaviour guarantees
-The hook always exits 0, prints nothing and logs errors to `${XDG_STATE_HOME:-~/.local/state}/kove/claude-code.log`.
-A helper daemon per session holds the job (a KDE job lives as long as its D-Bus connection) on
-`$XDG_RUNTIME_DIR/kove-claude/<session>.sock`; after Stop the job stays for 10 s so a quick next prompt reuses it (terminating and creating jobs in quick succession
-crashes plasmashell, see D-49); it is ended when that grace expires, on SessionEnd, or after 10 minutes without events
-unless Claude is waiting for you.
-
-## Jobs are opt-in
-Without `KOVE_CLAUDE_JOBS=1` (set in the hook's environment) only notifications are sent. With it, no job is created
-within 5 s of any job ending, in any session (shared stamp file in `$XDG_RUNTIME_DIR/kove-claude/`).
+Remove the hook entries pointing at `kove_hook.py` from `~/.claude/settings.json` (or restore the `.bak` file), then
+`rm -r ~/.local/share/kove/claude-code`.
 
 ## Tests
-`cd integrations/claude-code && python3 -m unittest -q`
+`cd integrations/claude-code && python3 -m unittest -q` (the end-to-end tests need a session bus and no running aggregator and
+skip otherwise).

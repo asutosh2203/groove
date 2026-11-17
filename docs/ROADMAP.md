@@ -98,13 +98,18 @@ Full design in [`WIDGET-ARCHITECTURE.md`](WIDGET-ARCHITECTURE.md): the deck ([Li
 cell-span grid (D-48), the preset editor, ref-counted services (WeatherService migrated), the widget contract and
 persistence. Still open there: the proposed contract details and context-aware presets.
 
-### W1: Claude Code progress integration (parked)
-Built in `integrations/claude-code/` (D-49): hook client, per-session daemon, pure logic with 16 Python
-tests, install script and README. Notifications work (Needs your OK, Done, two sessions, idle cleanup, about 15 ms per
-hook). Jobs are opt-in (`KOVE_CLAUDE_JOBS=1`) and were parked after a plasmashell crash that Kove's code triggered
-(inherited from upstream; the library makes it easy to hit; D-50, fixed). Still to do: a live run of the job path with the fix (grace/reuse and the cooldown), confirm the
-click opens VS Code and a real task-list run once a Claude Code version has the task tools.
-- Later: a dedicated AI Agent widget (multiple sessions, last message, subagents) once the widget contract exists.
+### W1 / W2: Claude Code integration
+- **W1 (superseded):** hooks, a per-session daemon and notifications, with the work shown as a disguised KDE job (D-49). The
+  job path is retired (D-57).
+- **W2 (done): agents as a native Live activity (D-57).** One per-user aggregator on the session bus
+  (`io.github.asutosh2203.Kove.Agents`); Kove subscribes from QML with no polling. Tiles for working, working with tasks,
+  waiting and done; compact rows above the transfers in a busy list; the closed capsule and the Live glyph (media > agent >
+  jobs); click-through by process chain and scope app id, never a guess; Kove's own icon set (`contents/ui/icons`).
+  Checked live in Notch and Pill, with fake sessions and with a real Claude Code session.
+- Deliberately deferred: approve/reject buttons on the waiting tile (they need a second channel into Claude Code).
+- **Next on the agent track: a Claude widget** for the widget host (D-54). The aggregator is its data source, so it is a small job.
+- Future note only: other agents (Codex, Aider, Gemini CLI, ...) via small adapters. The island side is agent-agnostic; the
+  aggregator would need an agent-neutral event next to Claude Code's, then one adapter script per tool.
 
 ## Backlog
 - **Settings form scrolling (D3 follow-up).** The editor's settings form does not scroll: its body is sized for the size control
