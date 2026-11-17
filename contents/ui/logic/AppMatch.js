@@ -35,7 +35,7 @@ function findTask(entry, tasks) {
 
 // Like findTask, then a looser second pass for raising a media player: a player's MPRIS DesktopEntry ("spotify") can be
 // the first part of its task's id ("spotify-launcher"). Exact matches always win; the loose pass accepts an id that starts
-// with the wanted one followed by "-" or ".".
+// with the wanted one followed by "-" or ".", and only when exactly one task matches (two matches could raise the wrong app).
 function findTaskLoose(entry, tasks) {
     const exact = findTask(entry, tasks);
     if (exact >= 0)
@@ -44,16 +44,18 @@ function findTaskLoose(entry, tasks) {
     if (id.length === 0)
         return -1;
     const list = tasks || [];
+    let found = -1;
     for (let i = 0; i < list.length; ++i) {
         const task = list[i] || {};
         if (task.isWindow === false)
             continue;
         const url = String(task.launcherUrl || "");
         const have = [clean(task.appId), stripSuffix(clean(url.substring(url.lastIndexOf("/") + 1)))];
-        for (const candidate of have) {
-            if (candidate.startsWith(id + "-") || candidate.startsWith(id + "."))
-                return i;
-        }
+        if (!have.some(candidate => candidate.startsWith(id + "-") || candidate.startsWith(id + ".")))
+            continue;
+        if (found >= 0)
+            return -1;
+        found = i;
     }
-    return -1;
+    return found;
 }

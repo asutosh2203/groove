@@ -40,7 +40,7 @@ test('a prefix of another id is not a match', () => {
     assert.equal(find('org.telegram', tasks), -1);
 });
 
-test('loose matching for raising: a player id that starts a task id, exact matches first, no plain prefixes', () => {
+test('loose matching for raising: a player id that starts a task id, exact matches first, no plain prefixes, never ambiguous', () => {
     const loose = (entry, list) => ctx.findTaskLoose(entry, list);
     const list = [
         { appId: 'spotify-launcher', launcherUrl: 'applications:spotify-launcher.desktop', isWindow: true },
@@ -55,4 +55,9 @@ test('loose matching for raising: a player id that starts a task id, exact match
     assert.equal(loose('spot', list), -1);
     assert.equal(loose('firefox', list), -1);
     assert.equal(loose('', list), -1);
+    // two tasks start with the id: ambiguous, so nothing is raised
+    const two = [{ appId: 'spotify-launcher', launcherUrl: '', isWindow: true }, { appId: 'spotify.beta', launcherUrl: '', isWindow: true }];
+    assert.equal(loose('spotify', two), -1);
+    // the same task matching by both of its ids counts once
+    assert.equal(loose('spotify', [{ appId: 'spotify-launcher', launcherUrl: 'applications:spotify-launcher.desktop', isWindow: true }]), 0);
 });
