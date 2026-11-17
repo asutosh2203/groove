@@ -73,7 +73,8 @@ QtObject {
             editor.active = true;
             return;
         }
-        const stored = PresetEdit.load(editor.storedPresets);
+        // What the deck shows is what is edited: devPresets wins over the saved blob, as it does for the display (D-54).
+        const stored = PresetEdit.load(editor.locked ? editor.devPresets : editor.storedPresets);
         editor.original = stored.draft;
         editor.draft = stored.draft;
         editor.readable = stored.readable;
