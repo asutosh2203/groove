@@ -15,7 +15,7 @@ Item {
     readonly property int notificationRow: app ? app.notifications.latestRow() : -1
     readonly property bool hasNotification: notificationRow >= 0
     readonly property var mainImage: hasNotification && app.notificationImagesEnabled ? app.notifications.mainImage(notificationRow) : null
-    readonly property bool hasImage: mainImage !== null && mainImage !== undefined && (typeof mainImage !== "string" || mainImage.length > 0)
+    readonly property bool hasImage: mainImage !== null && mainImage !== undefined && String(mainImage).length > 0
     readonly property var iconName: hasNotification ? app.notifications.mainIcon(notificationRow) : "notifications"
     // No real application icon: show the generic notification glyph, muted.
     readonly property bool genericIcon: !hasImage && (typeof iconName !== "string" || iconName.length === 0 || iconName === "notifications")

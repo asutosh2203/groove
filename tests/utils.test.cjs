@@ -71,3 +71,12 @@ test('commandStdout reads stdout from a finished command and tolerates missing d
     assert.equal(u.commandStdout(null), '');
     assert.equal(u.commandStdout(undefined), '');
 });
+
+test('hasVisualValue: an empty URL-like object is empty, an image-like object is not', () => {
+    assert.equal(u.hasVisualValue({ toString: () => '' }), false);
+    assert.equal(u.hasVisualValue({ toString: () => '  ' }), false);
+    assert.equal(u.hasVisualValue({ toString: () => 'file:///a.png' }), true);
+    assert.equal(u.hasVisualValue({}), true);
+    assert.equal(u.hasVisualValue('file:///a.png'), true);
+    assert.equal(u.hasVisualValue(0), true);
+});

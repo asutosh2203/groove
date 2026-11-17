@@ -2,10 +2,12 @@
 
 // Small pure helpers shared by the coordinator and the views.
 
+// An image or icon source counts when it is not blank. Values read from Qt can be URL objects, which are truthy even when
+// empty, so anything that is not a string is judged by what it reads as (an image object reads as non-empty).
 function hasVisualValue(value) {
     if (value === undefined || value === null)
         return false;
-    return typeof value !== "string" || value.trim().length > 0;
+    return String(value).trim().length > 0;
 }
 
 function finiteNumber(value, fallbackValue) {

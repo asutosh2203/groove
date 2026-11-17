@@ -129,3 +129,9 @@ test('an empty destUrl object does not hide a filled description value (model UR
     assert.equal(J.kind({ destUrl: emptyUrl, descriptionValue1: '/tmp/a', descriptionValue2: '/tmp/b' }, ''), 'copy');
     assert.deepEqual(j(J.openTarget({ destUrl: emptyUrl, descriptionValue2: '' })), { kind: 'none' });
 });
+
+test('kind: a URL-object source and destination are read as strings', () => {
+    const emptyUrl = { toString: () => '' };
+    assert.equal(J.kind({ descriptionValue1: 'https://x/y.iso', destUrl: emptyUrl, descriptionValue2: '' }, ''), 'download');
+    assert.equal(J.kind({ descriptionValue1: { toString: () => '/tmp/a' }, descriptionValue2: '/tmp/b', destUrl: emptyUrl }, ''), 'copy');
+});

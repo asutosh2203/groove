@@ -10,7 +10,7 @@ Item {
     property color fallbackColor: "transparent"
     property real cornerRadius: Math.min(width, height) / 2
 
-    readonly property bool hasSource: source !== undefined && source !== null && (typeof source !== "string" || source.length > 0)
+    readonly property bool hasSource: source !== undefined && source !== null && String(source).length > 0
     readonly property var effectiveSource: hasSource ? source : fallbackSource
 
     Rectangle {

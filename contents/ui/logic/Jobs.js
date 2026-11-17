@@ -51,7 +51,7 @@ function kind(details, iconName) {
     }
     if (!details)
         return "generic";
-    const src = TextUtils.cleanText(details.descriptionValue1 || "");
+    const src = TextUtils.cleanText(firstText([details.descriptionValue1]));
     const dst = TextUtils.cleanText(firstText([details.destUrl, details.descriptionValue2]));
     const remote = url => /^(https?|ftps?|sftp|smb|fish|webdav|webdavs|mtp|gdrive|nfs):/i.test(url);
     if (/^trash:/i.test(dst))
