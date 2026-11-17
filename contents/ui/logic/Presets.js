@@ -149,3 +149,18 @@ function evaluate(text, registry) {
     }
     return out;
 }
+
+// The blob to store for these presets (the editor's draft). Never called with a preset that has a problem(): the editor
+// checks first, so an invalid blob is never written.
+function serialize(presets) {
+    return JSON.stringify({ "format": FORMAT, "presets": presets });
+}
+
+function limit() {
+    return MAX_PRESETS;
+}
+
+// A page type's size in cells, or null.
+function gridOf(page) {
+    return pages[page] || null;
+}

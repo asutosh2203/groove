@@ -3,6 +3,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
+import "logic/Geocoding.js" as Geocoding
 
 KCM.SimpleKCM {
     id: configPage
@@ -18,8 +19,7 @@ KCM.SimpleKCM {
 
     // Open-Meteo geocoding: the user searches and explicitly picks a result (no GPS/IP guessing).
     function searchLocation(query) {
-        const name = query.trim();
-        if (name.length < 2) {
+        if (!Geocoding.validQuery(query)) {
             locationStatus = i18n("Type at least two characters.");
             return ;
         }
@@ -30,26 +30,17 @@ KCM.SimpleKCM {
         request.onreadystatechange = () => {
             if (request.readyState !== XMLHttpRequest.DONE)
                 return ;
-            try {
-                const rows = request.status === 200 ? (JSON.parse(request.responseText).results || []) : null;
-                if (rows === null) {
-                    locationStatus = i18n("Search failed. Check your connection and try again.");
-                    return ;
-                }
-                locationResults = rows.map(r => ({
-                    "text": [r.name, r.admin1, r.country].filter(x => x && x.length > 0).join(", "),
-                    "name": r.name,
-                    "lat": r.latitude,
-                    "lon": r.longitude
-                }));
-                locationStatus = rows.length === 0 ? i18n("No matching places found.") : i18np("%1 match. Choose one below.", "%1 matches. Choose one below.", rows.length);
-            } catch (e) {
+            const rows = request.status === 200 ? Geocoding.parse(request.responseText) : null;
+            if (rows === null) {
                 locationStatus = i18n("Search failed. Check your connection and try again.");
+                return ;
             }
+            locationResults = rows;
+            locationStatus = rows.length === 0 ? i18n("No matching places found.") : i18np("%1 match. Choose one below.", "%1 matches. Choose one below.", rows.length);
         };
         request.ontimeout = () => { locationStatus = i18n("Search timed out."); };
         request.onerror = () => { locationStatus = i18n("Search failed. Check your connection and try again."); };
-        request.open("GET", "https://geocoding-api.open-meteo.com/v1/search?count=8&format=json&language=" + encodeURIComponent(Qt.locale().name.split("_")[0]) + "&name=" + encodeURIComponent(name));
+        request.open("GET", Geocoding.url(query, Qt.locale().name));
         request.send();
     }
     property alias cfg_mediaActivityEnabled: mediaActivityEnabled.checked

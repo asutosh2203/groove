@@ -11,7 +11,7 @@
   "services": ["weather"],
   "settings": [
     { "key": "location", "type": "location", "label": { "en": "Location" }, "default": "island" },
-    { "key": "units", "type": "enum", "label": { "en": "Units" }, "default": "follow", "options": ["follow", "celsius", "fahrenheit"] },
-    { "key": "detail", "type": "enum", "label": { "en": "Detail line" }, "default": "highlow", "options": ["highlow", "sun"] }
+    { "key": "units", "type": "enum", "label": { "en": "Units" }, "default": "follow", "options": ["follow", "celsius", "fahrenheit"], "labels": { "follow": { "en": "Follow" }, "celsius": { "en": "°C" }, "fahrenheit": { "en": "°F" } } },
+    { "key": "detail", "type": "enum", "label": { "en": "Detail line" }, "default": "highlow", "options": ["highlow", "sun"], "labels": { "highlow": { "en": "High / low" }, "sun": { "en": "Sun" } } }
   ]
 }

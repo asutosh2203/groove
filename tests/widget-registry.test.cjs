@@ -84,3 +84,9 @@ test('a settings version newer than the widget knows is not rewritten', () => {
     const m = good();
     assert.equal(j(ctx.resolveSettings(m, { mode: 'b' }, 7)).mode, 'b');
 });
+
+test('enum labels are optional, keyed by an option, each with an en text', () => {
+    assert.equal(bad(m => { m.settings[2].labels = { a: { en: 'A' }, b: { en: 'B' } }; }).ok, true);
+    assert.equal(bad(m => { m.settings[2].labels = { z: { en: 'Z' } }; }).ok, false);
+    assert.equal(bad(m => { m.settings[2].labels = { a: 'A' }; }).ok, false);
+});

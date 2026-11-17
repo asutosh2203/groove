@@ -42,6 +42,8 @@ function fieldError(f) {
         return at + "needs a label with an en text";
     if (f.type === "enum" && !(Array.isArray(f.options) && f.options.length > 0 && f.options.every(isText) && f.options.indexOf(f.default) >= 0))
         return at + "needs options and a default that is one of them";
+    if (f.type === "enum" && f.labels !== undefined && !(isObject(f.labels) && Object.keys(f.labels).every(k => f.options.indexOf(k) >= 0 && isLocalised(f.labels[k]))))
+        return at + "labels must be keyed by an option, each with an en text";
     if (f.type === "number" && !(typeof f.min === "number" && typeof f.max === "number" && typeof f.step === "number" && f.min <= f.max && f.step > 0 && typeof f.default === "number" && f.default >= f.min && f.default <= f.max))
         return at + "needs min, max, step and a default within range";
     if (f.type === "bool" && typeof f.default !== "boolean")

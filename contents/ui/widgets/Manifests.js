@@ -56,7 +56,18 @@ const list = [
                         "locale",
                         "24h",
                         "12h"
-                    ]
+                    ],
+                    "labels": {
+                        "locale": {
+                            "en": "Follow system"
+                        },
+                        "24h": {
+                            "en": "24-hour"
+                        },
+                        "12h": {
+                            "en": "12-hour"
+                        }
+                    }
                 }
             ]
         }
@@ -108,7 +119,18 @@ const list = [
                         "follow",
                         "celsius",
                         "fahrenheit"
-                    ]
+                    ],
+                    "labels": {
+                        "follow": {
+                            "en": "Follow"
+                        },
+                        "celsius": {
+                            "en": "°C"
+                        },
+                        "fahrenheit": {
+                            "en": "°F"
+                        }
+                    }
                 },
                 {
                     "key": "detail",
@@ -120,7 +142,15 @@ const list = [
                     "options": [
                         "highlow",
                         "sun"
-                    ]
+                    ],
+                    "labels": {
+                        "highlow": {
+                            "en": "High / low"
+                        },
+                        "sun": {
+                            "en": "Sun"
+                        }
+                    }
                 }
             ]
         }
@@ -186,7 +216,18 @@ const list = [
                         "locale",
                         "24h",
                         "12h"
-                    ]
+                    ],
+                    "labels": {
+                        "locale": {
+                            "en": "Follow system"
+                        },
+                        "24h": {
+                            "en": "24-hour"
+                        },
+                        "12h": {
+                            "en": "12-hour"
+                        }
+                    }
                 }
             ]
         }

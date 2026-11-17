@@ -13,6 +13,6 @@
     { "key": "timezone1", "type": "timezone", "label": { "en": "First time zone" }, "default": "America/New_York" },
     { "key": "timezone2", "type": "timezone", "label": { "en": "Second time zone" }, "default": "Europe/London" },
     { "key": "timezone3", "type": "timezone", "label": { "en": "Third time zone" }, "default": "Asia/Tokyo" },
-    { "key": "timeFormat", "type": "enum", "label": { "en": "Time format" }, "default": "locale", "options": ["locale", "24h", "12h"] }
+    { "key": "timeFormat", "type": "enum", "label": { "en": "Time format" }, "default": "locale", "options": ["locale", "24h", "12h"], "labels": { "locale": { "en": "Follow system" }, "24h": { "en": "24-hour" }, "12h": { "en": "12-hour" } } }
   ]
 }

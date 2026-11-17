@@ -12,6 +12,6 @@
   "settings": [
     { "key": "timezone", "type": "timezone", "label": { "en": "Time zone" }, "default": "local" },
     { "key": "label", "type": "string", "label": { "en": "Label (optional)" }, "default": "" },
-    { "key": "timeFormat", "type": "enum", "label": { "en": "Time format" }, "default": "locale", "options": ["locale", "24h", "12h"] }
+    { "key": "timeFormat", "type": "enum", "label": { "en": "Time format" }, "default": "locale", "options": ["locale", "24h", "12h"], "labels": { "locale": { "en": "Follow system" }, "24h": { "en": "24-hour" }, "12h": { "en": "12-hour" } } }
   ]
 }
