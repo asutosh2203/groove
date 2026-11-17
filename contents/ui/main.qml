@@ -402,8 +402,9 @@ PlasmoidItem {
         geom: ({
             "cellW": T.deckCellW,
             "cellH": T.deckCellH,
-            "inset": T.deckInset,
             "padding": T.deckPadding,
+            "railW": T.deckRailWidth,
+            "railGap": T.deckRailGap,
             "liveHeaderH": T.liveHeaderHeight,
             "liveRowH": T.liveRowHeight,
             "liveGap": T.liveGap,

@@ -24,11 +24,10 @@ QtObject {
     }
     readonly property string deckLive: i18n("Live")
     readonly property string deckControlCenter: i18n("Control Center")
-    readonly property string deckNextPair: i18n("Show more")
-    readonly property string deckPreviousPair: i18n("Show previous")
 
-    function deckPage(number) {
-        return i18n("Page %1", number);
+    // A preset page's name for screen readers: its id until presets have names.
+    function deckPage(id) {
+        return i18n("Page %1", id);
     }
     readonly property string previous: i18n("Previous")
     readonly property string pause: i18n("Pause")

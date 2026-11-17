@@ -5,18 +5,44 @@
 
 const cells = { "small": { w: 2, h: 1 }, "wide": { w: 4, h: 1 }, "tall": { w: 2, h: 2 } };
 
-// [Live] -> [dev pages] -> [Control Center, always last]. Live is in the cycle only while something runs.
-function buildCycle(liveActive, dummyPages) {
+// At most three presets, so the worst case is five rail glyphs (Live + 3 + Control Center), which fit the Small page.
+const maxPresets = 3;
+
+// The dev flag's stand-ins for presets: one of each page type.
+function dummyPresets() {
+    return [{ "id": "dummy-small", "type": "small" }, { "id": "dummy-wide", "type": "wide" }, { "id": "dummy-tall", "type": "tall" }];
+}
+
+// [Live] -> [presets, at most three] -> [Control Center, always last]. Live is in the cycle only while something runs.
+function buildCycle(liveActive, presets) {
     const pages = [];
     if (liveActive)
         pages.push({ "id": "live", "type": "live" });
-    if (dummyPages) {
-        pages.push({ "id": "dummy-small", "type": "small" });
-        pages.push({ "id": "dummy-wide", "type": "wide" });
-        pages.push({ "id": "dummy-tall", "type": "tall" });
-    }
+    for (const preset of presets.slice(0, maxPresets))
+        pages.push(preset);
     pages.push({ "id": "control", "type": "control" });
     return pages;
+}
+
+// Theme symbolic names to try, in order (D-26). Presets will later show their first widget's glyph; until then each page
+// type has a placeholder.
+const glyphChains = {
+    "live": ["waveform-symbolic", "view-media-visualization-symbolic", "media-playback-start-symbolic"],
+    "control": ["configure-symbolic", "preferences-system-symbolic", "emblem-system-symbolic"],
+    "small": ["window-symbolic", "view-grid-symbolic", "folder-symbolic"],
+    "wide": ["view-split-left-right-symbolic", "view-grid-symbolic", "folder-symbolic"],
+    "tall": ["view-split-top-bottom-symbolic", "view-grid-symbolic", "folder-symbolic"]
+};
+
+// "2×1": a page type's size in cells (D-48), for labels.
+function cellLabel(type) {
+    const c = cells[type] || cells.small;
+    return c.w + "×" + c.h;
+}
+
+// The rail's width plus its gap: what a page grows by while the rail shows.
+function railExtra(geom) {
+    return geom.railW + geom.railGap;
 }
 
 function indexOf(cycle, id) {
@@ -41,14 +67,16 @@ function pageSize(type, geom) {
     return { "w": c.w * geom.cellW, "h": c.h * geom.cellH };
 }
 
-// The window is sized once, before the deck shows: the largest width and the largest height in the cycle. Live counts as
-// Tall (its largest shape) and the Control Center as its edit size.
+// The window is sized once, before the deck shows: the largest width and the largest height in the cycle, with the rail's
+// extra width on every page but the Control Center in edit mode (which hides it). Live counts as Tall (its largest shape)
+// and the Control Center as its edit size. The notch's ears are added by the caller.
 function windowSize(cycle, geom) {
+    const rail = cycle.length > 1 ? railExtra(geom) : 0;
     let w = 0;
     let h = 0;
     for (const page of cycle) {
-        const size = page.type === "live" ? pageSize("tall", geom) : page.type === "control" ? { "w": geom.controlEditW, "h": geom.controlEditH } : pageSize(page.type, geom);
-        w = Math.max(w, size.w);
+        const size = page.type === "live" ? pageSize("tall", geom) : page.type === "control" ? { "w": geom.controlEditW - rail, "h": geom.controlEditH } : pageSize(page.type, geom);
+        w = Math.max(w, size.w + rail);
         h = Math.max(h, size.h);
     }
     return { "w": w, "h": h };
@@ -66,15 +94,21 @@ function entryPage(cycle, lastUsedId, intent) {
     return cycle[0].id;
 }
 
-// null for a one-page deck. Pill = Live, dots = presets, gear = Control Center; the current page is flagged.
+// The rail, top to bottom in deck order; null for a one-page deck. Each entry carries its glyph chain; the current page
+// is flagged.
 function indicator(cycle, currentId) {
     if (cycle.length < 2)
         return null;
     return cycle.map(page => ({
                 "id": page.id,
-                "kind": page.type === "live" ? "pill" : page.type === "control" ? "gear" : "dot",
+                "glyphs": glyphChains[page.type] || glyphChains.small,
                 "current": page.id === currentId
             }));
+}
+
+// Pages move along the rail's axis: +1 when `to` is lower on the rail than `from` (content slides up), -1 when higher.
+function direction(cycle, fromId, toId) {
+    return indexOf(cycle, toId) >= indexOf(cycle, fromId) ? 1 : -1;
 }
 
 // The cycle changed while the deck is open. A page that still exists stays put (Live appearing only adds the pill).
