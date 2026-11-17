@@ -64,6 +64,9 @@ jobs:
       - name: Run Node tests
         run: node --test tests/*.test.cjs
 
+      - name: Run Claude Code integration tests
+        run: python3 -m unittest discover -s integrations/claude-code -q
+
       - name: Lint all QML and JavaScript (errors fatal, warnings ratcheted)
         run: scripts/check-qml.sh
 
