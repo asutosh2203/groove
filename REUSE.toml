@@ -8,3 +8,10 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "GNOME Project and Adwaita icon theme contributors"
 SPDX-License-Identifier = "LGPL-3.0-only"
 SPDX-FileComment = "Copies of daytime-sunrise-symbolic.svg and daytime-sunset-symbolic.svg from the Adwaita icon theme (CC-BY-SA-3.0 OR LGPL-3.0-only), used under the LGPL. Renamed so Kirigami does not resolve them through the icon theme."
+
+[[annotations]]
+path = "contents/ui/icons/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Kove contributors"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+SPDX-FileComment = "Glyphs drawn for Kove (the Kove icon set). Named *.kove.svg so Kirigami never resolves them through the icon theme."
