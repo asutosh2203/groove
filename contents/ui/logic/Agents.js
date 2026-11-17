@@ -62,6 +62,12 @@ function hasTasks(s) {
     return s.total > 0;
 }
 
+// The working subtitle's detail after the agent's name (the name always leads, D-57): the current task when there is a
+// task list, else the app hosting the session.
+function subtitleDetail(s, host) {
+    return hasTasks(s) && s.task ? s.task : String(host || "");
+}
+
 // Whole minutes the run took so far (a finished run stopped at its last update); never below 1, the island shows minutes only.
 function minutes(s, nowMs) {
     return Math.max(1, Math.floor(((s.state === "done" ? s.updatedAt : nowMs) - s.startedAt) / 60000));

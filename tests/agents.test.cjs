@@ -97,3 +97,10 @@ test('window: a non-window task and a pid of 0 or 1 never match', () => {
     assert.equal(find({ pids: [5] }, [win({ pid: 5, isWindow: false })]), -1);
     assert.equal(find({ pids: [0, 1] }, [win({ pid: 0 }), win({ pid: 1 })]), -1);
 });
+
+test('subtitle detail: the task with a task list, else the host app; never empty text for the name', () => {
+    assert.equal(A.subtitleDetail(p({ done: 1, total: 3, task: 'Merge the CC editor' }), 'Code'), 'Merge the CC editor');
+    assert.equal(A.subtitleDetail(p({}), 'Code'), 'Code');
+    assert.equal(A.subtitleDetail(p({ done: 1, total: 3, task: '' }), 'Code'), 'Code');
+    assert.equal(A.subtitleDetail(p({}), undefined), '');
+});

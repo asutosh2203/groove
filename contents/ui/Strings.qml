@@ -161,9 +161,9 @@ QtObject {
     // Agent sessions (D-57). The aggregator sends facts (an action and a short target); the wording is chosen here.
     readonly property string agentNeedsOk: i18n("Needs your OK")
 
-    // "Claude Code · Code": the agent and the app it runs in, when a window of that app is known.
-    function agentSubtitle(name, app) {
-        return app ? i18n("%1 · %2", name, app) : name;
+    // The tail after the agent's name on a working tile: "· Merge the CC editor", "· Code". Empty detail, no tail.
+    function agentSubtitleTail(detail) {
+        return detail ? i18n("· %1", detail) : "";
     }
 
     function agentMinutes(minutes) {

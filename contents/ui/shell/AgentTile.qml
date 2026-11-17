@@ -95,6 +95,7 @@ Rectangle {
 
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.preferredWidth: 0  // a long task name must elide, not push the counter out of the tile
                 spacing: 0
 
                 PlasmaLabel {
@@ -107,9 +108,32 @@ Rectangle {
                     maximumLineCount: 1
                 }
 
+                // Working: the agent's name always leads and never elides; the detail after it does.
+                RowLayout {
+                    Layout.fillWidth: true
+                    visible: !tile.waiting && !tile.finished
+                    spacing: T.compactGap
+
+                    PlasmaLabel {
+                        text: tile.session?.name ?? ""
+                        color: T.textSecondary
+                        font.pixelSize: T.fontCaption
+                    }
+
+                    PlasmaLabel {
+                        Layout.fillWidth: true
+                        text: tile.session ? tile.app.strings.agentSubtitleTail(Agents.subtitleDetail(tile.session, tile.host)) : ""
+                        color: T.textSecondary
+                        font.pixelSize: T.fontCaption
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                    }
+                }
+
                 PlasmaLabel {
                     Layout.fillWidth: true
-                    text: tile.waiting ? tile.app.strings.agentNeedsOk : tile.finished ? (tile.session?.lastMessage ?? "") : tile.hasTasks && tile.session.task ? tile.session.task : tile.app.strings.agentSubtitle(tile.session?.name ?? "", tile.host)
+                    visible: tile.waiting || tile.finished
+                    text: tile.waiting ? tile.app.strings.agentNeedsOk : (tile.session?.lastMessage ?? "")
                     color: tile.waiting ? tile.accent : T.textSecondary
                     font.pixelSize: T.fontCaption
                     elide: Text.ElideRight
