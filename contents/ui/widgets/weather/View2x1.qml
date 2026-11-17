@@ -36,7 +36,7 @@ WeatherBase {
             required property int index
 
             x: view.areaX + column.index * (view.areaWidth / 5) + (view.areaWidth / 5 - column.width) / 2
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: view.verticalCenter
             day: view.days[column.index]
             dayName: view.days[column.index].isToday && view.strings ? view.strings.today : view.locale.dayName(view.days[column.index].dow, Locale.ShortFormat)
             fahrenheit: view.fahrenheit

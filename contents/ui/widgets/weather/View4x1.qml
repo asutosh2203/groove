@@ -37,7 +37,7 @@ WeatherBase {
             required property int index
 
             x: view.areaX + hour.index * (view.areaWidth / view.count) + (view.areaWidth / view.count - hour.width) / 2
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: view.verticalCenter
             cell: view.cells[hour.index]
             timeText: view.cells[hour.index].kind === "now" && view.strings ? view.strings.now : view.hm(view.cells[hour.index].ms, view.offset)
             sunText: view.strings ? (view.cells[hour.index].sun === "sunrise" ? view.strings.sunrise : view.strings.sunset) : ""

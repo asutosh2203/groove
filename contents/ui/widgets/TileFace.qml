@@ -13,6 +13,8 @@ Item {
     property string hero
     property string detail
     property real heroSize: T.widgetHeroSize
+    // Room the label leaves on the right for something drawn over it (the weather glyph).
+    property real labelInset: 0
     property alias detailItem: detailLabel
     default property alias extras: extraHost.data
 
@@ -20,6 +22,7 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.rightMargin: face.labelInset
         text: face.label
         color: T.textSecondary
         font.pixelSize: T.fontCaption
@@ -36,7 +39,8 @@ Item {
         font.pixelSize: face.heroSize
         font.weight: T.widgetHeroWeight
         font.features: ({ "tnum": 1 })
-        elide: Text.ElideRight
+        fontSizeMode: Text.HorizontalFit
+        minimumPixelSize: T.fontTitle
         maximumLineCount: 1
     }
 

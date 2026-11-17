@@ -44,6 +44,7 @@ Item {
     Widgets.TileFace {
         anchors.fill: parent
         anchors.margins: T.widgetPadding
+        labelInset: T.widgetGlyph + T.deckSpacing
         label: block.base.service ? block.base.service.locationName : ""
         hero: block.base.service && block.base.service.hasData ? Forecast.deg(block.base.service.temperatureC, block.base.fahrenheit) : ""
 
