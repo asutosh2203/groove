@@ -10,6 +10,9 @@ const base = vm.createContext({ isFinite, Number, Math, String, parseInt, consol
 vm.runInContext(read('Utils.js'), base);
 vm.runInContext(read('TextUtils.js'), base);
 const ctx = vm.createContext({ Utils: { finiteNumber: base.finiteNumber, hasVisualValue: base.hasVisualValue }, TextUtils: { cleanText: base.cleanText }, isFinite, Number, Math, String, Boolean });
+const glyphCtx = vm.createContext({});
+vm.runInContext(read('LiveGlyphs.js'), glyphCtx);
+ctx.LiveGlyphs = { chain: glyphCtx.chain };
 vm.runInContext(read('Jobs.js'), ctx);
 const J = ctx;
 const j = (v) => JSON.parse(JSON.stringify(v));
@@ -103,4 +106,19 @@ test('bytes: the counts, 0 when absent or invalid', () => {
     assert.deepEqual(JSON.parse(JSON.stringify(ctx.bytes({ processedBytes: 5, totalBytes: 10 }))), { processed: 5, total: 10 });
     assert.deepEqual(JSON.parse(JSON.stringify(ctx.bytes({ processedBytes: -3, totalBytes: 'x' }))), { processed: 0, total: 0 });
     assert.deepEqual(JSON.parse(JSON.stringify(ctx.bytes(null))), { processed: 0, total: 0 });
+});
+
+test('openTarget: trash shows trash:/, local paths become file URLs, schemes pass through, nothing is not clickable', () => {
+    assert.deepEqual(j(J.openTarget({ destUrl: 'trash:/0-a' })), { kind: 'show', url: 'trash:/' });
+    assert.deepEqual(j(J.openTarget({ destUrl: 'file:///tmp/a b.bin' })), { kind: 'show', url: 'file:///tmp/a b.bin' });
+    assert.deepEqual(j(J.openTarget({ descriptionValue2: '/tmp/my file.bin' })), { kind: 'show', url: 'file:///tmp/my%20file.bin' });
+    assert.deepEqual(j(J.openTarget({ destUrl: 'sftp://host/home/x' })), { kind: 'show', url: 'sftp://host/home/x' });
+    assert.deepEqual(j(J.openTarget({ descriptionValue1: 'https://example.org/a.iso' })), { kind: 'none' });
+    assert.deepEqual(j(J.openTarget({})), { kind: 'none' });
+    assert.deepEqual(j(J.openTarget(null)), { kind: 'none' });
+    assert.deepEqual(j(J.openTarget({ destUrl: 'not a url' })), { kind: 'none' });
+});
+
+test('glyph names come from the one chain table', () => {
+    assert.deepEqual(j(J.glyphNames({ descriptionValue1: 'https://x/y', destUrl: '' }, '')), j(glyphCtx.chain('download')));
 });

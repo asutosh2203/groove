@@ -142,3 +142,6 @@ const liveHeaderHeight = 24;
 const liveFade = 24;            // the list's bottom fade where more rows lie beyond
 const liveHairlineAlpha = 1;    // the line between the media card and the job list
 const liveMediaGap = 16;        // room around that line: half above it, half below
+const liveTileHeight = 96;      // a job row opened in place (accordion) is as tall as a tile
+const hoverScale = 1.02;        // the media card's artwork grows this much on hover
+const fileManagerRaiseDelay = 450;  // ms to let the file manager show an item before its window is raised

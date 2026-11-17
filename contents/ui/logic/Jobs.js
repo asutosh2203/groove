@@ -1,6 +1,7 @@
 .pragma library
 .import "TextUtils.js" as TextUtils
 .import "Utils.js" as Utils
+.import "LiveGlyphs.js" as LiveGlyphs
 
 // How a job (a file copy, a download) reads, as pure functions. A job row carries `details` (an object with the
 // job's own fields, may be absent) and plain model roles; the details win and the roles are the fallback. The
@@ -59,18 +60,9 @@ function kind(details, iconName) {
     return "generic";
 }
 
-// The symbolic glyph names to try, in order, for a job (the last one always exists in the themes this ships for).
+// The symbolic glyph names to try, in order, for a job (LiveGlyphs.js holds the chains).
 function glyphNames(details, iconName) {
-    const generic = "folder-download-symbolic";
-    const chains = {
-        "copy": ["edit-copy-symbolic", generic],
-        "move": ["edit-move-symbolic", "go-next-symbolic", generic],
-        "download": ["download-symbolic", "go-down-symbolic", generic],
-        "upload": ["document-send-symbolic", "upload-symbolic", "go-up-symbolic", generic],
-        "delete": ["edit-delete-symbolic", "user-trash-symbolic", generic],
-        "generic": ["edit-copy-symbolic", generic]
-    };
-    return chains[kind(details, iconName)];
+    return LiveGlyphs.chain(kind(details, iconName));
 }
 
 function state(details, stateRole) {
@@ -127,4 +119,20 @@ function destination(details) {
 // The job's byte counts, for the Live page's combined progress; 0 when a job does not report them.
 function bytes(details) {
     return { "processed": details ? Math.max(0, Utils.finiteNumber(details.processedBytes, 0)) : 0, "total": details ? Math.max(0, Utils.finiteNumber(details.totalBytes, 0)) : 0 };
+}
+
+// Where a click on the job goes: { kind: "show", url } to show it in the file manager, or { kind: "none" } when the job
+// reports no usable destination (browsers often report none). Trash jobs show trash:/, local paths become file URLs,
+// anything with a scheme (sftp, smb ...) is passed on as it is. Never parses job text (D-27).
+function openTarget(details) {
+    const dst = details ? TextUtils.cleanText(details.destUrl || details.descriptionValue2 || "") : "";
+    if (dst.length === 0)
+        return { "kind": "none" };
+    if (/^trash:/i.test(dst))
+        return { "kind": "show", "url": "trash:/" };
+    if (dst.charAt(0) === "/")
+        return { "kind": "show", "url": "file://" + dst.split("/").map(encodeURIComponent).join("/") };
+    if (/^[a-z][a-z0-9+.-]*:/i.test(dst))
+        return { "kind": "show", "url": dst };
+    return { "kind": "none" };
 }

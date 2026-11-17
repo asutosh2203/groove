@@ -36,20 +36,23 @@ MouseArea {
     Row {
         anchors.centerIn: parent
 
+        // One delegate per page, kept as the pages' details change, so the colour, the dot and the glyph can animate.
         Repeater {
-            model: capsule.items
+            model: capsule.items ? capsule.items.length : 0
 
             delegate: Item {
                 id: entry
 
-                required property var modelData
+                required property int index
 
-                property color tone: modelData.current ? T.textPrimary : hover.hovered ? T.textSecondary : T.textTertiary
+                readonly property var info: capsule.items && entry.index < capsule.items.length ? capsule.items[entry.index] : null
+                readonly property bool current: entry.info !== null && capsule.app.deck.current === entry.info.id
+                property color tone: current ? T.textPrimary : hover.hovered ? T.textSecondary : T.textTertiary
 
                 width: T.deckCapsuleItem
                 height: T.deckCapsuleItem
                 Accessible.role: Accessible.Button
-                Accessible.name: modelData.id === "live" ? capsule.app.strings.deckLive : modelData.id === "control" ? capsule.app.strings.deckControlCenter : capsule.app.strings.deckPage(modelData.id)
+                Accessible.name: entry.info === null ? "" : entry.info.id === "live" ? capsule.app.strings.deckLive : entry.info.id === "control" ? capsule.app.strings.deckControlCenter : capsule.app.strings.deckPage(entry.info.id)
 
                 Behavior on tone {
                     enabled: !capsule.reduceMotion
@@ -60,19 +63,81 @@ MouseArea {
                     }
                 }
 
-                CC.ThemeGlyph {
+                // A glyph that changes with the content (the Live item) cross-fades from the old one to the new.
+                Item {
+                    id: glyphPair
+
+                    property bool showA: true
+                    property var namesA: []
+                    property var namesB: []
+
                     anchors.centerIn: parent
                     width: T.deckGlyph
                     height: T.deckGlyph
-                    visible: entry.modelData.kind === "glyph"
-                    names: entry.modelData.glyphs
-                    color: entry.tone
+                    visible: entry.info !== null && entry.info.kind === "glyph"
+
+                    function follow(next) {
+                        if (next === null)
+                            return ;
+                        const shown = glyphPair.showA ? glyphPair.namesA : glyphPair.namesB;
+                        if (JSON.stringify(next) === JSON.stringify(shown))
+                            return ;
+                        if (glyphPair.showA) {
+                            glyphPair.namesB = next;
+                            glyphPair.showA = false;
+                        } else {
+                            glyphPair.namesA = next;
+                            glyphPair.showA = true;
+                        }
+                    }
+
+                    Component.onCompleted: glyphPair.namesA = entry.info === null ? [] : entry.info.glyphs
+
+                    Connections {
+                        function onInfoChanged() {
+                            glyphPair.follow(entry.info === null ? null : entry.info.glyphs);
+                        }
+
+                        target: entry
+                    }
+
+                    CC.ThemeGlyph {
+                        anchors.fill: parent
+                        names: glyphPair.namesA
+                        color: entry.tone
+                        opacity: glyphPair.showA ? 1 : 0
+
+                        Behavior on opacity {
+                            enabled: !capsule.reduceMotion
+
+                            NumberAnimation {
+                                duration: T.motionFade
+                                easing.type: T.easingStandard
+                            }
+                        }
+                    }
+
+                    CC.ThemeGlyph {
+                        anchors.fill: parent
+                        names: glyphPair.namesB
+                        color: entry.tone
+                        opacity: glyphPair.showA ? 0 : 1
+
+                        Behavior on opacity {
+                            enabled: !capsule.reduceMotion
+
+                            NumberAnimation {
+                                duration: T.motionFade
+                                easing.type: T.easingStandard
+                            }
+                        }
+                    }
                 }
 
                 Rectangle {
                     anchors.centerIn: parent
-                    visible: entry.modelData.kind === "dot"
-                    width: entry.modelData.current ? T.deckDotActiveWidth : T.deckDotSize
+                    visible: entry.info !== null && entry.info.kind === "dot"
+                    width: entry.current ? T.deckDotActiveWidth : T.deckDotSize
                     height: T.deckDotSize
                     radius: height / 2
                     color: entry.tone
@@ -96,7 +161,10 @@ MouseArea {
                 MouseArea {
                     anchors.fill: parent
                     acceptedButtons: Qt.LeftButton
-                    onClicked: capsule.app.deck.goTo(entry.modelData.id)
+                    onClicked: {
+                        if (entry.info !== null)
+                            capsule.app.deck.goTo(entry.info.id);
+                    }
                 }
             }
         }

@@ -77,12 +77,13 @@ function layout(input) {
 // The Live page's height in list mode (D-51): the media card (when shown, at its Small-page height), the header and the rows,
 // plus the page's chrome (top inset and the bottom inset that holds the indicator), clamped between the Small and Tall
 // heights. The list scrolls only past the Tall cap. Other modes keep the shape's own height: null.
-// geom: { smallH, tallH, chrome, headerH, rowH, gap, mediaGap } (mediaGap: the room around the hairline under the media card)
+// geom: { smallH, tallH, chrome, headerH, rowH, gap, mediaGap, expandedExtra } (mediaGap: the room around the hairline under
+// the media card; expandedExtra: how much taller the open accordion row is than a compact one, 0 when none is open)
 function fitHeight(layout, geom) {
     if (layout.mode !== "list")
         return null;
     const rows = layout.jobs.length;
     const media = layout.mediaSlot ? geom.smallH - geom.chrome + geom.mediaGap : 0;
-    const content = media + geom.headerH + geom.gap + rows * geom.rowH + (rows - 1) * geom.gap;
+    const content = media + geom.headerH + geom.gap + rows * geom.rowH + (rows - 1) * geom.gap + geom.expandedExtra;
     return Math.max(geom.smallH, Math.min(geom.tallH, geom.chrome + content));
 }

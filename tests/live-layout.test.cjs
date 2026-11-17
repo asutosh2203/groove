@@ -111,7 +111,7 @@ test('layout carries the header only in list mode', () => {
     assert.equal(lay(true, [job('j1', 1), job('j2', 2)]).header.count, 2);
 });
 
-const geom = { smallH: 120, tallH: 240, chrome: 30, headerH: 24, rowH: 30, gap: 8, mediaGap: 16 };
+const geom = { smallH: 120, tallH: 240, chrome: 30, headerH: 24, rowH: 30, gap: 8, mediaGap: 16, expandedExtra: 0 };
 const listLayout = (hasMedia, n) => j(ctx.layout({ hasMedia, jobs: Array.from({ length: n }, (_, i) => job('j' + i, i)) }));
 
 test('fit height: not a list, no fit height', () => {
@@ -138,4 +138,11 @@ test('fit height: media + list adds the media card at its Small-page height', ()
     // 30 + (90 + 16) media + 24 + 8 + 2 rows (60) + 1 gap (8) = 236
     assert.equal(ctx.fitHeight(listLayout(true, 2), geom), 236);
     assert.equal(ctx.fitHeight(listLayout(true, 3), geom), 240);
+});
+
+test('an open accordion row adds its extra height, still capped at the Tall height', () => {
+    // no media, 3 rows: 168 + 56 = 224; with 4 rows the cap applies
+    assert.equal(ctx.fitHeight(listLayout(false, 3), { ...geom, expandedExtra: 56 }), 224);
+    assert.equal(ctx.fitHeight(listLayout(false, 4), { ...geom, expandedExtra: 56 }), 240);
+    assert.equal(ctx.fitHeight(listLayout(false, 3), { ...geom, expandedExtra: 0 }), 168);
 });

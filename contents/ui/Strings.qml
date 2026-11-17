@@ -22,6 +22,7 @@ QtObject {
     function replyPlaceholder(sender) {
         return i18n("Reply to %1…", sender);
     }
+    readonly property string jobCollapse: i18n("Collapse")
     readonly property string deckLive: i18n("Live")
     readonly property string deckControlCenter: i18n("Control Center")
 

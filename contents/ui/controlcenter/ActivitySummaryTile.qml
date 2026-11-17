@@ -222,6 +222,8 @@ Rectangle {
         readonly property real art: Math.min(72, height - inset - 30 - 10 - 12)
         readonly property real controlsTop: inset + art + 10
         readonly property real controlsHeight: 30
+        // The artwork and the title block raise the player (same cue as the media card in the island).
+        readonly property bool raiseHover: cardArtRaise.hovered || cardTitleRaise.hovered || cardSubtitleRaise.hovered
 
         Item {
             id: leftColumn
@@ -240,6 +242,22 @@ Rectangle {
                 mode: "media"
                 kind: app.media.kind
                 playing: app.media.isPlaying
+                scale: twoColumnLayout.raiseHover ? T.hoverScale : 1
+
+                Behavior on scale {
+                    enabled: !activitySummary.app.reduceMotion
+
+                    NumberAnimation {
+                        duration: T.motionHover
+                        easing.type: T.easingStandard
+                    }
+                }
+
+                Activities.RaiseArea {
+                    id: cardArtRaise
+
+                    onActivated: activitySummary.app.raisePlayer()
+                }
             }
         }
 
@@ -304,6 +322,12 @@ Rectangle {
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
                 maximumLineCount: 1
+
+                Activities.RaiseArea {
+                    id: cardTitleRaise
+
+                    onActivated: activitySummary.app.raisePlayer()
+                }
             }
 
             PlasmaLabel {
@@ -314,6 +338,12 @@ Rectangle {
                 font.pixelSize: T.fontBody
                 elide: Text.ElideRight
                 maximumLineCount: 1
+
+                Activities.RaiseArea {
+                    id: cardSubtitleRaise
+
+                    onActivated: activitySummary.app.raisePlayer()
+                }
             }
 
             Item {

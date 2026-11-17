@@ -11,6 +11,8 @@ Item {
     readonly property bool hasPlayer: app && app.media.hasPlayer
     readonly property bool hasLength: hasPlayer && app.media.length > 0
     readonly property bool playing: hasPlayer && app.media.isPlaying
+    // The artwork and the title block raise the player; the buttons and the bar keep their own behaviour.
+    readonly property bool raiseHover: artRaise.hovered || titleRaise.hovered || artistRaise.hovered
 
     RowLayout {
         id: contentRow
@@ -33,6 +35,22 @@ Item {
             fallbackMode: "media"
             progress: musicPage.hasPlayer ? musicPage.app.media.player.position / Math.max(1, musicPage.app.media.length) : 0
             playing: musicPage.playing
+            scale: musicPage.raiseHover ? T.hoverScale : 1
+
+            Behavior on scale {
+                enabled: !musicPage.app.reduceMotion
+
+                NumberAnimation {
+                    duration: T.motionHover
+                    easing.type: T.easingStandard
+                }
+            }
+
+            RaiseArea {
+                id: artRaise
+
+                onActivated: musicPage.app.raisePlayer()
+            }
         }
 
         ColumnLayout {
@@ -58,6 +76,12 @@ Item {
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
                         maximumLineCount: 1
+
+                        RaiseArea {
+                            id: titleRaise
+
+                            onActivated: musicPage.app.raisePlayer()
+                        }
                     }
 
                     PlasmaLabel {
@@ -67,6 +91,12 @@ Item {
                         font.pixelSize: 11
                         elide: Text.ElideRight
                         maximumLineCount: 1
+
+                        RaiseArea {
+                            id: artistRaise
+
+                            onActivated: musicPage.app.raisePlayer()
+                        }
                     }
                 }
 

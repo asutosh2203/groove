@@ -39,3 +39,20 @@ test('no match, empty values and non-window rows give -1', () => {
 test('a prefix of another id is not a match', () => {
     assert.equal(find('org.telegram', tasks), -1);
 });
+
+test('loose matching for raising: a player id that starts a task id, exact matches first, no plain prefixes', () => {
+    const loose = (entry, list) => ctx.findTaskLoose(entry, list);
+    const list = [
+        { appId: 'spotify-launcher', launcherUrl: 'applications:spotify-launcher.desktop', isWindow: true },
+        { appId: 'spotifyd', launcherUrl: '', isWindow: true },
+        { appId: 'org.kde.dolphin', launcherUrl: 'applications:org.kde.dolphin.desktop', isWindow: true },
+        { appId: 'org.kde.dolphin.extra', launcherUrl: '', isWindow: true },
+        { appId: 'firefox', launcherUrl: 'applications:firefox.desktop', isWindow: false }
+    ];
+    assert.equal(loose('spotify', list), 0);
+    assert.equal(loose('Spotify.desktop', list), 0);
+    assert.equal(loose('org.kde.dolphin', list), 2);
+    assert.equal(loose('spot', list), -1);
+    assert.equal(loose('firefox', list), -1);
+    assert.equal(loose('', list), -1);
+});

@@ -2,7 +2,9 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import org.kde.plasma.plasma5support as Plasma5Support
+import org.kde.plasma.workspace.dbus as DBus
 import org.kde.taskmanager as TaskManager
+import "../controlcenter/Tokens.js" as T
 import "../logic/AppMatch.js" as AppMatch
 
 // The single app launcher: desktop entries (the calendar, the notification fallback), the settings pages the Control
@@ -23,6 +25,12 @@ Item {
     // The app is picked by an id that came from another app, so only plain desktop ids launch. One launch at a time.
     property string pendingLaunchEntry: ""
     property int launchLookups: 0
+    // A raise only activates an existing window of one of these ids, and never launches; `raiseMissed` runs when none exists.
+    property var raiseEntries: []
+    property var raiseMissed: null
+    // File managers that can answer org.freedesktop.FileManager1, to raise after showing an item. There is no activation
+    // token API in QML, so the window is raised through the task model like the other launches (D-32).
+    readonly property var fileManagerEntries: ["org.kde.dolphin", "org.gnome.Nautilus", "thunar", "pcmanfm-qt", "nemo", "org.kde.krusader"]
     readonly property string calendarDiscoveryCommand: 'echo "DI_CAL $(xdg-mime query default text/calendar 2>/dev/null)"'
 
     // The widget's settings page is opened by the owner of the Plasmoid.
@@ -67,9 +75,41 @@ Item {
         taskLookupTimer.restart();
     }
 
+    // Raises an already-running app (the first of `entries` that has a window); never starts one. `missed` is called when
+    // none is running.
+    function raise(entries, missed) {
+        const ids = (entries || []).filter(id => /^[A-Za-z0-9._-]+$/.test(String(id)));
+        if (ids.length === 0 || pendingLaunchEntry.length > 0) {
+            if (missed)
+                missed();
+            return ;
+        }
+        raiseEntries = ids;
+        raiseMissed = missed || null;
+        pendingLaunchEntry = ids[0];
+        launchLookups = 0;
+        tasksLoader.active = true;
+        taskLookupTimer.restart();
+    }
+
+    // Shows a file or folder in the file manager (org.freedesktop.FileManager1.ShowItems, a native D-Bus call, no command)
+    // and then raises the file manager's window.
+    function showInFileManager(url) {
+        DBus.SessionBus.asyncCall({
+            "service": "org.freedesktop.FileManager1",
+            "path": "/org/freedesktop/FileManager1",
+            "iface": "org.freedesktop.FileManager1",
+            "member": "ShowItems",
+            // Plain strings in an array marshal as an empty string pair; the typed wrappers give (as, s).
+            "arguments": [[new DBus.string(String(url))], new DBus.string("")]
+        });
+        raiseTimer.restart();
+    }
+
     // The model fills in asynchronously, so an empty one is retried a few times before concluding "not running".
     function finishLaunch() {
         const entry = pendingLaunchEntry;
+        const raising = raiseEntries.length > 0;
         const model = tasksLoader.item as TaskManager.TasksModel;
         if (model && model.rowCount() === 0 && ++launchLookups < 5) {
             taskLookupTimer.restart();
@@ -87,16 +127,26 @@ Item {
                     "isWindow": model.data(idx, TaskManager.AbstractTasksModel.IsWindow)
                 });
             }
-            const hit = AppMatch.findTask(entry, tasks);
-            if (hit >= 0) {
-                model.requestActivate(model.index(hit, 0));
-                activated = true;
+            for (const candidate of raising ? raiseEntries : [entry]) {
+                const hit = raising ? AppMatch.findTaskLoose(candidate, tasks) : AppMatch.findTask(candidate, tasks);
+                if (hit >= 0) {
+                    model.requestActivate(model.index(hit, 0));
+                    activated = true;
+                    break;
+                }
             }
         }
+        const missed = raiseMissed;
         pendingLaunchEntry = "";
+        raiseEntries = [];
+        raiseMissed = null;
         tasksLoader.active = false;
-        if (!activated)
+        if (activated)
+            return ;
+        if (!raising)
             runDesktopEntry(entry);
+        else if (missed)
+            missed();
     }
 
     // `kioclient exec` on the desktop file, falling back to gtk-launch. The id is tried as "<id>.desktop" and
@@ -188,6 +238,14 @@ Item {
             filterByActivity: false
             groupMode: TaskManager.TasksModel.GroupDisabled
         }
+    }
+
+    // The file manager needs a moment to show the item before its window can be raised.
+    Timer {
+        id: raiseTimer
+
+        interval: T.fileManagerRaiseDelay
+        onTriggered: launcher.raise(launcher.fileManagerEntries, null)
     }
 
     Timer {

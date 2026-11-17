@@ -1,7 +1,9 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../logic/Accordion.js" as Accordion
 import "../logic/DeckPlan.js" as DeckPlan
+import "../logic/LiveGlyphs.js" as LiveGlyphs
 import "../logic/LiveLayout.js" as LiveLayout
 
 // The deck's per-island state (D-51): the page cycle, the viewed page, the page opened last (this session only) and the
@@ -14,6 +16,7 @@ Item {
     required property int liveCount
     required property bool deckVisible
     required property bool liveMedia
+    required property string liveMediaKind
     required property var liveJobs
     required property bool dummyPages
     required property bool controlEditing
@@ -28,7 +31,14 @@ Item {
     readonly property var windowSize: DeckPlan.windowSize(cycle, geom)
     readonly property var liveLayout: LiveLayout.layout({ "hasMedia": deckVisible && liveMedia, "jobs": deckVisible ? liveJobs : [] })
     readonly property int liveShownCount: deckVisible ? liveLayout.count : liveCount
-    readonly property var indicator: DeckPlan.indicator(cycle, current)
+    // The job row opened in place in the list (accordion); per session, reset when the deck closes.
+    property string openJobId: ""
+    readonly property string openJob: Accordion.clamp(openJobId, liveLayout.jobs.map(job => job.id))
+    // What the capsule's Live item shows follows what the Live page shows.
+    // A string, so the capsule only hears about a real change (the layout is rebuilt on every progress tick).
+    readonly property string liveGlyphKind: LiveGlyphs.liveKind(liveLayout.mediaSlot, liveMediaKind, liveLayout.jobs.map(job => job.kind))
+    readonly property var liveGlyphs: LiveGlyphs.chain(liveGlyphKind)
+    readonly property var indicator: DeckPlan.indicator(cycle, current, liveGlyphs)
 
     function pageType(id) {
         for (const page of cycle) {
@@ -62,7 +72,8 @@ Item {
                                                                         "headerH": geom.liveHeaderH,
                                                                         "rowH": geom.liveRowH,
                                                                         "gap": geom.liveGap,
-                                                                        "mediaGap": geom.liveMediaGap
+                                                                        "mediaGap": geom.liveMediaGap,
+                                                                        "expandedExtra": openJob !== "" ? geom.liveTileH - geom.liveRowH : 0
                                                                     }) : null;
         return fit === null ? size : { "w": size.w, "h": fit };
     }
@@ -73,6 +84,15 @@ Item {
 
     function goTo(id) {
         current = id;
+    }
+
+    function toggleJob(id) {
+        openJobId = Accordion.toggle(openJob, id);
+    }
+
+    onDeckVisibleChanged: {
+        if (!deckVisible)
+            openJobId = "";
     }
 
     onCurrentChanged: lastUsed = current

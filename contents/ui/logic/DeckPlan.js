@@ -27,7 +27,7 @@ function buildCycle(liveActive, presets) {
 // Theme symbolic names to try, in order (D-26). Presets will later show their first widget's glyph; until then each page
 // type has a placeholder.
 const glyphChains = {
-    "live": ["music-note-16th-symbolic", "audio-volume-high-symbolic", "media-playback-start-symbolic"],
+    "live": ["music-note-16th-symbolic", "audio-volume-high-symbolic", "media-playback-start-symbolic"], // overridden by LiveGlyphs
     "control": ["configure-symbolic", "preferences-system-symbolic", "emblem-system-symbolic"],
     "small": ["window-symbolic", "view-grid-symbolic", "folder-symbolic"],
     "wide": ["view-split-left-right-symbolic", "view-grid-symbolic", "folder-symbolic"],
@@ -93,13 +93,13 @@ function entryPage(cycle, lastUsedId, intent) {
 
 // The page-control capsule, left to right in deck order; null for a one-page deck. Live and the Control Center are glyphs
 // (with their fallback chains), each preset a dot; the current page is flagged.
-function indicator(cycle, currentId) {
+function indicator(cycle, currentId, liveGlyphs) {
     if (cycle.length < 2)
         return null;
     return cycle.map(page => ({
                 "id": page.id,
                 "kind": page.type === "live" || page.type === "control" ? "glyph" : "dot",
-                "glyphs": glyphChains[page.type] || glyphChains.small,
+                "glyphs": page.type === "live" && liveGlyphs ? liveGlyphs : glyphChains[page.type] || glyphChains.small,
                 "current": page.id === currentId
             }));
 }

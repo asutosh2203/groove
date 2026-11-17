@@ -13,11 +13,39 @@ Rectangle {
 
     required property var app
     required property int row
+    // An accordion row opened in place also shows a chevron that closes it again.
+    property bool collapsible: false
+    readonly property bool clickable: tile.app.jobClickable(tile.row)
+    signal collapse()
     readonly property var meta: tile.app.jobs.meta(tile.row)
     readonly property int percentage: tile.app.jobs.percentage(tile.row)
 
     radius: T.radiusInner
-    color: T.row
+    color: clickable && hover.hovered ? T.rowHover : T.row
+
+    Behavior on color {
+        enabled: !tile.app.reduceMotion
+
+        ColorAnimation {
+            duration: T.motionHover
+            easing.type: T.easingStandard
+        }
+    }
+
+    // The body opens the destination in the file manager; only a tile with a usable destination reacts to the pointer.
+    HoverHandler {
+        id: hover
+
+        enabled: tile.clickable
+        cursorShape: Qt.PointingHandCursor
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        enabled: tile.clickable
+        onClicked: tile.app.openJob(tile.row)
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -103,6 +131,37 @@ Rectangle {
                 color: T.textCaption
                 font.pixelSize: T.fontCaption
             }
+        }
+    }
+
+    // Closes an opened accordion row (its own click target).
+    Item {
+        visible: tile.collapsible
+        anchors.top: parent.top
+        anchors.right: parent.right
+        width: T.deckCapsuleItem
+        height: T.deckCapsuleItem
+        Accessible.role: Accessible.Button
+        Accessible.name: tile.app.strings.jobCollapse
+
+        CC.ThemeGlyph {
+            anchors.centerIn: parent
+            width: T.deckGlyph
+            height: T.deckGlyph
+            names: ["go-up-symbolic", "arrow-up", "go-up"]
+            color: chevronHover.hovered ? T.textPrimary : T.textTertiary
+        }
+
+        HoverHandler {
+            id: chevronHover
+
+            cursorShape: Qt.PointingHandCursor
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.LeftButton
+            onClicked: tile.collapse()
         }
     }
 }

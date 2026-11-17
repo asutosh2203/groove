@@ -238,6 +238,34 @@ PlasmoidItem {
         Qt.callLater(root.focusIslandDialog);
     }
 
+    // A click on a job tile or row: show its destination in the file manager and close the deck (D-31); a job with no
+    // usable destination does nothing.
+    function openJob(row) {
+        const target = jobService.openTarget(row);
+        if (target.kind !== "show")
+            return ;
+        appLauncher.showInFileManager(target.url);
+        closeIsland();
+    }
+
+    function jobClickable(row) {
+        return jobService.openTarget(row).kind === "show";
+    }
+
+    // A click on the media card's artwork or title: raise the player's window, else ask the player to raise itself over
+    // MPRIS. The exact browser tab is not guaranteed.
+    function raisePlayer() {
+        const player = mediaService.player;
+        if (player) {
+            const entry = String(player.desktopEntry || "");
+            appLauncher.raise(entry.length > 0 ? [entry] : [], () => {
+                if (mediaService.player && mediaService.player.canRaise)
+                    mediaService.player.Raise();
+            });
+        }
+        closeIsland();
+    }
+
     function showControlCenter() {
         showDeck("double");
     }
@@ -313,6 +341,7 @@ PlasmoidItem {
     property string idleClickTarget: ""
     readonly property alias weather: weatherService
     readonly property alias launcher: appLauncher
+    readonly property bool reduceMotion: Kirigami.Units.longDuration <= 1
     readonly property alias layoutService: controlLayoutService
     readonly property alias media: mediaService
     readonly property alias notifications: notificationService
@@ -396,6 +425,7 @@ PlasmoidItem {
         liveCount: root.liveCount
         deckVisible: root.dialogVisible && root.popupMode === "deck"
         liveMedia: root.liveMedia
+        liveMediaKind: mediaService.kind
         liveJobs: root.jobActivityEnabled && root.dialogVisible && root.popupMode === "deck" ? jobService.runningRows() : []
         dummyPages: root.settings.deckDummyPages === true
         controlEditing: controlLayoutService.editMode
@@ -409,6 +439,7 @@ PlasmoidItem {
             "liveRowH": T.liveRowHeight,
             "liveGap": T.liveGap,
             "liveMediaGap": T.liveMediaGap,
+            "liveTileH": T.liveTileHeight,
             "controlW": T.controlWidth,
             "controlH": T.controlHeight,
             "controlEditW": T.controlEditWidth,

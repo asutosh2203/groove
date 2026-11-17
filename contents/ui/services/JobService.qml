@@ -72,6 +72,11 @@ Item {
         return Jobs.icon(details(row), notifications.rowValue(row, NotificationManager.Notifications.ApplicationIconNameRole, ""), notifications.rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
     }
 
+    // Where a click on this job goes (Jobs.openTarget): { kind: "show", url } or { kind: "none" }.
+    function openTarget(row) {
+        return Jobs.openTarget(details(row));
+    }
+
     function glyphNames(row) {
         return Jobs.glyphNames(details(row), icon(row));
     }
