@@ -44,8 +44,9 @@ RowLayout {
                 verticalAlignment: Text.AlignVCenter
                 text: "‹"
                 color: backHover.hovered ? T.textPrimary : T.textCaption
-                font.pixelSize: T.fontTitle
-                font.weight: Font.DemiBold
+                font.pixelSize: T.fontTitle + T.fontHeader
+                // The big glyph sits low in its line box; this lifts it to the name's line.
+                bottomPadding: T.fontHeader / 2
 
                 HoverHandler {
                     id: backHover
