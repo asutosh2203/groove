@@ -15,6 +15,8 @@ Item {
     property double nowMs: Date.now()
     property real localOffset: 0
     property string localZone: ""
+    // What a local-zone clock is called by default: the island's weather city when set (set by main.qml).
+    property string localLabel: ""
     property var offsets: ({})
     property var subscribers: Subs.create()
     property var zoneCounts: ({})

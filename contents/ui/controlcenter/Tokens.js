@@ -154,7 +154,6 @@ const widgetHeroWeight = 500;
 const widgetGlyph = 24;             // the weather condition glyph on a tile
 const widgetGlyphSmall = 18;        // a day or hour column's glyph
 const widgetSunGlyph = 12;          // the sun glyph in the detail line
-const widgetStaleLine = 16;         // the "updated N ago" line the host reserves under a stale view
 const widgetSkeletonHeight = 8;
 const widgetDayColumn = 46;         // minimum width of a day or hour column
 const widgetPeekDwell = 150;        // ms of hover before the detail line peeks

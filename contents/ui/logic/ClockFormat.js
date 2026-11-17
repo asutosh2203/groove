@@ -28,13 +28,25 @@ function is24Hour(format) {
     return !/[aA]/.test(String(format).replace(/'[^']*'/g, ""));
 }
 
+// The time as { digits, suffix }: "21:05" and "" in 24-hour, "9:05" and "pm" in 12-hour, so the suffix can be drawn small.
 // mode: "24h", "12h" or "locale" (then locale24 decides). am and pm come from the locale.
-function timeText(ms, offsetSec, mode, locale24, am, pm) {
+function timeParts(ms, offsetSec, mode, locale24, am, pm) {
     const w = wall(ms, offsetSec);
     if (mode === "24h" || (mode !== "12h" && locale24))
-        return pad(w.h) + ":" + pad(w.mi);
-    const h = w.h % 12 === 0 ? 12 : w.h % 12;
-    return h + ":" + pad(w.mi) + " " + (w.h < 12 ? am : pm);
+        return { "digits": pad(w.h) + ":" + pad(w.mi), "suffix": "" };
+    return { "digits": (w.h % 12 === 0 ? 12 : w.h % 12) + ":" + pad(w.mi), "suffix": w.h < 12 ? am : pm };
+}
+
+function timeText(ms, offsetSec, mode, locale24, am, pm) {
+    const t = timeParts(ms, offsetSec, mode, locale24, am, pm);
+    return t.suffix.length > 0 ? t.digits + " " + t.suffix : t.digits;
+}
+
+// A label for an hourly column: compact on the hour in 12-hour ("9 pm"), else the full time.
+function hourText(ms, offsetSec, mode, locale24, am, pm) {
+    const w = wall(ms, offsetSec);
+    const t = timeParts(ms, offsetSec, mode, locale24, am, pm);
+    return w.mi === 0 && t.suffix.length > 0 ? t.digits.split(":")[0] + " " + t.suffix : timeText(ms, offsetSec, mode, locale24, am, pm);
 }
 
 // "Tue 17 Nov". days: seven short names from Sunday, months: twelve short names.

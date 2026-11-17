@@ -25,6 +25,7 @@ Rectangle {
     readonly property string viewState: slot.view ? slot.view.widgetState : "loading"
     readonly property bool showsContent: slot.available && (slot.viewState === "ready" || slot.viewState === "stale")
     readonly property bool stale: slot.viewState === "stale"
+    readonly property var age: slot.view ? WidgetState.age(slot.view.lastUpdated, Date.now()) : ({ "unit": "minute", "n": 1 })
     readonly property var action: slot.showsContent && slot.view ? slot.view.clickAction : null
     readonly property bool clickable: slot.action !== null && slot.action !== undefined
 
@@ -97,7 +98,7 @@ Rectangle {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        height: slot.height - (slot.stale ? T.widgetStaleLine : 0)
+        height: slot.height
         active: slot.available
         source: slot.available ? Qt.resolvedUrl("../widgets/" + slot.placement.widget + "/View" + slot.placement.span + ".qml") : ""
         visible: slot.showsContent
@@ -132,6 +133,14 @@ Rectangle {
         target: loader.item
         property: "strings"
         value: slot.app.strings
+        when: loader.item !== null
+        restoreMode: Binding.RestoreNone
+    }
+
+    Binding {
+        target: loader.item
+        property: "staleText"
+        value: slot.stale && slot.view ? slot.app.strings.updatedAgo(slot.age.unit, slot.age.n) : ""
         when: loader.item !== null
         restoreMode: Binding.RestoreNone
     }
@@ -187,19 +196,5 @@ Rectangle {
         color: T.textSecondary
         font.pixelSize: T.fontBody
         text: !slot.available ? slot.app.strings.widgetUnavailable : slot.view && slot.view.message.length > 0 ? slot.view.message : slot.viewState === "needsSetup" ? slot.app.strings.widgetSetLocation : slot.app.strings.widgetError
-    }
-
-    PlasmaLabel {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.leftMargin: T.widgetPadding
-        anchors.rightMargin: T.widgetPadding
-        height: T.widgetStaleLine
-        visible: slot.stale
-        color: T.textSecondary
-        font.pixelSize: T.fontCaption
-        elide: Text.ElideRight
-        text: slot.stale && slot.view ? slot.app.strings.updatedAgo(WidgetState.age(slot.view.lastUpdated, Date.now()).unit, WidgetState.age(slot.view.lastUpdated, Date.now()).n) : ""
     }
 }

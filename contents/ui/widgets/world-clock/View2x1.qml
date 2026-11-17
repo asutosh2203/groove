@@ -29,6 +29,7 @@ Widgets.WidgetView {
             readonly property string zone: view.zoneIds[column.index]
             readonly property real offset: view.clock ? view.clock.offsetOf(column.zone) : NaN
             readonly property bool known: isFinite(column.offset)
+            readonly property var parts: column.known ? ClockFormat.timeParts(view.clock.nowMs, column.offset, view.settings.timeFormat, view.use24Hour, view.locale.amText, view.locale.pmText) : ({ "digits": "", "suffix": "" })
 
             x: T.widgetPadding + column.index * view.columnWidth
             y: T.widgetPadding
@@ -48,8 +49,9 @@ Widgets.WidgetView {
                 anchors.leftMargin: column.index > 0 ? T.widgetPadding : 0
                 anchors.rightMargin: column.index < 2 ? T.widgetPadding : 0
                 heroSize: T.widgetHeroSizeSmall
-                label: ClockFormat.cityName(column.zone === "local" ? view.clock.localZone : column.zone)
-                hero: column.known ? ClockFormat.timeText(view.clock.nowMs, column.offset, view.settings.timeFormat, view.use24Hour, view.locale.amText, view.locale.pmText) : ""
+                label: column.zone === "local" && view.clock.localLabel.length > 0 ? view.clock.localLabel : ClockFormat.cityName(column.zone === "local" ? view.clock.localZone : column.zone)
+                hero: column.parts.digits
+                heroSuffix: column.parts.suffix
                 detail: column.known && view.strings ? view.strings.dayRelation(ClockFormat.dayRelation(view.clock.nowMs, column.offset, view.clock.localOffset)) + " · " + ClockFormat.offsetText(column.offset, view.clock.localOffset) : ""
             }
         }

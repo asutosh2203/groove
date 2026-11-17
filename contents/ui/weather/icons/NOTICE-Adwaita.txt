@@ -1,0 +1,3 @@
+daytime-sunrise-symbolic.svg and daytime-sunset-symbolic.svg are from the Adwaita icon theme
+(GNOME), offered under CC-BY-SA-3.0 OR LGPL-3.0-only; used here under LGPL-3.0-only, text in
+LICENSE-Adwaita-LGPL-3.0.txt. They are the sunrise and sunset glyphs of the Weather widget (D-55).

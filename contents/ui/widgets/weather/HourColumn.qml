@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import "../.." as Island
-import "../../controlcenter" as CC
 import "../../controlcenter/Tokens.js" as T
 import "../../logic/WeatherForecast.js" as Forecast
 import "../../weather" as Weather
@@ -39,10 +38,10 @@ Column {
             isDay: col.cell.isDay
         }
 
-        CC.ThemeGlyph {
+        SunGlyph {
             anchors.fill: parent
             visible: col.cell.kind === "sun"
-            names: col.cell.sun === "sunrise" ? ["weather-sunrise-symbolic", "weather-sunrise", "weather-clear-symbolic"] : ["weather-sunset-symbolic", "weather-sunset", "weather-clear-night-symbolic"]
+            kind: col.cell.sun
             color: T.textPrimary
         }
     }

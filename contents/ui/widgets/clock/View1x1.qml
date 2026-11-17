@@ -13,6 +13,7 @@ Widgets.WidgetView {
     readonly property string zone: String(view.settings.timezone)
     readonly property string zoneState: view.clock ? view.clock.zoneState(view.zone) : "loading"
     readonly property real offset: view.clock ? view.clock.offsetOf(view.zone) : NaN
+    readonly property var parts: isFinite(view.offset) ? ClockFormat.timeParts(view.clock.nowMs, view.offset, view.settings.timeFormat, view.use24Hour, view.locale.amText, view.locale.pmText) : ({ "digits": "", "suffix": "" })
     readonly property var dayNames: [0, 1, 2, 3, 4, 5, 6].map(i => view.locale.dayName(i, Locale.ShortFormat))
     readonly property var monthNames: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => view.locale.monthName(i, Locale.ShortFormat))
 
@@ -24,8 +25,9 @@ Widgets.WidgetView {
     Widgets.TileFace {
         anchors.fill: parent
         anchors.margins: T.widgetPadding
-        label: view.settings.label.length > 0 ? view.settings.label : ClockFormat.cityName(view.zone === "local" ? view.clock.localZone : view.zone)
-        hero: isFinite(view.offset) ? ClockFormat.timeText(view.clock.nowMs, view.offset, view.settings.timeFormat, view.use24Hour, view.locale.amText, view.locale.pmText) : ""
+        label: view.settings.label.length > 0 ? view.settings.label : view.zone === "local" && view.clock.localLabel.length > 0 ? view.clock.localLabel : ClockFormat.cityName(view.zone === "local" ? view.clock.localZone : view.zone)
+        hero: view.parts.digits
+        heroSuffix: view.parts.suffix
         detail: isFinite(view.offset) ? ClockFormat.dateText(view.clock.nowMs, view.offset, view.dayNames, view.monthNames) : ""
     }
 }

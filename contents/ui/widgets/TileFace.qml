@@ -11,6 +11,7 @@ Item {
 
     property string label
     property string hero
+    property string heroSuffix
     property string detail
     property real heroSize: T.widgetHeroSize
     // Room the label leaves on the right for something drawn over it (the weather glyph).
@@ -30,10 +31,13 @@ Item {
         maximumLineCount: 1
     }
 
+    // The hero fits the width left after the suffix, so the digits never truncate.
     Island.PlasmaLabel {
+        id: heroLabel
+
         anchors.left: parent.left
-        anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
+        width: face.width - (suffixLabel.visible ? suffixLabel.implicitWidth + T.deckSpacing : 0)
         text: face.hero
         color: T.textPrimary
         font.pixelSize: face.heroSize
@@ -42,6 +46,19 @@ Item {
         fontSizeMode: Text.HorizontalFit
         minimumPixelSize: T.fontTitle
         maximumLineCount: 1
+    }
+
+    // am/pm in the detail's size and colour, on the hero's baseline.
+    Island.PlasmaLabel {
+        id: suffixLabel
+
+        anchors.left: heroLabel.left
+        anchors.leftMargin: heroLabel.contentWidth + T.deckSpacing
+        anchors.baseline: heroLabel.baseline
+        visible: face.heroSuffix.length > 0
+        text: face.heroSuffix
+        color: T.textSecondary
+        font.pixelSize: T.fontCaption
     }
 
     Island.PlasmaLabel {

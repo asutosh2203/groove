@@ -59,10 +59,15 @@ function today(fc, nowMs) {
     return fc.daily.find(r => r.date === date) || null;
 }
 
-// The next `count` day columns starting today: { dow, code, max, min, isToday }.
+// The next `count` day columns starting tomorrow (today's high and low live in the left block): { dow, code, max, min }.
 function days(fc, nowMs, count) {
     const date = dateOf(nowMs, fc.offset);
-    return fc.daily.filter(r => r.date >= date).slice(0, count).map(r => ({ "dow": r.dow, "code": r.code, "max": r.max, "min": r.min, "isToday": r.date === date }));
+    return fc.daily.filter(r => r.date > date).slice(0, count).map(r => ({ "dow": r.dow, "code": r.code, "max": r.max, "min": r.min }));
+}
+
+// "Bengaluru, Karnataka, India" -> "Bengaluru".
+function cityName(name) {
+    return String(name).split(",")[0].trim();
 }
 
 // The next sunrise or sunset after now: { kind: "sunrise" | "sunset", ms } or null. Sunset in the day, sunrise at night.
@@ -101,7 +106,7 @@ function deg(celsius, fahrenheit) {
 function detail(setting, o, hm) {
     const lead = o.condition.length > 0 ? o.condition + " · " : "";
     if (setting === "sun" && o.sun)
-        return { "head": lead, "glyph": o.sun.kind, "tail": hm(o.sun.ms, o.offset) };
+        return { "head": o.condition.length > 0 ? o.condition + " \u00b7" : "", "glyph": o.sun.kind, "tail": hm(o.sun.ms, o.offset) };
     if (setting === "highlow" && o.today)
         return { "head": lead + deg(o.today.max, o.fahrenheit) + " / " + deg(o.today.min, o.fahrenheit), "glyph": "", "tail": "" };
     return { "head": o.condition, "glyph": "", "tail": "" };

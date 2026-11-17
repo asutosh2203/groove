@@ -62,15 +62,15 @@ test('trim keeps the hours from one hour ago, at most 48', () => {
     assert.equal(t.daily.length, 6);
 });
 
-test('today and the day columns start with today', () => {
+test('the day columns start tomorrow; today lives in the left block', () => {
     const f = ctx.parse(response());
     assert.equal(j(ctx.today(f, NOW)).max, 27);
     const d = j(ctx.days(f, NOW, 5));
     assert.equal(d.length, 5);
-    assert.equal(d[0].isToday, true);
-    assert.deepEqual(d.map(x => x.max), [27, 20, 19, 18, 2]);
+    assert.deepEqual(d.map(x => x.max), [20, 19, 18, 2, 1]);
+    assert.equal(j(ctx.days(f, NOW, 9)).length, 5);
     // after the location's midnight it is the next day, whatever the system zone says
-    assert.equal(j(ctx.days(f, iso('2026-11-18T00:30'), 5))[0].max, 20);
+    assert.equal(j(ctx.days(f, iso('2026-11-18T00:30'), 5))[0].max, 19);
 });
 
 test('next sun event: sunset in the day, sunrise at night', () => {
@@ -123,7 +123,7 @@ test('detail line for both settings', () => {
     const o = { condition: 'Cloudy', today: { max: 27.2, min: 18.4 }, sun: { kind: 'sunset', ms: 1000 }, fahrenheit: false, offset: 0 };
     const hm = (ms, off) => '17:58';
     assert.deepEqual(j(ctx.detail('highlow', o, hm)), { head: 'Cloudy · 27° / 18°', glyph: '', tail: '' });
-    assert.deepEqual(j(ctx.detail('sun', o, hm)), { head: 'Cloudy · ', glyph: 'sunset', tail: '17:58' });
+    assert.deepEqual(j(ctx.detail('sun', o, hm)), { head: 'Cloudy ·', glyph: 'sunset', tail: '17:58' });
     assert.deepEqual(j(ctx.detail('sun', { ...o, sun: { kind: 'sunrise', ms: 1 } }, hm)).glyph, 'sunrise');
     assert.equal(j(ctx.detail('highlow', { ...o, fahrenheit: true }, hm)).head, 'Cloudy · 81° / 65°');
 });
@@ -132,6 +132,7 @@ test('detail line falls back to the condition when the data is missing', () => {
     const o = { condition: 'Cloudy', today: null, sun: null, fahrenheit: false, offset: 0 };
     assert.equal(j(ctx.detail('highlow', o, () => '')).head, 'Cloudy');
     assert.equal(j(ctx.detail('sun', o, () => '')).head, 'Cloudy');
+    assert.equal(j(ctx.detail('sun', { ...o, condition: '', sun: { kind: 'sunset', ms: 1 } }, () => '5')).head, '');
     assert.equal(j(ctx.detail('highlow', { ...o, condition: '' }, () => '')).head, '');
 });
 
@@ -169,4 +170,11 @@ test('the cache keeps the four most recent locations and ignores unreadable text
     assert.equal(ctx.cacheRead('{"version":2,"entries":{}}', 'k'), null);
     assert.equal(j(ctx.cacheRead(ctx.cacheWrite('garbage', 'a', entry(1)), 'a')).updatedMs, 1);
     assert.equal(ctx.cacheRead(JSON.stringify({ version: 1, entries: { a: { updatedMs: 1 } } }), 'a'), null);
+});
+
+test('the city is the first part of the geocoder name', () => {
+    assert.equal(ctx.cityName('Bengaluru, Karnataka, India'), 'Bengaluru');
+    assert.equal(ctx.cityName('Oslo'), 'Oslo');
+    assert.equal(ctx.cityName('  Lisbon , Portugal'), 'Lisbon');
+    assert.equal(ctx.cityName(''), '');
 });

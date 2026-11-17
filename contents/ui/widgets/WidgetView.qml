@@ -17,6 +17,8 @@ Item {
     property var locale: Qt.locale()
     property bool use24Hour: true
     property bool reduceMotion: false
+    // "updated 2 h ago" while the data is stale, else empty. The view shows it in place of its detail line.
+    property string staleText: ""
 
     // Reported to the host: loading, ready, stale, error or needsSetup, when the data is from, what a click does
     // ({ type: "url", value }, { type: "app", value } or { type: "calendar" }; null is not clickable) and the text for the

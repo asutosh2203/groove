@@ -13,6 +13,7 @@ import "controlcenter/Tokens.js" as T
 import "logic/ActivityResolver.js" as ActivityResolver
 import "logic/DeckPlan.js" as DeckPlan
 import "logic/ClockFormat.js" as ClockFormat
+import "logic/WeatherForecast.js" as WeatherForecast
 import "activities" as Activities
 import "shell"
 import "weather"
@@ -434,6 +435,8 @@ PlasmoidItem {
 
     ClockService {
         id: clockService
+
+        localLabel: WeatherForecast.cityName(weatherService.locationName)
     }
 
     readonly property alias weatherHub: weatherHub

@@ -78,3 +78,18 @@ test('DST moves the offset, not the maths: the same city shifts by an hour acros
     assert.equal(ctx.timeText(t, BERLIN_STD, '24h', true, '', ''), '02:30');
     assert.equal(ctx.timeText(t, BERLIN_DST, '24h', true, '', ''), '03:30');
 });
+
+test('12-hour time splits into digits and a suffix for small type', () => {
+    const t = at('2026-11-17T20:00:00Z');
+    assert.deepEqual(JSON.parse(JSON.stringify(ctx.timeParts(t, TOKYO, '12h', true, 'am', 'pm'))), { digits: '5:00', suffix: 'am' });
+    assert.deepEqual(JSON.parse(JSON.stringify(ctx.timeParts(at('2026-11-17T14:55:00Z'), TOKYO, '12h', true, 'am', 'pm'))), { digits: '11:55', suffix: 'pm' });
+    assert.deepEqual(JSON.parse(JSON.stringify(ctx.timeParts(t, TOKYO, 'locale', true, 'am', 'pm'))), { digits: '05:00', suffix: '' });
+    assert.equal(ctx.timeText(t, TOKYO, '12h', true, 'am', 'pm'), '5:00 am');
+});
+
+test('hour labels are compact on the hour in 12-hour and unchanged in 24-hour', () => {
+    assert.equal(ctx.hourText(at('2026-11-17T21:00:00Z'), 0, '12h', true, 'am', 'pm'), '9 pm');
+    assert.equal(ctx.hourText(at('2026-11-17T00:00:00Z'), 0, '12h', true, 'am', 'pm'), '12 am');
+    assert.equal(ctx.hourText(at('2026-11-17T17:21:00Z'), 0, '12h', true, 'am', 'pm'), '5:21 pm');
+    assert.equal(ctx.hourText(at('2026-11-17T21:00:00Z'), 0, '24h', false, 'am', 'pm'), '21:00');
+});

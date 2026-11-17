@@ -4,7 +4,7 @@ import QtQuick
 import "../../controlcenter/Tokens.js" as T
 import "../../logic/WeatherForecast.js" as Forecast
 
-// Weather 2x1 (D-55): the left block, a hairline, then five day columns starting today. The day area is whatever the box
+// Weather 2x1 (D-55): the left block, a hairline, then the five days after today (today lives in the left block). The day area is whatever the box
 // leaves after the left block.
 WeatherBase {
     id: view
@@ -38,7 +38,7 @@ WeatherBase {
             x: view.areaX + column.index * (view.areaWidth / 5) + (view.areaWidth / 5 - column.width) / 2
             anchors.verticalCenter: view.verticalCenter
             day: view.days[column.index]
-            dayName: view.days[column.index].isToday && view.strings ? view.strings.today : view.locale.dayName(view.days[column.index].dow, Locale.ShortFormat)
+            dayName: view.locale.dayName(view.days[column.index].dow, Locale.ShortFormat)
             fahrenheit: view.fahrenheit
         }
     }

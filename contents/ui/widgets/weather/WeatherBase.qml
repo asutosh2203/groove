@@ -31,6 +31,11 @@ Widgets.WidgetView {
         return ClockFormat.timeText(ms, offset, "locale", base.use24Hour, base.locale.amText, base.locale.pmText);
     }
 
+    // An hourly column's label: "9 pm" in 12-hour, the full time in 24-hour.
+    function hourLabel(ms) {
+        return ClockFormat.hourText(ms, base.offset, "locale", base.use24Hour, base.locale.amText, base.locale.pmText);
+    }
+
     // The detail line for a setting ("highlow" or "sun") as { head, glyph, tail }.
     function detailFor(setting) {
         return Forecast.detail(setting, { "condition": base.condition, "today": base.fc ? Forecast.today(base.fc, base.nowMs) : null, "sun": base.fc ? Forecast.nextSun(base.fc, base.nowMs) : null, "fahrenheit": base.fahrenheit, "offset": base.offset }, base.hm);

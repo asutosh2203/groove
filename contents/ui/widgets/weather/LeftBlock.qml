@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import "../.." as Island
-import "../../controlcenter" as CC
 import "../../controlcenter/Tokens.js" as T
 import "../../logic/WeatherForecast.js" as Forecast
 import "../../weather" as Weather
@@ -18,7 +17,9 @@ Item {
     required property var base
     property bool peeking: false
     readonly property string main: block.base.settings.detail
-    readonly property var primary: block.base.detailFor(block.main)
+    readonly property bool stale: block.base.staleText.length > 0
+    // While stale, "updated N ago" takes the detail line's place (the three-line structure holds) and the peek is off.
+    readonly property var primary: block.stale ? ({ "head": block.base.staleText, "glyph": "", "tail": "" }) : block.base.detailFor(block.main)
     readonly property var peek: block.base.detailFor(Forecast.other(block.main))
 
     HoverHandler {
@@ -45,7 +46,7 @@ Item {
         anchors.fill: parent
         anchors.margins: T.widgetPadding
         labelInset: T.widgetGlyph + T.deckSpacing
-        label: block.base.service ? block.base.service.locationName : ""
+        label: block.base.service ? Forecast.cityName(block.base.service.locationName) : ""
         hero: block.base.service && block.base.service.hasData ? Forecast.deg(block.base.service.temperatureC, block.base.fahrenheit) : ""
 
         Weather.WeatherIcon {
@@ -62,7 +63,7 @@ Item {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             parts: block.primary
-            shown: block.peeking ? 0 : 1
+            shown: block.peeking && !block.stale ? 0 : 1
         }
 
         DetailRow {
@@ -70,7 +71,7 @@ Item {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             parts: block.peek
-            shown: block.peeking ? 1 : 0
+            shown: block.peeking && !block.stale ? 1 : 0
         }
     }
 
@@ -81,7 +82,7 @@ Item {
         property real shown: 1
 
         opacity: row.shown
-        spacing: T.deckSpacing
+        spacing: 0
 
         Behavior on shown {
             enabled: !block.base.reduceMotion
@@ -92,6 +93,7 @@ Item {
             }
         }
 
+        // One run: "Cloudy ·", a small gap, the glyph, a small gap, the time.
         Island.PlasmaLabel {
             Layout.fillWidth: row.parts.glyph === ""
             Layout.maximumWidth: row.width
@@ -102,20 +104,26 @@ Item {
             maximumLineCount: 1
         }
 
-        CC.ThemeGlyph {
+        SunGlyph {
             visible: row.parts.glyph !== ""
+            Layout.leftMargin: row.parts.head.length > 0 ? T.deckSpacing : 0
             Layout.preferredWidth: T.widgetSunGlyph
             Layout.preferredHeight: T.widgetSunGlyph
-            names: row.parts.glyph === "sunrise" ? ["weather-sunrise-symbolic", "weather-sunrise", "weather-clear-symbolic"] : ["weather-sunset-symbolic", "weather-sunset", "weather-clear-night-symbolic"]
+            kind: row.parts.glyph
             color: T.textSecondary
         }
 
         Island.PlasmaLabel {
             visible: row.parts.glyph !== ""
+            Layout.leftMargin: T.deckSpacing
             text: row.parts.tail
             color: T.textSecondary
             font.pixelSize: T.fontCaption
             maximumLineCount: 1
+        }
+
+        Item {
+            Layout.fillWidth: row.parts.glyph !== ""
         }
     }
 }
