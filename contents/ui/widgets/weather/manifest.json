@@ -1,0 +1,17 @@
+{
+  "contract": 1,
+  "id": "weather",
+  "name": { "en": "Weather" },
+  "description": { "en": "Current conditions, the coming days and the hours ahead" },
+  "icon": ["weather-clouds-symbolic", "weather-few-clouds-symbolic", "weather-clear-symbolic"],
+  "spans": ["1x1", "2x1", "4x1"],
+  "defaultSpan": "1x1",
+  "category": "Info",
+  "version": 1,
+  "services": ["weather"],
+  "settings": [
+    { "key": "location", "type": "location", "label": { "en": "Location" }, "default": "island" },
+    { "key": "units", "type": "enum", "label": { "en": "Units" }, "default": "follow", "options": ["follow", "celsius", "fahrenheit"] },
+    { "key": "detail", "type": "enum", "label": { "en": "Detail line" }, "default": "highlow", "options": ["highlow", "sun"] }
+  ]
+}

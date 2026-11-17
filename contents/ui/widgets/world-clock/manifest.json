@@ -1,0 +1,18 @@
+{
+  "contract": 1,
+  "id": "world-clock",
+  "name": { "en": "World Clock" },
+  "description": { "en": "Three cities side by side" },
+  "icon": ["globe-symbolic", "preferences-system-time-symbolic", "clock-symbolic"],
+  "spans": ["2x1"],
+  "defaultSpan": "2x1",
+  "category": "Info",
+  "version": 1,
+  "services": ["clock"],
+  "settings": [
+    { "key": "timezone1", "type": "timezone", "label": { "en": "First time zone" }, "default": "America/New_York" },
+    { "key": "timezone2", "type": "timezone", "label": { "en": "Second time zone" }, "default": "Europe/London" },
+    { "key": "timezone3", "type": "timezone", "label": { "en": "Third time zone" }, "default": "Asia/Tokyo" },
+    { "key": "timeFormat", "type": "enum", "label": { "en": "Time format" }, "default": "locale", "options": ["locale", "24h", "12h"] }
+  ]
+}
