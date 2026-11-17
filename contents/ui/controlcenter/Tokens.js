@@ -49,6 +49,9 @@ const progressGlowBlur = 1;         // px
 
 // Semantic (the only non-neutral colour)
 const critical = "#ff453a";
+// Agent accents (D-45, D-57): colour only marks "needs you"; an unknown agent gets the neutral amber.
+const agentAccents = { "claude-code": "#d97757" };
+const agentAccentDefault = "#e0a63c";
 
 // Radii
 const radiusCard = 20;
