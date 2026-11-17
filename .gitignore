@@ -34,3 +34,5 @@ HANDOFF.md
 
 # Performance measurements (scripts/perf-baseline.sh)
 perf/results/
+__pycache__/
+*.pyc
