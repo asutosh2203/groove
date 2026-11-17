@@ -94,3 +94,15 @@ function reconcile(oldCycle, newCycle, currentId) {
 function suppressesBump(kind, deckOpen) {
     return deckOpen && (kind === "media" || kind === "job");
 }
+
+// A page's content insets inside the silhouette: the Control Center's differ from the other pages', and the notch's
+// shoulders add to the sides.
+function insets(isControl, notch, shoulder) {
+    const left = (isControl ? 14 : 12) + (notch ? shoulder + 2 : 0);
+    return {
+        "l": left,
+        "r": isControl ? (notch ? 22 : left) : left + (notch ? 0 : 3),
+        "t": isControl ? 12 : (notch ? 14 : 10),
+        "b": isControl ? 16 : (notch ? 14 : 10) - 2
+    };
+}

@@ -6,6 +6,7 @@ import org.kde.kirigami as Kirigami
 import ".."
 import "../weather"
 import "../controlcenter/Tokens.js" as T
+import "../logic/DeckPlan.js" as DeckPlan
 import "../logic/ReplyShelf.js" as ReplyShelf
 
 MouseArea {
@@ -34,14 +35,9 @@ MouseArea {
 
     // The content insets of a page: the Control Center's differ from the other pages'.
     function insets(isControl) {
-        const left = (isControl ? 14 : 12) + (popupRoot.app.notchShape ? popupRoot.app.notchShoulder + 2 : 0);
-        return {
-            "l": left,
-            "r": isControl ? (popupRoot.app.notchShape ? 22 : left) : left + (popupRoot.app.notchShape ? 0 : 3),
-            "t": isControl ? 12 : (popupRoot.app.notchShape ? 14 : 10),
-            "b": isControl ? 16 : (popupRoot.app.notchShape ? 14 : 10) - 2
-        };
+        return DeckPlan.insets(isControl, popupRoot.app.notchShape, popupRoot.app.notchShoulder);
     }
+
     readonly property real panelRadius: collapsedRadius + (popupRoot.app.popupRadius - collapsedRadius) * morph
     readonly property real panelX: popupRoot.app.popupCollapsedX * (1 - morph) + (popupRoot.app.popupWidth - popupRoot.pageWidth) / 2 * morph
     readonly property real panelY: popupRoot.app.popupCollapsedY * (1 - morph) + (popupRoot.app.islandExpandsUp ? popupRoot.app.popupHeight - popupRoot.pageHeight : 0) * morph

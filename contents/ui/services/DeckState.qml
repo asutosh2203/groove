@@ -17,6 +17,8 @@ Item {
     required property var liveJobs
     required property bool dummyPages
     required property bool controlEditing
+    required property bool notch
+    required property real notchShoulder
     required property var geom
 
     property string current: "control"
@@ -37,11 +39,28 @@ Item {
         return "small";
     }
 
+    // The Live page's top inset plus the bottom inset that holds the indicator: what a page keeps clear around its content.
+    readonly property real liveChrome: {
+        const ins = DeckPlan.insets(false, notch, notchShoulder);
+        return ins.t + Math.max(ins.b, geom.inset);
+    }
+    // The media card keeps its Small-page height wherever it sits.
+    readonly property real mediaHeight: geom.cellH - liveChrome
+
     function sizeOf(id) {
         const type = pageType(id);
         if (type === "control" && controlEditing)
             return { "w": geom.controlEditW, "h": geom.controlEditH };
-        return DeckPlan.pageSize(type, geom);
+        const size = DeckPlan.pageSize(type, geom);
+        const fit = id === "live" && deckVisible ? LiveLayout.fitHeight(liveLayout, {
+                                                                        "smallH": geom.cellH,
+                                                                        "tallH": geom.cellH * 2,
+                                                                        "chrome": liveChrome,
+                                                                        "headerH": geom.liveHeaderH,
+                                                                        "rowH": geom.liveRowH,
+                                                                        "gap": geom.liveGap
+                                                                    }) : null;
+        return fit === null ? size : { "w": size.w, "h": fit };
     }
 
     function open(intent) {

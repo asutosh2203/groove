@@ -135,3 +135,5 @@ const liveRowHeight = 30;
 const liveRowBar = 3;
 const liveHeaderHeight = 24;
 const liveFade = 24;            // the list's bottom fade where more rows lie beyond
+const liveMediaNudge = 2;       // the media card draws its artwork this far outside its own box
+const liveHairlineAlpha = 0.5;  // the line between the media card and the job list

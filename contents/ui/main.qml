@@ -396,9 +396,15 @@ PlasmoidItem {
         liveJobs: root.jobActivityEnabled && root.dialogVisible && root.popupMode === "deck" ? jobService.runningRows() : []
         dummyPages: root.settings.deckDummyPages === true
         controlEditing: controlLayoutService.editMode
+        notch: root.notchShape
+        notchShoulder: root.notchShoulder
         geom: ({
             "cellW": T.deckCellW,
             "cellH": T.deckCellH,
+            "inset": T.deckInset,
+            "liveHeaderH": T.liveHeaderHeight,
+            "liveRowH": T.liveRowHeight,
+            "liveGap": T.liveGap,
             "controlW": T.controlWidth,
             "controlH": T.controlHeight,
             "controlEditW": T.controlEditWidth,

@@ -79,3 +79,10 @@ test('reconcile: Live emptied while viewed moves to the next page, else Control 
     assert.equal(ctx.reconcile(ctx.buildCycle(true, true), ctx.buildCycle(false, true), 'live'), 'dummy-small');
     assert.equal(ctx.reconcile(ctx.buildCycle(true, false), ctx.buildCycle(false, false), 'live'), 'control');
 });
+
+test('insets: Control Center differs, the notch adds its shoulders', () => {
+    assert.deepEqual(j(ctx.insets(false, false, 8)), { l: 12, r: 15, t: 10, b: 8 });
+    assert.deepEqual(j(ctx.insets(false, true, 8)), { l: 22, r: 22, t: 14, b: 12 });
+    assert.deepEqual(j(ctx.insets(true, true, 8)), { l: 24, r: 22, t: 12, b: 16 });
+    assert.deepEqual(j(ctx.insets(true, false, 8)), { l: 14, r: 14, t: 12, b: 16 });
+});

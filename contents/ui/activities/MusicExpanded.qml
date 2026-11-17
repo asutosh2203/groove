@@ -103,7 +103,7 @@ Item {
                 spacing: 0
 
                 PlasmaLabel {
-                    Layout.preferredWidth: 36
+                    Layout.preferredWidth: 30
                     text: musicPage.hasLength ? MediaPlayers.formatTime(musicPage.app.media.player.position) : ""
                     color: "#9a9ca6"
                     font.pixelSize: 10
@@ -115,7 +115,7 @@ Item {
                 }
 
                 IslandButton {
-                    Layout.rightMargin: 8
+                    Layout.rightMargin: 2
                     iconName: "media-skip-backward"
                     flat: true
                     glyphSize: T.iconTransport
@@ -137,7 +137,7 @@ Item {
                 }
 
                 IslandButton {
-                    Layout.leftMargin: 8
+                    Layout.leftMargin: 2
                     iconName: "media-skip-forward"
                     flat: true
                     glyphSize: T.iconTransport
@@ -152,7 +152,7 @@ Item {
                 }
 
                 PlasmaLabel {
-                    Layout.preferredWidth: 36
+                    Layout.preferredWidth: 30
                     text: musicPage.hasLength ? MediaPlayers.formatTime(musicPage.app.media.length) : ""
                     color: "#9a9ca6"
                     font.pixelSize: 10
