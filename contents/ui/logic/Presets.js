@@ -83,6 +83,8 @@ function migrate(blob) {
 function problem(preset, registry) {
     if (!isObject(preset) || typeof preset.id !== "string" || preset.id.length === 0)
         return "no id";
+    if (preset.id === "live" || preset.id === "control")
+        return "the id " + preset.id + " is reserved";
     if (!pages[preset.page])
         return "page must be small, wide or tall";
     if (!Array.isArray(preset.placements))
@@ -102,7 +104,9 @@ function problem(preset, registry) {
 // text: the blob as stored. Returns { presets, hidden, log }: the presets that show (at most three, in order, with their
 // grid cells), the ones that do not and why, and log lines for a developer. A bad blob gives no presets.
 function evaluate(text, registry) {
-    const none = reason => ({ "presets": [], "hidden": [], "log": [reason] });
+    const none = reason => ({ "presets": [], "hidden": [], "log": reason ? [reason] : [] });
+    if (String(text).trim().length === 0)
+        return none("");
     const parsed = parse(text);
     if (!parsed.ok)
         return none("presets: " + parsed.error);

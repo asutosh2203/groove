@@ -24,7 +24,7 @@ Item {
     property int slideDir: 1
 
     function componentFor(id) {
-        return id === "live" ? liveComponent : id === "control" ? deck.controlPage : dummyComponent;
+        return id === "live" ? liveComponent : id === "control" ? deck.controlPage : presetComponent;
     }
 
     function start(id) {
@@ -103,9 +103,9 @@ Item {
 
         Binding {
             target: loader.item
-            property: "label"
-            value: slot.pageId.replace("dummy-", "") + " " + DeckPlan.cellLabel(slot.pageId.replace("dummy-", ""))
-            when: loader.item !== null && slot.pageId.startsWith("dummy-")
+            property: "pageId"
+            value: slot.pageId
+            when: loader.item !== null && slot.pageId !== "live" && slot.pageId !== "control"
             restoreMode: Binding.RestoreNone
         }
     }
@@ -131,9 +131,10 @@ Item {
     }
 
     Component {
-        id: dummyComponent
+        id: presetComponent
 
-        DummyPage {
+        PresetPage {
+            app: deck.app
         }
     }
 }

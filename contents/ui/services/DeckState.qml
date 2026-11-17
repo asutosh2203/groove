@@ -18,7 +18,8 @@ Item {
     required property bool liveMedia
     required property string liveMediaKind
     required property var liveJobs
-    required property bool dummyPages
+    // The presets that show, from PresetStore.
+    required property var presets
     required property bool controlEditing
     required property var geom
 
@@ -26,7 +27,6 @@ Item {
     property string lastUsed: ""
     property var previousCycle: []
 
-    readonly property var presets: dummyPages ? DeckPlan.dummyPresets() : []
     readonly property var cycle: DeckPlan.buildCycle(liveCount > 0, presets)
     readonly property var windowSize: DeckPlan.windowSize(cycle, geom)
     readonly property var liveLayout: LiveLayout.layout({ "hasMedia": deckVisible && liveMedia, "jobs": deckVisible ? liveJobs : [] })
@@ -39,6 +39,11 @@ Item {
     readonly property string liveGlyphKind: LiveGlyphs.liveKind(liveLayout.mediaSlot, liveMediaKind, liveLayout.jobs.map(job => job.kind))
     readonly property var liveGlyphs: LiveGlyphs.chain(liveGlyphKind)
     readonly property var indicator: DeckPlan.indicator(cycle, current, liveGlyphs)
+
+    // A preset page's data (name, type, placements), or null for Live and the Control Center.
+    function presetFor(id) {
+        return presets.find(preset => preset.id === id) || null;
+    }
 
     function pageType(id) {
         for (const page of cycle) {

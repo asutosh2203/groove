@@ -9,12 +9,16 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, '../contents/ui/logic/DeckP
 const j = (v) => JSON.parse(JSON.stringify(v));
 const ids = (c) => j(c.map(p => p.id));
 const geom = { cellW: 170, cellH: 120, controlW: 430, controlH: 540, controlEditW: 620, controlEditH: 570, capsuleExtra: 37, capsuleW: 126 };
-const dummy = () => j(ctx.dummyPresets());
+const dummy = () => [{ id: 'a', type: 'small' }, { id: 'b', type: 'wide' }, { id: 'c', type: 'tall' }];
+
+test('a preset left out of the cycle does not appear', () => {
+    assert.deepEqual(ids(ctx.buildCycle(false, [{ id: 'a', type: 'small' }, { id: 'x', type: 'small', inCycle: false }])), ['a', 'control']);
+});
 
 test('cycle: Control Center is always last, Live only when running', () => {
     assert.deepEqual(ids(ctx.buildCycle(false, [])), ['control']);
     assert.deepEqual(ids(ctx.buildCycle(true, [])), ['live', 'control']);
-    assert.deepEqual(ids(ctx.buildCycle(true, dummy())), ['live', 'dummy-small', 'dummy-wide', 'dummy-tall', 'control']);
+    assert.deepEqual(ids(ctx.buildCycle(true, dummy())), ['live', 'a', 'b', 'c', 'control']);
     assert.deepEqual(ids(ctx.buildCycle(false, dummy())).at(-1), 'control');
 });
 
@@ -62,7 +66,7 @@ test('at most three presets: the rest are dropped and the worst case is five pag
 
 test('direction: a page further right slides content left (+1), further left slides it right (-1)', () => {
     const cycle = ctx.buildCycle(true, dummy());
-    assert.equal(ctx.direction(cycle, 'live', 'dummy-wide'), 1);
+    assert.equal(ctx.direction(cycle, 'live', 'b'), 1);
     assert.equal(ctx.direction(cycle, 'control', 'live'), -1);
     assert.equal(ctx.direction(cycle, 'live', 'control'), 1);
 });
@@ -70,18 +74,18 @@ test('direction: a page further right slides content left (+1), further left sli
 test('entry: click goes to Live, else last used, else first; double-click to Control Center', () => {
     const withLive = ctx.buildCycle(true, dummy());
     const noLive = ctx.buildCycle(false, dummy());
-    assert.equal(ctx.entryPage(withLive, 'dummy-wide', 'click'), 'live');
-    assert.equal(ctx.entryPage(noLive, 'dummy-wide', 'click'), 'dummy-wide');
-    assert.equal(ctx.entryPage(noLive, 'gone', 'click'), 'dummy-small');
-    assert.equal(ctx.entryPage(noLive, null, 'click'), 'dummy-small');
+    assert.equal(ctx.entryPage(withLive, 'b', 'click'), 'live');
+    assert.equal(ctx.entryPage(noLive, 'b', 'click'), 'b');
+    assert.equal(ctx.entryPage(noLive, 'gone', 'click'), 'a');
+    assert.equal(ctx.entryPage(noLive, null, 'click'), 'a');
     assert.equal(ctx.entryPage(ctx.buildCycle(false, []), null, 'click'), 'control');
     assert.equal(ctx.entryPage(withLive, 'live', 'double'), 'control');
 });
 
 test('capsule: hidden for one page; glyphs for Live and Control Center, dots for presets, in deck order', () => {
     assert.equal(ctx.indicator(ctx.buildCycle(false, []), 'control'), null);
-    const caps = j(ctx.indicator(ctx.buildCycle(true, dummy()), 'dummy-wide'));
-    assert.deepEqual(caps.map(i => i.id), ['live', 'dummy-small', 'dummy-wide', 'dummy-tall', 'control']);
+    const caps = j(ctx.indicator(ctx.buildCycle(true, dummy()), 'b'));
+    assert.deepEqual(caps.map(i => i.id), ['live', 'a', 'b', 'c', 'control']);
     assert.deepEqual(caps.map(i => i.kind), ['glyph', 'dot', 'dot', 'dot', 'glyph']);
     assert.deepEqual(caps.map(i => i.current), [false, false, true, false, false]);
     assert.equal(caps[0].glyphs[0], 'music-note-16th-symbolic');
@@ -103,12 +107,12 @@ test('only media and job bumps are suppressed, and only while the deck is open',
 test('reconcile: a surviving page stays, Live appearing does not jump', () => {
     const before = ctx.buildCycle(false, dummy());
     const after = ctx.buildCycle(true, dummy());
-    assert.equal(ctx.reconcile(before, after, 'dummy-wide'), 'dummy-wide');
+    assert.equal(ctx.reconcile(before, after, 'b'), 'b');
     assert.equal(ctx.reconcile(ctx.buildCycle(false, []), ctx.buildCycle(true, []), 'control'), 'control');
 });
 
 test('reconcile: Live emptied while viewed moves to the next page, else Control Center', () => {
-    assert.equal(ctx.reconcile(ctx.buildCycle(true, dummy()), ctx.buildCycle(false, dummy()), 'live'), 'dummy-small');
+    assert.equal(ctx.reconcile(ctx.buildCycle(true, dummy()), ctx.buildCycle(false, dummy()), 'live'), 'a');
     assert.equal(ctx.reconcile(ctx.buildCycle(true, []), ctx.buildCycle(false, []), 'live'), 'control');
 });
 

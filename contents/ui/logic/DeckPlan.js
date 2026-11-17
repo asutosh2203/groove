@@ -8,24 +8,19 @@ const cells = { "small": { w: 2, h: 1 }, "wide": { w: 4, h: 1 }, "tall": { w: 2,
 // At most three presets, so the worst case is five rail glyphs (Live + 3 + Control Center), which fit the Small page.
 const maxPresets = 3;
 
-// The dev flag's stand-ins for presets: one of each page type.
-function dummyPresets() {
-    return [{ "id": "dummy-small", "type": "small" }, { "id": "dummy-wide", "type": "wide" }, { "id": "dummy-tall", "type": "tall" }];
-}
-
 // [Live] -> [presets, at most three] -> [Control Center, always last]. Live is in the cycle only while something runs.
 function buildCycle(liveActive, presets) {
     const pages = [];
     if (liveActive)
         pages.push({ "id": "live", "type": "live" });
-    for (const preset of presets.slice(0, maxPresets))
+    for (const preset of presets.filter(p => p.inCycle !== false).slice(0, maxPresets))
         pages.push(preset);
     pages.push({ "id": "control", "type": "control" });
     return pages;
 }
 
-// Theme symbolic names to try, in order (D-26). Presets will later show their first widget's glyph; until then each page
-// type has a placeholder.
+// Theme symbolic names to try, in order (D-26). The capsule shows presets as dots (D-51), so these chains are only a
+// fallback for a glyph item.
 const glyphChains = {
     "live": ["music-note-16th-symbolic", "audio-volume-high-symbolic", "media-playback-start-symbolic"], // overridden by LiveGlyphs
     "control": ["configure-symbolic", "preferences-system-symbolic", "emblem-system-symbolic"],

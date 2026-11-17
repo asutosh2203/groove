@@ -80,7 +80,8 @@ test('cycle membership defaults to in', () => {
 });
 
 test('a bad blob gives no presets and a reason', () => {
-    for (const text of ['', 'nope', '[]', '{"format":2,"presets":[]}', '{"format":1}', '{"presets":[]}', '{"format":0,"presets":[]}']) {
+    assert.deepEqual(j(ctx.evaluate('  ', registry)), { presets: [], hidden: [], log: [] });
+    for (const text of ['nope', '[]', '{"format":2,"presets":[]}', '{"format":1}', '{"presets":[]}', '{"format":0,"presets":[]}']) {
         const r = j(ctx.evaluate(text, registry));
         assert.deepEqual(r.presets, [], text);
         assert.equal(r.log.length, 1, text);
@@ -90,4 +91,10 @@ test('a bad blob gives no presets and a reason', () => {
 test('migration: a format with no step is refused, the framework lifts by one step each', () => {
     assert.equal(ctx.migrate({ format: 1, presets: [] }).ok, true);
     assert.equal(ctx.migrate({ format: 99 }).ok, false);
+});
+
+test('the deck\'s own page ids are reserved', () => {
+    const r = j(ctx.evaluate(blob(p('small', ['1x1'], { id: 'live' }), p('small', ['1x1'], { id: 'control' })), registry));
+    assert.equal(r.presets.length, 0);
+    assert.equal(r.hidden.length, 2);
 });

@@ -12,6 +12,7 @@ import "logic/Utils.js" as Utils
 import "controlcenter/Tokens.js" as T
 import "logic/ActivityResolver.js" as ActivityResolver
 import "logic/DeckPlan.js" as DeckPlan
+import "logic/ClockFormat.js" as ClockFormat
 import "activities" as Activities
 import "shell"
 import "weather"
@@ -419,6 +420,44 @@ PlasmoidItem {
     readonly property int liveCount: (liveMedia ? 1 : 0) + (jobActivityEnabled ? jobService.activeCount : 0)
     readonly property alias deck: deckState
 
+    // The widget registry and the presets (D-54); the host reaches them as app.widgets, and the clock service as app.clock.
+    readonly property alias widgets: presetStore
+    readonly property alias clock: clockService
+    readonly property bool use24Hour: ClockFormat.is24Hour(Qt.locale().timeFormat(Locale.ShortFormat))
+
+    PresetStore {
+        id: presetStore
+
+        devPresets: String(root.settings.devPresets || "")
+        storedPresets: String(root.settings.presets || "")
+    }
+
+    ClockService {
+        id: clockService
+    }
+
+    readonly property alias weatherHub: weatherHub
+
+    WeatherHub {
+        id: weatherHub
+
+        island: weatherService
+        locations: presetStore.weatherLocations
+    }
+
+    // A widget's click (D-54): run its action through the host and close the deck (D-31). Widgets never run commands.
+    function runWidgetAction(action) {
+        if (action.type === "url" && /^https?:\/\//.test(String(action.value)))
+            Qt.openUrlExternally(action.value);
+        else if (action.type === "app")
+            appLauncher.launch(String(action.value));
+        else if (action.type === "calendar")
+            appLauncher.openCalendar();
+        else
+            return ;
+        closeIsland();
+    }
+
     DeckState {
         id: deckState
 
@@ -427,7 +466,7 @@ PlasmoidItem {
         liveMedia: root.liveMedia
         liveMediaKind: mediaService.kind
         liveJobs: root.jobActivityEnabled && root.dialogVisible && root.popupMode === "deck" ? jobService.runningRows() : []
-        dummyPages: root.settings.deckDummyPages === true
+        presets: presetStore.presets
         controlEditing: controlLayoutService.editMode
         geom: ({
             "cellW": T.deckCellW,
