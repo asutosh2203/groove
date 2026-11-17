@@ -29,6 +29,38 @@ function iconKey(code, isDay) {
     return "not-available";
 }
 
+// Open-Meteo WMO weather code -> the condition's key; Strings.qml turns it into text.
+function conditionKey(code, isDay) {
+    const c = Number(code);
+    if (c === 0)
+        return isDay === false || isDay === 0 ? "clear" : "sunny";
+    if (c === 1)
+        return "mostlyClear";
+    if (c === 2)
+        return "partlyCloudy";
+    if (c === 3)
+        return "cloudy";
+    if (c === 45 || c === 48)
+        return "fog";
+    if (c === 51 || c === 53 || c === 55)
+        return "drizzle";
+    if (c === 56 || c === 57)
+        return "freezingDrizzle";
+    if (c === 61 || c === 63 || c === 65)
+        return "rain";
+    if (c === 66 || c === 67)
+        return "freezingRain";
+    if (c === 71 || c === 73 || c === 75 || c === 77)
+        return "snow";
+    if (c === 80 || c === 81 || c === 82)
+        return "showers";
+    if (c === 85 || c === 86)
+        return "snowShowers";
+    if (c === 95 || c === 96 || c === 99)
+        return "thunderstorm";
+    return "";
+}
+
 // Rounded temperature split into number and unit so the UI can size them separately.
 function temperatureParts(celsius, fahrenheit) {
     const unit = fahrenheit ? "°F" : "°C";
