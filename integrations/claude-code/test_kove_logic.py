@@ -108,10 +108,12 @@ class T(unittest.TestCase):
         self.assertTrue(out[0]["urgent"])
         self.assertEqual(out[0]["summary"], "groove · Needs your OK")
         s = self.snap(h)
-        self.assertEqual((s["state"], s["waitingCommand"]), ("waiting", "rm -rf build"))
+        self.assertEqual((s["state"], s["waitingCommand"], s["waitingAction"]), ("waiting", "rm -rf build", "run"))
         h.handle(self.ev("PostToolUse", tool_name="Bash", tool_input={}), 2)
         self.assertEqual(self.snap(h)["state"], "working")
-        self.assertEqual(self.snap(h)["waitingCommand"], "")
+        self.assertEqual((self.snap(h)["waitingCommand"], self.snap(h)["waitingAction"]), ("", ""))
+        h.handle(self.ev("PermissionRequest", tool_name="Edit", tool_input={"file_path": "a/m.qml"}), 3)
+        self.assertEqual((self.snap(h)["waitingCommand"], self.snap(h)["waitingAction"]), ("Editing m.qml", "edit"))
 
     def test_todos_and_task_events(self):
         h = Hub()

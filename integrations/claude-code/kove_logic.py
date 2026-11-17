@@ -107,7 +107,7 @@ class Session:
         self.state = "working"
         self.started = self.updated = now
         self.tasks = {}
-        self.action = self.target = self.waiting_cmd = self.last_message = ""
+        self.action = self.target = self.waiting_cmd = self.waiting_action = self.last_message = ""
         self.done_until = None
 
     def expired(self, now):
@@ -131,14 +131,15 @@ class Session:
             return []
         self.updated = now
         if self.state == "waiting":  # any event after a prompt means it was answered
-            self.state, self.waiting_cmd = "working", ""
+            self.state, self.waiting_cmd, self.waiting_action = "working", "", ""
         tool, ti = ev.get("tool_name"), ev.get("tool_input") if isinstance(ev.get("tool_input"), dict) else {}
         if kind == "PermissionRequest":
             self.state, self.waiting_cmd = "waiting", waiting_command(tool, ti)
+            self.waiting_action = action_for_tool(tool, ti)[0]
             return [{"op": "notify", "urgent": True, "summary": self.project + " · Needs your OK",
                      "body": status_for_tool(tool, ti), "sid": self.sid}]
         if kind == "Notification" and ev.get("notification_type") in ("idle_prompt", "elicitation_dialog"):
-            self.state, self.waiting_cmd = "waiting", str(ev.get("message") or "")[:80]
+            self.state, self.waiting_cmd, self.waiting_action = "waiting", str(ev.get("message") or "")[:80], "other"
             return [{"op": "notify", "urgent": True, "summary": self.project + " · Needs your OK",
                      "body": str(ev.get("message") or "")[:120], "sid": self.sid}]
         if kind == "PreToolUse":
@@ -159,7 +160,7 @@ class Session:
         done, total, current = task_counts(self.tasks)
         d = {"id": self.sid, "agent": AGENT_ID, "name": AGENT_NAME, "project": self.project, "pids": self.pids,
              "scopeApp": self.scope_app, "state": self.state, "task": current, "done": done, "total": total,
-             "action": self.action, "target": self.target, "waitingCommand": self.waiting_cmd,
+             "action": self.action, "target": self.target, "waitingCommand": self.waiting_cmd, "waitingAction": self.waiting_action,
              "startedAt": int(self.started), "updatedAt": int(self.updated)}
         if self.state == "done":
             d["lastMessage"] = self.last_message
