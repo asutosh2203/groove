@@ -42,6 +42,9 @@ QtObject {
     readonly property bool dirty: (editor.active || editor.kept) && (editor.presetsDirty || editor.layout.dirty)
     readonly property int presetIndex: PresetEdit.index(editor.draft, editor.presetId)
     readonly property var preset: editor.presetIndex >= 0 ? editor.draft.presets[editor.presetIndex] : null
+    readonly property int presetCount: editor.draft.presets.length
+    readonly property int maxPresets: PresetEdit.limit()
+    readonly property bool canAddPreset: editor.presetCount < editor.maxPresets
     readonly property string pageType: editor.preset ? editor.preset.page : "small"
     readonly property var placement: editor.preset && editor.formIndex >= 0 ? editor.preset.placements[editor.formIndex] || null : null
 
@@ -127,6 +130,33 @@ QtObject {
 
     function setSetting(key, value) {
         editor.apply(PresetEdit.setSetting(editor.draft, editor.presetId, editor.formIndex, key, value, editor.registry));
+    }
+
+    // "+ New": a blank Small preset, shown at once.
+    function addPreset() {
+        const result = PresetEdit.addPreset(editor.draft);
+        if (editor.apply(result))
+            editor.selectPreset(result.id);
+    }
+
+    // Staged until Done (cancel brings it back). The editor moves to a neighbour, or to the tile editor when none is left.
+    function removePreset(id) {
+        const at = PresetEdit.index(editor.draft, id);
+        if (!editor.apply(PresetEdit.removePreset(editor.draft, id)) || editor.presetId !== id)
+            return;
+        const left = editor.draft.presets;
+        if (left.length === 0)
+            editor.selectGear();
+        else
+            editor.selectPreset(left[Math.min(at, left.length - 1)].id);
+    }
+
+    function toggleCycle(id) {
+        editor.apply(PresetEdit.toggleCycle(editor.draft, id));
+    }
+
+    function movePreset(from, to) {
+        editor.apply(PresetEdit.movePreset(editor.draft, from, to));
     }
 
     // A click on a free cell chooses it for the catalogue; a second click lets go.

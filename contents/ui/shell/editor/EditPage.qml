@@ -108,6 +108,7 @@ Item {
     ChipsBar {
         x: T.editInset
         y: page.height - T.editInset - T.editChips + (T.editChips - T.editChipH) / 2
+        width: page.width - 2 * T.editInset
         app: page.app
     }
 

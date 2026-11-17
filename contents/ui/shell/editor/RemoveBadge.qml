@@ -9,6 +9,7 @@ Rectangle {
     id: badge
 
     property string tooltip: ""
+    readonly property bool hovered: area.containsMouse
 
     signal clicked
 

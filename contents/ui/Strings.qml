@@ -57,6 +57,15 @@ QtObject {
     readonly property string editPreview: i18n("Live preview")
     readonly property string editGear: i18n("Control Center tiles")
 
+    readonly property string editNew: i18n("New")
+    readonly property string editInCycle: i18n("Shown in the deck")
+    readonly property string editOutOfCycle: i18n("Hidden from the deck")
+    readonly property string editRemovePreset: i18n("Remove preset")
+
+    function editPresetCount(n, max) {
+        return i18n("%1 of %2 presets", n, max);
+    }
+
     function pageTypeName(type) {
         return type === "wide" ? i18n("Wide") : type === "tall" ? i18n("Tall") : i18n("Small");
     }

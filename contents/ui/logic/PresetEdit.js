@@ -220,3 +220,7 @@ function weatherLocations(draft, registry) {
         return [];
     return draft.presets.reduce((all, p) => all.concat(p.placements), []).filter(p => p.widget === "weather").map(p => Registry.resolveSettings(manifest, p.settings, p.settingsVersion).location).filter(l => l !== "island");
 }
+
+function limit() {
+    return Presets.limit();
+}
