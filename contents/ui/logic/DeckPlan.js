@@ -27,7 +27,7 @@ function buildCycle(liveActive, presets) {
 // Theme symbolic names to try, in order (D-26). Presets will later show their first widget's glyph; until then each page
 // type has a placeholder.
 const glyphChains = {
-    "live": ["waveform-symbolic", "view-media-visualization-symbolic", "media-playback-start-symbolic"],
+    "live": ["music-note-16th-symbolic", "audio-volume-high-symbolic", "media-playback-start-symbolic"],
     "control": ["configure-symbolic", "preferences-system-symbolic", "emblem-system-symbolic"],
     "small": ["window-symbolic", "view-grid-symbolic", "folder-symbolic"],
     "wide": ["view-split-left-right-symbolic", "view-grid-symbolic", "folder-symbolic"],

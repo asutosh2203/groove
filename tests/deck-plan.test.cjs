@@ -84,6 +84,7 @@ test('capsule: hidden for one page; glyphs for Live and Control Center, dots for
     assert.deepEqual(caps.map(i => i.id), ['live', 'dummy-small', 'dummy-wide', 'dummy-tall', 'control']);
     assert.deepEqual(caps.map(i => i.kind), ['glyph', 'dot', 'dot', 'dot', 'glyph']);
     assert.deepEqual(caps.map(i => i.current), [false, false, true, false, false]);
+    assert.equal(caps[0].glyphs[0], 'music-note-16th-symbolic');
     assert.equal(caps.at(-1).glyphs[0], 'configure-symbolic');
     for (const entry of caps.filter(i => i.kind === 'glyph')) {
         assert.ok(entry.glyphs.length >= 2);
