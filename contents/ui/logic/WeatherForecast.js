@@ -111,3 +111,56 @@ function detail(setting, o, hm) {
 function other(setting) {
     return setting === "sun" ? "highlow" : "sun";
 }
+
+function locationKey(lat, lon) {
+    return Number(lat).toFixed(4) + "," + Number(lon).toFixed(4);
+}
+
+// The locations that need their own service: every distinct one except the island's (whose service already exists, so it is
+// never fetched or cached twice). list: [{ name, lat, lon }].
+function uniqueLocations(list, islandKey) {
+    const seen = {};
+    seen[islandKey] = true;
+    const out = [];
+    for (const loc of list) {
+        const key = locationKey(loc.lat, loc.lon);
+        if (!seen[key]) {
+            seen[key] = true;
+            out.push({ "name": loc.name, "lat": loc.lat, "lon": loc.lon });
+        }
+    }
+    return out;
+}
+
+const CACHE_VERSION = 1;
+const CACHE_ENTRIES = 4;
+
+// One cache for every location of the island: { version, entries: { key: { updatedMs, current, forecast } } }.
+// Returns the entry for key, or null when the text is unreadable or has none.
+function cacheRead(text, key) {
+    try {
+        const c = JSON.parse(text);
+        const e = c && c.version === CACHE_VERSION && c.entries ? c.entries[key] : null;
+        return e && typeof e.updatedMs === "number" && e.current && typeof e.current.t === "number" && typeof e.current.code === "number" ? e : null;
+    } catch (err) {
+        return null;
+    }
+}
+
+// The cache text with `entry` stored under key, keeping the CACHE_ENTRIES most recently updated.
+function cacheWrite(text, key, entry) {
+    let entries = {};
+    try {
+        const c = JSON.parse(text);
+        if (c && c.version === CACHE_VERSION && c.entries)
+            entries = c.entries;
+    } catch (err) {
+        entries = {};
+    }
+    entries[key] = entry;
+    const keep = Object.keys(entries).sort((a, b) => (entries[b].updatedMs || 0) - (entries[a].updatedMs || 0)).slice(0, CACHE_ENTRIES);
+    const out = {};
+    for (const k of keep)
+        out[k] = entries[k];
+    return JSON.stringify({ "version": CACHE_VERSION, "entries": out });
+}

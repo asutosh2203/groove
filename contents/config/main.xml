@@ -68,8 +68,14 @@
         <entry name="notificationPopupDurationSeconds" type="Int">
             <default>4</default>
         </entry>
-        <entry name="deckDummyPages" type="Bool">
-            <default>false</default>
+        <entry name="presets" type="String">
+            <default></default>
+        </entry>
+        <entry name="devPresets" type="String">
+            <default></default>
+        </entry>
+        <entry name="weatherForecastCache" type="String">
+            <default></default>
         </entry>
         <entry name="ongoingPopupDurationSeconds" type="Int">
             <default>3</default>

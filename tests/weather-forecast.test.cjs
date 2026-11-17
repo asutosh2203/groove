@@ -148,3 +148,25 @@ test('condition keys follow the WMO codes', () => {
     assert.equal(ctx.conditionKey(95, true), 'thunderstorm');
     assert.equal(ctx.conditionKey(999, true), '');
 });
+
+test('one fetch per location: duplicates and the island\'s own are dropped', () => {
+    const island = ctx.locationKey(48.8566, 2.3522);
+    const list = [{ name: 'Oslo', lat: 59.9139, lon: 10.7522 }, { name: 'Paris again', lat: 48.8566, lon: 2.35221 }, { name: 'Oslo 2', lat: 59.91390, lon: 10.7522 }, { name: 'Rome', lat: 41.9, lon: 12.5 }];
+    assert.deepEqual(j(ctx.uniqueLocations(list, island)).map(l => l.name), ['Oslo', 'Rome']);
+    assert.deepEqual(j(ctx.uniqueLocations([{ name: 'P', lat: 48.8566, lon: 2.3522 }], island)), []);
+});
+
+test('the cache keeps the four most recent locations and ignores unreadable text', () => {
+    const entry = (ms) => ({ updatedMs: ms, current: { t: 1, code: 3, isDay: true }, forecast: null });
+    let text = '';
+    for (let i = 1; i <= 5; i++) text = ctx.cacheWrite(text, 'k' + i, entry(i));
+    assert.equal(ctx.cacheRead(text, 'k1'), null);
+    assert.equal(j(ctx.cacheRead(text, 'k5')).updatedMs, 5);
+    assert.equal(Object.keys(JSON.parse(text).entries).length, 4);
+    text = ctx.cacheWrite(text, 'k2', entry(9));
+    assert.equal(j(ctx.cacheRead(text, 'k2')).updatedMs, 9);
+    assert.equal(ctx.cacheRead('garbage', 'k'), null);
+    assert.equal(ctx.cacheRead('{"version":2,"entries":{}}', 'k'), null);
+    assert.equal(j(ctx.cacheRead(ctx.cacheWrite('garbage', 'a', entry(1)), 'a')).updatedMs, 1);
+    assert.equal(ctx.cacheRead(JSON.stringify({ version: 1, entries: { a: { updatedMs: 1 } } }), 'a'), null);
+});
