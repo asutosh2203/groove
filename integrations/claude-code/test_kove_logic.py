@@ -238,6 +238,8 @@ class HookTest(unittest.TestCase):
 
 def _bus_has_aggregator():
     try:
+        if subprocess.run(["busctl", "--user", "list"], capture_output=True, timeout=5).returncode != 0:
+            return None  # no session bus (CI container)
         r = subprocess.run(["busctl", "--user", "status", "io.github.asutosh2203.Kove.Agents"], capture_output=True, timeout=5)
         return r.returncode == 0
     except (OSError, subprocess.TimeoutExpired):
