@@ -419,6 +419,33 @@ MouseArea {
 
     }
 
+    // The page-control capsule floats below the island, centred on it and following its bottom edge as it morphs. It
+    // appears once the island has finished opening (with a small settle) and goes first on close; it is hidden with one
+    // page, in Control Center edit mode and while a pop-in shows.
+    DeckCapsule {
+        id: capsuleItem
+
+        readonly property bool shown: popupRoot.app.islandOpen && popupRoot.morph > 0.98 && popupRoot.app.popupMode === "deck" && popupRoot.app.deck.capsuleWanted
+
+        app: popupRoot.app
+        control: popupRoot.control
+        reduceMotion: popupRoot.reduceMotion
+        x: popupRoot.panelX + popupRoot.panelWidth / 2 - width / 2
+        y: popupRoot.panelY + popupRoot.panelHeight + T.deckCapsuleGap
+        opacity: shown ? 1 : 0
+        visible: opacity > 0
+        transform: Translate {
+            y: popupRoot.reduceMotion ? 0 : -T.deckSettle * (1 - capsuleItem.opacity)
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: T.motionFade
+                easing.type: T.easingStandard
+            }
+        }
+    }
+
     Behavior on pageWidth {
         enabled: !popupRoot.reduceMotion && popupRoot.morph >= 1
         NumberAnimation {

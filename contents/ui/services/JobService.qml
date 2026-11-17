@@ -27,6 +27,10 @@ Item {
     // The running and paused jobs for the Live page (LiveLayout.js). Created is a plain date role (D-50 only bans
     // JobDetailsRole through data()); the details come through the role delegate.
     function runningRows() {
+        // Never true: reading it makes a binding that calls this re-evaluate when a job starts or ends, even while the
+        // model has no rows yet (an empty model's row count does not notify).
+        if (activeCount < 0)
+            return [];
         const out = [];
         const types = notifications.types();
         for (let i = 0; i < types.length; ++i) {

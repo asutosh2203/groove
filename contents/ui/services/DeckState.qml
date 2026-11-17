@@ -46,22 +46,15 @@ Item {
     // The media card keeps its Small-page height wherever it sits.
     readonly property real mediaHeight: geom.cellH - liveChrome
 
-    // The rail shows when there are two or more pages, except while the Control Center is being edited.
-    function railOn(id) {
-        return cycle.length > 1 && !(id === "control" && controlEditing);
-    }
+    // The capsule shows with two or more pages, except while the Control Center is being edited.
+    readonly property bool capsuleWanted: cycle.length > 1 && !(current === "control" && controlEditing)
 
-    function railExtraOf(id) {
-        return railOn(id) ? DeckPlan.railExtra(geom) : 0;
-    }
-
-    // A page's body size: its own size plus the rail's room when the rail shows.
+    // A page's body size.
     function sizeOf(id) {
         const type = pageType(id);
         if (type === "control" && controlEditing)
             return { "w": geom.controlEditW, "h": geom.controlEditH };
         const size = DeckPlan.pageSize(type, geom);
-        size.w += railExtraOf(id);
         const fit = id === "live" && deckVisible ? LiveLayout.fitHeight(liveLayout, {
                                                                         "smallH": geom.cellH,
                                                                         "tallH": geom.cellH * 2,
@@ -83,7 +76,7 @@ Item {
     }
 
     onCurrentChanged: lastUsed = current
-    // Live appearing adds its rail glyph and stays put; Live emptying moves on to the next page (or the Control Center).
+    // Live appearing adds its capsule glyph and stays put; Live emptying moves on to the next page (or the Control Center).
     onCycleChanged: {
         current = DeckPlan.reconcile(previousCycle.length > 0 ? previousCycle : cycle, cycle, current);
         previousCycle = cycle;
