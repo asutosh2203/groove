@@ -79,19 +79,32 @@ Notifications and the keyboard layout stay pop-ins over the deck, not pages (the
 - Widget spans: **Small** 1×1, **Medium** 2×1, **Wide** 4×1 (Wide page only). The Tall page reuses the 1×1 and 2×1 views,
   so no extra widget views exist for it. Large 2×2 square widgets for the Tall page come later.
 
-## Preset editor (decided)
+## Preset editor (decided, D-56)
 
-One edit mode for the whole deck. The pencil on any page enters it and the island zooms about 104% on a soft spring.
-Preset pages edit presets; the Control Center page edits tiles (the existing CC editor merges into this mode).
+One edit mode for the whole deck, entered from the Control Center's pencil (no pencil on preset pages). The island zooms
+about 104% on a soft spring; the capsule is hidden and Live is excluded. The window is pre-sized for it (D-43). The
+Control Center tile editor is merged in as the gear chip.
 
-- Top: preset name (click to rename) and a page-type toggle (Small / Wide / Tall). Switching to a page type where
-  widgets do not fit is blocked with a hint; nothing is auto-removed.
-- Grid: "−" removes a widget; "+ Add widget" opens the catalogue filtered to spans that fit; drag to reorder; clicking a
-  widget opens its generated settings form in place (← back).
-- Bottom: preset chips in cycle order. Drag to reorder, the eye toggles cycle membership, "+ New" (disabled at 3).
-- Transactional: Done saves everything; Cancel or Esc discards. With unsaved changes an in-island "Discard your changes?"
-  prompt appears ([Keep editing] / [Discard]); Esc on the prompt keeps editing. No prompt when nothing changed.
-  Deleting a preset is staged until Done.
+- Top bar: a Small / Wide / Tall control for the current preset (a type the placements do not fit is blocked with a hint;
+  nothing is auto-removed) and the Control Center editor's ✕ and ✓ for the whole session. In the settings form the left
+  side is "‹ <widget name>". No preset names: presets are shown as silhouettes, the `name` stays optional in the format.
+- Grid: the page at real size in a dashed outline. "−" removes a widget, a click opens its settings form in place, a drag
+  reorders (reflow by the packing rule), a free cell reads "+ Add widget" and chooses where the catalogue adds. A
+  placement the page cannot take is listed first in the sidebar as "Doesn't fit" so it can be fixed.
+- Catalogue sidebar: icon, localised name and spans per widget; widgets that fit nowhere are greyed with "won't fit".
+  Click adds to the chosen cell or the first free spot, a drag drops it on the grid.
+- Settings form (generated from the manifest schema): live preview left, fields right, size control first with the spans
+  that cannot fit greyed, "Remove widget" under the preview. Field types: bool (switch), enum (segmented up to four
+  options, else dropdown; options may carry localised `labels`), string, number (stepper or slider), location (Open-Meteo
+  search) and timezone (Plasma's zone data, plain id fallback). `app` is reserved, not built.
+- Bottom: one chip per preset with a silhouette of its layout. Hover shows an eye (cycle membership) and a "−" (delete,
+  staged until Done); drag to reorder; the gear chip opens the tile editor; "+ New" adds a blank Small preset and is
+  disabled at three ("3 of 3 presets").
+- Transactional: Done saves everything (presets only through a blob that passes validation, never while `devPresets` is
+  set); Cancel discards. With unsaved changes ✕, Esc and a click on the window's transparent area show the in-island
+  "Discard your changes?" prompt ([Keep editing] / [Discard]); Esc on the prompt keeps editing. Closing the deck on focus
+  loss keeps the draft in memory and the next open resumes it ("Unsaved changes restored"). Esc steps back one level:
+  field, form to grid, grid to Cancel.
 
 ## Services and lifecycle (decided)
 
@@ -131,6 +144,11 @@ Built-in widgets first; third-party extensions only after this contract is stabl
   154 wide on Small, 158 on Wide and 104 tall on Tall).
 - Settings field types: bool, enum, string, number (with `min`, `max`, `step`), location, timezone, app. Each has a label
   and a default; the host stores values per placement. There is no colour picker (D-45).
+- Enum option labels (added in D3, D-56): an enum field may carry `labels`, an object keyed by option id whose values are
+  locale-keyed texts with `en` required, for example `"labels": { "highlow": { "en": "High / low" } }`. The settings form shows
+  the label in the user's locale, then `en`, and an option without a label shows its id. The registry rejects a `labels`
+  key that is not one of the field's options or has no `en` text. It is optional, so contract v1 manifests without it stay
+  valid.
 - The host injects (required properties): `span` and the pixel box (`boxWidth`, `boxHeight`), `settings` (resolved against
   the schema), `tokens`, the declared services only, the locale and time format, a reduced-motion flag, and a host API
   (open URL, launch app).

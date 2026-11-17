@@ -32,7 +32,7 @@ CC6 (notification list density/scrolling) was dropped.
 - B1: still to look at live: the notice accent colours (Critical red, Normal orange, Low grey). The Theme settings tile and
   icon fix were checked on screen.
 
-- **D1: deck shell (done; code committed locally, not pushed).** D-51, D-52 and D-53: the deck, the page-control capsule, the
+- **D1: deck shell (done, pushed).** D-51, D-52 and D-53: the deck, the page-control capsule, the
   Live page with job tiles, list and accordion, the content-aware Live glyph, job and media clicks, and the hidden
   `deckDummyPages` flag. The closed-deck performance re-check shows no regression (`docs/PERFORMANCE.md`, "After D1").
   Next: the widget host and registry (D2).
@@ -41,7 +41,17 @@ CC6 (notification list density/scrolling) was dropped.
   D-54 and D-55: contract v1, the manifest registry (JSON is the source of truth, a generated mirror with a drift test),
   versioned presets with validation and migrations, preset pages in the deck, the widget host with the standard states, the
   minute-tick clock service, and Clock, World Clock and Weather. D2's presets come from the hidden `devPresets` key;
-  `deckDummyPages` is retired. Next: D3, the preset editor and the catalogue.
+  `deckDummyPages` is retired.
+
+- **D3: the preset editor (done, pushed; a first pass to live with).** D-56: one edit mode entered from the Control Center's
+  pencil, with the grid (remove, add, drag reorder), the catalogue sidebar, the settings form generated from the manifest
+  (every field type, Open-Meteo location search, Plasma time zone data), the chips bar with silhouettes, the tile editor
+  merged in as the gear chip, a transactional session with a discard prompt, a draft kept on focus loss, and the
+  `devPresets` lock. Checked live in Notch and Pill. Next: use it for a few days, then
+  refine (see the list below), then the first-run starter presets.
+  - Possible later: right-click a preset page to edit that preset (a shortcut; the capsule stays symmetric, D-51). A scrolling
+    form for widgets with more than four settings. A catalogue search. Keyboard reordering. An `app` field type when a
+    widget needs it.
 
 ## B1: bug batch (done)
 Found while moving code in Q2; behaviour was kept during the moves, then fixed one commit per item.
@@ -97,6 +107,10 @@ click opens VS Code and a real task-list run once a Claude Code version has the 
 - Later: a dedicated AI Agent widget (multiple sessions, last message, subagents) once the widget contract exists.
 
 ## Backlog
+- **Settings form scrolling (D3 follow-up).** The editor's settings form does not scroll: its body is sized for the size control
+  plus four fields (the World Clock), so a widget with more settings would overflow into the chips bar. Needs a scrolling
+  right column that still lets the location and time zone result lists overlay it (they extend past their row, so a plain
+  clipped `Flickable` would cut them off).
 - **Align the idle face's weather icons with the widgets.** The panel's idle face still draws the bundled, colour, animated
   Meteocons; the Weather widgets draw monochrome white glyphs (theme `weather-*-symbolic` first, D-55). Decide whether the idle
   face should use the same glyphs (and drop its animation) so the two agree.

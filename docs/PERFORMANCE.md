@@ -158,6 +158,44 @@ plasmashell restart, no frame logging. The D1 build (`c316c16`) was re-measured 
 - **Clock timers:** each Plasma `Clock` holds its own minute-aligned timerfd. Small preset: 1 (local). Tall sample: 3 (local,
   New York, Tokyo). Closed deck: 0 (the Clocks exist only while subscribed plus the 30 s grace).
 
+## After D3 (2026-11-18, the preset editor, D-56)
+
+Closed-deck A/B on the dev copy, 3 runs of 30 s each, settled 125 s after a plasmashell restart, no frame logging, D2 build
+(`08a8f96`) and D3 build measured back to back. **Spotify was playing for both** (not paused: it is the user's music), so
+these numbers are higher and noisier than "After D2" (media paused) and must only be compared with each other. Raw files:
+`perf/results/*d3-ab-*`.
+
+| State | CPU per run | Median | RSS |
+|---|---|---|---|
+| D2 build, deck closed (Spotify playing) | 0.65, 0.70, 1.07% | 0.70% | 662 MB |
+| D3 build, deck closed (Spotify playing) | 0.53, 1.58, 0.63% | 0.63% | 698 MB |
+
+- **No closed-deck CPU regression** within the noise (one run in each build spiked; the medians are 0.70 and 0.63%). Edit mode
+  creates nothing while closed: its UI, the time zone model and the geocoding request exist only while it is open.
+- **RSS: the +36 MB was noise (investigated 2026-11-18).** Six plasmashell restarts, each settled 100 s, deck never opened,
+  Spotify playing, alternating the builds (D2, D3 as committed, D3 with the lazy-loading fix), two rounds:
+
+  | Build | Round 1 | Round 2 | Anonymous (range) | File-backed |
+  |---|---|---|---|---|
+  | D2 | 665 MB | 666 MB | 215 to 221 MB | about 398 MB |
+  | D3 as committed | 610 MB | 652 MB | 160 to 205 MB | about 398 MB |
+  | D3 with the fix | 658 MB | 661 MB | 210 to 211 MB | about 398 MB |
+
+  Restart to restart, anonymous memory swings by up to 55 MB for the same build (D3 as committed was the lowest and the
+  highest D3 value in turn), and file-backed memory is the same everywhere, so no build is consistently larger.
+- **Something eager did exist, and is fixed:** `PopupContent` named `EditPage` as a type, so all 14 editor QML files and the
+  editor's pure modules loaded at startup (checked with `qt.qml.diskcache.debug`: 140 project files loaded, now 119). The editor
+  UI is now loaded by URL through a Loader inside the edit-mode component, so it exists only while edit mode runs. Still always
+  present: `PresetEditor.qml` and the pure modules `PresetEdit`, `PageFit`, `Catalogue` (the session state, which must outlive the
+  deck to keep a draft). The private time zone module was already lazy (it loads with the first time zone field).
+- **Through an edit session** (D3 build with the fix, one run, deck opened by a debug hook): closed 677 MB, deck open on the
+  Control Center 684 (+7 to +12), edit mode on a Clock form, a World Clock form and the tile editor 683, 681, 681 (no
+  measurable cost beyond opening the deck), closed again 682 after 5 s, 681 after 30 s, 692 after 60 s. **Memory is not given
+  back after closing**: it stays about +5 to +15 MB over the first closed reading (malloc and the QML engine keep pages), and
+  it does not grow with the number of pages visited. Not a leak by this measure (three forms and the tile editor in a row
+  added nothing), but not released either.
+- Not measured: CPU while edit mode is open (no media paused, and a held-open deck needs a debug timer).
+
 ## What changed (commits)
 
 | Change | Commit |
