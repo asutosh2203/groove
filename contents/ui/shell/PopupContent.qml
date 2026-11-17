@@ -8,7 +8,6 @@ import "../weather"
 import "../controlcenter/Tokens.js" as T
 import "../logic/DeckPlan.js" as DeckPlan
 import "../logic/ReplyShelf.js" as ReplyShelf
-import "editor"
 
 MouseArea {
     id: popupRoot
@@ -217,18 +216,17 @@ MouseArea {
             sourceComponent: popupRoot.app.popupMode === "deck" ? (popupRoot.app.editor.active ? editComponent : deckComponent) : popupRoot.app.activities.expandedComponentFor(popupRoot.app.popupActivityMode())
         }
 
-        // The editor lays out at its target size from the first frame and the silhouette morphs around it.
+        // The editor lays out at its target size from the first frame and the silhouette morphs around it. It is loaded
+        // by URL, only when edit mode starts: a type reference would load the whole editor tree at startup (P9).
         Component {
             id: editComponent
 
             Item {
-                EditPage {
+                Loader {
                     x: (parent.width - width) / 2
                     width: popupRoot.app.deck.editSize ? popupRoot.app.deck.editSize.w : 0
                     height: popupRoot.app.deck.editSize ? popupRoot.app.deck.editSize.h : 0
-                    app: popupRoot.app
-                    focusRoot: popupRoot
-                    controlPage: popupRoot.controlPage
+                    Component.onCompleted: setSource("editor/EditPage.qml", { "app": popupRoot.app, "focusRoot": popupRoot, "controlPage": popupRoot.controlPage })
                 }
             }
         }
