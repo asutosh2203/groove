@@ -122,3 +122,10 @@ test('openTarget: trash shows trash:/, local paths become file URLs, schemes pas
 test('glyph names come from the one chain table', () => {
     assert.deepEqual(j(J.glyphNames({ descriptionValue1: 'https://x/y', destUrl: '' }, '')), j(glyphCtx.chain('download')));
 });
+
+test('an empty destUrl object does not hide a filled description value (model URLs are truthy when empty)', () => {
+    const emptyUrl = { toString: () => '' };
+    assert.deepEqual(j(J.openTarget({ destUrl: emptyUrl, descriptionValue2: '/tmp/x.bin' })), { kind: 'show', url: 'file:///tmp/x.bin' });
+    assert.equal(J.kind({ destUrl: emptyUrl, descriptionValue1: '/tmp/a', descriptionValue2: '/tmp/b' }, ''), 'copy');
+    assert.deepEqual(j(J.openTarget({ destUrl: emptyUrl, descriptionValue2: '' })), { kind: 'none' });
+});

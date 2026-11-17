@@ -8,6 +8,17 @@
 // service reads the roles and passes the values in. Translated text is left to the caller: titleText and appText may
 // be empty, and meta says which line applies, never what it is called in the user's language.
 
+// The first of these values that reads as a non-empty string. Properties read from the notification model can be URL objects,
+// which are truthy even when empty, so `a || b` would pick an empty destUrl over a filled description value.
+function firstText(values) {
+    for (const value of values) {
+        const text = value === undefined || value === null ? "" : String(value);
+        if (TextUtils.cleanText(text).length > 0)
+            return text;
+    }
+    return "";
+}
+
 function titleText(details, summaryRole) {
     return TextUtils.cleanText(details && details.summary ? details.summary : summaryRole);
 }
@@ -41,7 +52,7 @@ function kind(details, iconName) {
     if (!details)
         return "generic";
     const src = TextUtils.cleanText(details.descriptionValue1 || "");
-    const dst = TextUtils.cleanText(details.destUrl || details.descriptionValue2 || "");
+    const dst = TextUtils.cleanText(firstText([details.destUrl, details.descriptionValue2]));
     const remote = url => /^(https?|ftps?|sftp|smb|fish|webdav|webdavs|mtp|gdrive|nfs):/i.test(url);
     if (/^trash:/i.test(dst))
         return "delete";
@@ -125,7 +136,7 @@ function bytes(details) {
 // reports no usable destination (browsers often report none). Trash jobs show trash:/, local paths become file URLs,
 // anything with a scheme (sftp, smb ...) is passed on as it is. Never parses job text (D-27).
 function openTarget(details) {
-    const dst = details ? TextUtils.cleanText(details.destUrl || details.descriptionValue2 || "") : "";
+    const dst = details ? TextUtils.cleanText(firstText([details.destUrl, details.descriptionValue2])) : "";
     if (dst.length === 0)
         return { "kind": "none" };
     if (/^trash:/i.test(dst))
