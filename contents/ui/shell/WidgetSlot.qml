@@ -43,19 +43,21 @@ Rectangle {
         slot.heldWeather = null;
     }
 
+    // Takes what the slot needs now; a call that changes nothing does nothing, so a binding re-evaluating costs no churn.
     function hold() {
-        slot.release();
-        if (!slot.available)
+        const wantClock = slot.available && slot.declared.indexOf("clock") >= 0 ? slot.app.clock : null;
+        const wantWeather = slot.available ? slot.weather : null;
+        const wantZones = wantClock ? slot.zones : [];
+        if (wantClock === slot.heldClock && wantWeather === slot.heldWeather && JSON.stringify(wantZones) === JSON.stringify(slot.heldZones))
             return ;
-        if (slot.declared.indexOf("clock") >= 0) {
-            slot.heldClock = slot.app.clock;
-            slot.heldZones = slot.zones;
-            slot.heldClock.subscribe(slot.heldZones);
-        }
-        if (slot.weather) {
-            slot.heldWeather = slot.weather;
-            slot.heldWeather.subscribe();
-        }
+        slot.release();
+        slot.heldClock = wantClock;
+        slot.heldZones = wantZones;
+        slot.heldWeather = wantWeather;
+        if (wantClock)
+            wantClock.subscribe(wantZones);
+        if (wantWeather)
+            wantWeather.subscribe();
     }
 
     onZonesChanged: Qt.callLater(slot.hold)
