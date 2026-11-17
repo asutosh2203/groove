@@ -33,6 +33,15 @@ Item {
                 maximumLineCount: 1
             }
 
+            Rectangle {
+                visible: agentCompact.session !== null && !agentCompact.waiting
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredWidth: T.compactDot
+                Layout.preferredHeight: T.compactDot
+                radius: width / 2
+                color: T.textCaption
+            }
+
             RollText {
                 visible: agentCompact.session !== null && !agentCompact.waiting
                 Layout.alignment: Qt.AlignVCenter

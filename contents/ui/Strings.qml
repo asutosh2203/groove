@@ -178,21 +178,21 @@ QtObject {
         return i18n("%1 of %2", done, total);
     }
 
-    // The closed capsule's tail after the project name: "· 3 of 7" with a task list, else "· editing" (the action's kind).
+    // The closed capsule's tail after the project name and its dot: "3 of 7" with a task list, else "editing" (the action's kind).
     function agentCompactTail(progress, kind) {
         if (progress)
-            return i18n("· %1 of %2", progress.done, progress.total);
+            return i18n("%1 of %2", progress.done, progress.total);
         switch (kind) {
         case "edit":
-            return i18n("· editing");
+            return i18n("editing");
         case "run":
-            return i18n("· running");
+            return i18n("running");
         case "read":
-            return i18n("· reading");
+            return i18n("reading");
         case "search":
-            return i18n("· searching");
+            return i18n("searching");
         default:
-            return i18n("· working");
+            return i18n("working");
         }
     }
 
