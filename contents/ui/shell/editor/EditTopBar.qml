@@ -38,11 +38,14 @@ RowLayout {
             spacing: T.paddingCompact / 2
 
             // A plain chevron: IslandButton's legacy glyphs read "previous" as a media skip.
+            // Both labels are as tall as the bar's buttons and centred in it, so the chevron, the name and the ✕ ✓ share a line.
             PlasmaLabel {
-                anchors.verticalCenter: parent.verticalCenter
+                height: T.editChipH
+                verticalAlignment: Text.AlignVCenter
                 text: "‹"
                 color: backHover.hovered ? T.textPrimary : T.textCaption
-                font.pixelSize: T.fontTitle + T.fontHeader
+                font.pixelSize: T.fontTitle
+                font.weight: Font.DemiBold
 
                 HoverHandler {
                     id: backHover
@@ -56,7 +59,8 @@ RowLayout {
             }
 
             PlasmaLabel {
-                anchors.verticalCenter: parent.verticalCenter
+                height: T.editChipH
+                verticalAlignment: Text.AlignVCenter
                 text: bar.ed.placement ? bar.ed.widgetName(bar.ed.placement.widget) : ""
                 color: T.textPrimary
                 font.pixelSize: T.fontHeader
