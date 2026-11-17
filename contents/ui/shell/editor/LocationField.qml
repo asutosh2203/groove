@@ -19,6 +19,9 @@ Item {
 
     signal picked(var location)
 
+    // The search, for the tests to feed results into.
+    readonly property alias search: search
+
     readonly property bool editing: input.activeFocus
     readonly property string shownName: field.value === "island" ? "" : String(field.value.name)
 
