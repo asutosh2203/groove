@@ -17,8 +17,6 @@ Item {
     required property var liveJobs
     required property bool dummyPages
     required property bool controlEditing
-    required property bool notch
-    required property real notchShoulder
     required property var geom
 
     property string current: "control"
@@ -41,7 +39,7 @@ Item {
 
     // The Live page's top inset plus the bottom inset that holds the indicator: what a page keeps clear around its content.
     readonly property real liveChrome: {
-        const ins = DeckPlan.insets(false, notch, notchShoulder);
+        const ins = DeckPlan.insets(false, geom.padding);
         return ins.t + Math.max(ins.b, geom.inset);
     }
     // The media card keeps its Small-page height wherever it sits.

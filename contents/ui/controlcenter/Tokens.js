@@ -111,6 +111,7 @@ const glowSettlePx = 0.3;    // stop asking for frames within this distance of t
 // The deck (D-51). Cell units follow D-48: Small 2x1, Wide 4x1, Tall 2x2.
 const deckCellW = 170;
 const deckCellH = 120;
+const deckPadding = 12;         // equal padding on all four sides of a page
 const deckInset = 16;           // bottom strip kept free for the page indicator
 const deckDot = 5;
 const deckPillW = 14;
@@ -135,6 +136,5 @@ const liveRowHeight = 30;
 const liveRowBar = 3;
 const liveHeaderHeight = 24;
 const liveFade = 24;            // the list's bottom fade where more rows lie beyond
-const liveMediaNudge = 2;       // the media card draws its artwork this far outside its own box
 const liveHairlineAlpha = 1;    // the line between the media card and the job list
 const liveMediaGap = 16;        // room around that line: half above it, half below

@@ -53,34 +53,14 @@ Item {
     onLayoutChanged: page.sync(page.layout.jobs)
     Component.onCompleted: page.sync(page.layout.jobs)
 
-    // With jobs below it the media card is inset like a tile's content so the two line up (its artwork already sits a
-    // little outside its box); alone it keeps the shell's own insets.
     Item {
-        readonly property real pad: page.layout.jobs.length > 0 ? T.liveTilePadding : 0
-        readonly property real nudge: pad > 0 ? T.liveMediaNudge : 0
-
         y: 0
-        x: pad + nudge
-        width: page.width - pad * 2 - nudge
+        width: page.width
         height: page.mediaHeight
         opacity: page.layout.mediaSlot ? 1 : 0
         visible: opacity > 0
 
         Behavior on opacity {
-            NumberAnimation {
-                duration: T.motionFade
-                easing.type: T.easingStandard
-            }
-        }
-
-        Behavior on x {
-            NumberAnimation {
-                duration: T.motionFade
-                easing.type: T.easingStandard
-            }
-        }
-
-        Behavior on width {
             NumberAnimation {
                 duration: T.motionFade
                 easing.type: T.easingStandard

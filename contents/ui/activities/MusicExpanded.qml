@@ -16,11 +16,9 @@ Item {
         id: contentRow
 
         anchors.fill: parent
-        // Shell inset (left wall and bottom edge) is equal so the artwork corner stays concentric with the shell's 26px curve.
-        readonly property real inset: app && app.notchShape ? 12 : 10
-        anchors.bottomMargin: inset - (app && app.notchShape ? 12 : 8)
-        // Artwork sits 2px inside the shell wall; both children share this row's height exactly.
-        anchors.leftMargin: -2
+        // The page pads every side equally, so the artwork sits flush with that padding and its corner is concentric with the
+        // shell's curve (shell radius minus the padding).
+        readonly property real inset: T.deckPadding
         spacing: 12
 
         ArtworkVisual {
@@ -31,7 +29,7 @@ Item {
             Layout.preferredWidth: contentRow.height
             source: musicPage.hasPlayer ? musicPage.app.media.player.artUrl : ""
             kind: musicPage.app.media.kind
-            cornerRadius: 26 - contentRow.inset
+            cornerRadius: (musicPage.app ? musicPage.app.popupRadius : 26) - contentRow.inset
             fallbackMode: "media"
             progress: musicPage.hasPlayer ? musicPage.app.media.player.position / Math.max(1, musicPage.app.media.length) : 0
             playing: musicPage.playing

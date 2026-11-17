@@ -48,14 +48,17 @@ PlasmoidItem {
     readonly property bool hasActivity: systemControls.announcementActive || jobActivityEnabled && jobService.hasJobs || mediaActivityEnabled && mediaService.shown || notificationService.activityActive
     // Fixed allocation: the panel never resizes for visual transitions. The
     // visible shape is drawn inside whatever slot the panel actually gives us.
-    readonly property int islandWidth: 180
+    // The visible body is islandBodyWidth in both shapes; the notch's concave ears flare shoulder px outside it, so its
+    // item (and the panel allocation) is wider by two shoulders.
+    readonly property int islandBodyWidth: 180
+    readonly property real shapeEars: notchShape ? 2 * notchShoulder : 0
+    readonly property int islandWidth: islandBodyWidth + shapeEars
     readonly property int islandHeight: 40
     readonly property bool notchShape: root.settings.shellShape === "notch"
     // Notch mode attaches the containing panel to the screen edge (not floating,
     // thickness = shell height) and Pill mode restores the panel's saved settings.
     readonly property int notchPanelThickness: islandHeight
     readonly property real notchShoulder: 8
-    readonly property real notchSideMargin: notchShoulder + 4
     readonly property real notchBottomRadius: Math.round(Math.min(realIslandHeight, islandHeight) * 0.35)
     readonly property real compactArtworkSize: Math.max(18, realIslandHeight - 8) - (notchShape ? 2 : 0) // notch: 2px extra bottom inset
     readonly property real realIslandWidth: compactRepresentationItem && compactRepresentationItem.width > 0 ? compactRepresentationItem.width : islandWidth
@@ -67,7 +70,7 @@ PlasmoidItem {
     readonly property int mediaPopupHeight: 120
     readonly property int pageBaseHeight: popupMode === "deck" ? deckState.sizeOf(deckState.current).h : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupHeight : 104)
     property bool deckWindowActive: false
-    readonly property int popupWidth: deckWindowActive ? deckState.windowSize.w : pageWidth
+    readonly property int popupWidth: (deckWindowActive ? deckState.windowSize.w : pageWidth) + shapeEars
     readonly property bool ccShowing: popupMode === "deck" && deckState.current === "control"
     // D-43: a replyable notice gets a window with room for the shelf from before it first shows, and keeps it until the
     // popup is hidden: resizing a visible window shows one stretched frame on Wayland.
@@ -396,12 +399,11 @@ PlasmoidItem {
         liveJobs: root.jobActivityEnabled && root.dialogVisible && root.popupMode === "deck" ? jobService.runningRows() : []
         dummyPages: root.settings.deckDummyPages === true
         controlEditing: controlLayoutService.editMode
-        notch: root.notchShape
-        notchShoulder: root.notchShoulder
         geom: ({
             "cellW": T.deckCellW,
             "cellH": T.deckCellH,
             "inset": T.deckInset,
+            "padding": T.deckPadding,
             "liveHeaderH": T.liveHeaderHeight,
             "liveRowH": T.liveRowHeight,
             "liveGap": T.liveGap,

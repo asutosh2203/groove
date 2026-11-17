@@ -5,7 +5,7 @@
 4 contents/ui/activities/JobExpanded.qml
 1 contents/ui/activities/KeyboardLayoutExpanded.qml
 2 contents/ui/activities/MusicCompact.qml
-10 contents/ui/activities/MusicExpanded.qml
+6 contents/ui/activities/MusicExpanded.qml
 4 contents/ui/activities/MuteButton.qml
 1 contents/ui/activities/NotificationCompact.qml
 7 contents/ui/activities/NotificationExpanded.qml

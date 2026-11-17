@@ -24,22 +24,27 @@ MouseArea {
     readonly property bool reduceMotion: Kirigami.Units.longDuration <= 1
     property real pageWidth: popupRoot.app.pageWidth
     property real pageHeight: popupRoot.app.pageBaseHeight
-    readonly property real panelWidth: collapsedWidth + (popupRoot.pageWidth - collapsedWidth) * morph
+    // The shape is the page body plus the notch's ears (zero for the pill); content is laid out in the body.
+    readonly property real earSide: popupRoot.app.shapeEars / 2
+    readonly property real shapeWidth: popupRoot.pageWidth + popupRoot.app.shapeEars
+    readonly property real panelWidth: collapsedWidth + (popupRoot.shapeWidth - collapsedWidth) * morph
     readonly property real panelHeight: collapsedHeight + (popupRoot.pageHeight - collapsedHeight) * morph + popupRoot.shelfExtent
     readonly property real collapsedRadius: popupRoot.app.notchShape ? popupRoot.app.notchBottomRadius : collapsedHeight / 2
     readonly property real shelfExtent: popupRoot.app.replyShelfHeight * popupRoot.app.replyShelf.progress
     readonly property bool control: popupRoot.app.ccShowing
-    readonly property real contentLeft: (popupRoot.control ? 14 : 12) + (popupRoot.app.notchShape ? popupRoot.app.notchShoulder + 2 : 0)
-    readonly property real contentRight: popupRoot.control ? (popupRoot.app.notchShape ? 22 : contentLeft) : (contentLeft + (popupRoot.app.notchShape ? 0 : 3))
-    readonly property real contentBottom: popupRoot.control ? 16 : (popupRoot.app.notchShape ? 14 : 10) - 2
+    readonly property var pageInsets: popupRoot.insets(popupRoot.control)
+    readonly property real contentLeft: popupRoot.earSide + popupRoot.pageInsets.l
+    readonly property real contentRight: popupRoot.earSide + popupRoot.pageInsets.r
+    readonly property real contentTop: popupRoot.pageInsets.t
+    readonly property real contentBottom: popupRoot.pageInsets.b
 
     // The content insets of a page: the Control Center's differ from the other pages'.
     function insets(isControl) {
-        return DeckPlan.insets(isControl, popupRoot.app.notchShape, popupRoot.app.notchShoulder);
+        return DeckPlan.insets(isControl, T.deckPadding);
     }
 
     readonly property real panelRadius: collapsedRadius + (popupRoot.app.popupRadius - collapsedRadius) * morph
-    readonly property real panelX: popupRoot.app.popupCollapsedX * (1 - morph) + (popupRoot.app.popupWidth - popupRoot.pageWidth) / 2 * morph
+    readonly property real panelX: popupRoot.app.popupCollapsedX * (1 - morph) + (popupRoot.app.popupWidth - popupRoot.shapeWidth) / 2 * morph
     readonly property real panelY: popupRoot.app.popupCollapsedY * (1 - morph) + (popupRoot.app.islandExpandsUp ? popupRoot.app.popupHeight - popupRoot.pageHeight : 0) * morph
 
     readonly property bool glowEnabled: popupRoot.app.islandOpen && (popupRoot.control ? popupRoot.app.glowControlCenterEnabled : popupRoot.app.glowExpandedEnabled && (popupRoot.app.popupMode === "deck" || popupRoot.app.popupActivityMode() !== "idle"))
@@ -182,7 +187,7 @@ MouseArea {
             anchors.fill: parent
             anchors.leftMargin: popupRoot.app.popupMode === "deck" ? 0 : popupRoot.contentLeft
             anchors.rightMargin: popupRoot.app.popupMode === "deck" ? 0 : popupRoot.contentRight
-            anchors.topMargin: popupRoot.app.popupMode === "deck" ? 0 : (popupRoot.app.notchShape ? 14 : 10)
+            anchors.topMargin: popupRoot.app.popupMode === "deck" ? 0 : popupRoot.contentTop
             anchors.bottomMargin: popupRoot.app.popupMode === "deck" ? 0 : popupRoot.contentBottom + popupRoot.shelfExtent
             opacity: popupRoot.contentOpacity
             visible: opacity > 0
@@ -203,7 +208,7 @@ MouseArea {
             anchors.fill: parent
             app: popupRoot.app
             primary: false
-            sideMargin: popupRoot.app.notchShape ? 18 : 16
+            sideMargin: popupRoot.earSide + 16
             animate: false
             opacity: popupRoot.app.hasActivity ? 0 : popupRoot.compactOpacity
             visible: opacity > 0
@@ -211,8 +216,8 @@ MouseArea {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: popupRoot.app.notchShape ? popupRoot.app.notchSideMargin + 2 : (popupRoot.app.popupActivityMode() === "media" ? 4 : 6)
-            anchors.rightMargin: popupRoot.app.notchShape ? popupRoot.app.notchSideMargin : 6
+            anchors.leftMargin: popupRoot.earSide + (popupRoot.app.popupActivityMode() === "media" ? 4 : 6)
+            anchors.rightMargin: popupRoot.earSide + 6
             anchors.topMargin: 4
             anchors.bottomMargin: popupRoot.app.notchShape ? 6 : 4
             spacing: 5

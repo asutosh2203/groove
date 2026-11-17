@@ -64,7 +64,7 @@ Item {
 
         anchors.fill: parent
         app: island.app
-        sideMargin: island.app.notchShape ? 18 : 16
+        sideMargin: island.app.shapeEars / 2 + 16
         animate: !island.app.hasActivity && !island.app.islandOpen && !island.app.panelHidden
         opacity: island.app.hasActivity ? 0 : 1
         visible: opacity > 0
@@ -76,8 +76,8 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: island.app.notchShape ? island.app.notchSideMargin + 2 : (island.app.activityMode() === "media" ? 4 : 6)
-        anchors.rightMargin: island.app.notchShape ? island.app.notchSideMargin : 6
+        anchors.leftMargin: island.app.shapeEars / 2 + (island.app.activityMode() === "media" ? 4 : 6)
+        anchors.rightMargin: island.app.shapeEars / 2 + 6
         anchors.topMargin: 4
         anchors.bottomMargin: island.app.notchShape ? 6 : 4
         spacing: 5
