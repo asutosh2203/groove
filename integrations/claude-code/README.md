@@ -8,7 +8,7 @@ Shows your Claude Code sessions in the island as a native Live activity, and sen
   the elapsed minutes; with a task list it also shows the current task, "3 of 7" and a progress bar. Waiting shows
   "Needs your OK" in an accent colour with a dot on the glyph and "Wants to run: <command>". Done shows "Done · 18 min" and the
   first sentence of Claude's last message, and fades after 10 s. A busy page turns agents into compact rows above the transfers.
-- **Closed island:** the agent glyph and "project · 3 of 7" with a task list, else "project · editing" (or running, reading, searching, working). While Claude waits for you it shows
+- **Closed island:** the agent glyph and "project · 3 of 7" with a task list, else "project · editing" (or running, reading, searching, working); the verb rolls when it changes. While Claude waits for you it shows
   "Needs your OK" with the accent dot.
 - **Click** a tile or an opened row to raise the window Claude runs in. Kove finds it from the process chain (and, for a
   Flatpak, the app id); it never guesses. If no window is found the tile is simply not clickable.
