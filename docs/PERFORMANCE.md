@@ -137,6 +137,27 @@ The pre-D1 build is `5e0aaa4`; the others are HEAD. Raw files are in `perf/resul
   total without an idle run; none was taken here.
 - **GPU:** utilisation readings (11 to 40%) vary by run with the card's clock state (P5 to P8) and show no trend.
 
+## After D2 (2026-11-17, the widget host and the first widgets, D-54 and D-55)
+
+Dev copy, Plasma 6.8.2 / NVIDIA RTX 4060. **Spotify and Firefox were paused for every run** (checked), so these are not
+comparable with the "After D1" table, where Spotify was playing. Each state is 3 runs of 30 s, settled 120 s after a
+plasmashell restart, no frame logging. The D1 build (`c316c16`) was re-measured the same way for a fair A/B. Raw files:
+`perf/results/*d2-*`.
+
+| State | CPU per run | Median | RSS |
+|---|---|---|---|
+| D1 build, deck closed (media paused) | 0.50, 0.50, 0.50% | 0.50% | 627 MB |
+| D2 build, deck closed (media paused) | 0.50, 0.45, 0.50% | 0.50% | 631 MB |
+| D2 build, Small preset open (Clock + Weather 1x1) | 0.07, 0.07, 0.06% | 0.07% | 644 MB |
+
+- **No closed-deck regression:** identical CPU, +4 MB RSS. Nothing from D2 runs while the deck is closed: no minute timer, no
+  Clocks, no weather polling beyond the idle face's own.
+- **Preset page open:** about 0.07%, because the compact pill is hidden and a static page repaints only when the minute turns.
+  The deck was held open by a temporary reopen timer in the deployed copy (removed afterwards); it was confirmed open on
+  screen. The hover peek, the other spans, a page morph and frames per second were not measured.
+- **Clock timers:** each Plasma `Clock` holds its own minute-aligned timerfd. Small preset: 1 (local). Tall sample: 3 (local,
+  New York, Tokyo). Closed deck: 0 (the Clocks exist only while subscribed plus the 30 s grace).
+
 ## What changed (commits)
 
 | Change | Commit |

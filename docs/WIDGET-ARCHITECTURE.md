@@ -1,6 +1,6 @@
-# Widget architecture (draft)
+# Widget architecture
 
-Status: design notes, nothing here is built except `logic/Subscribers.js` and the WeatherService migration.
+Status: the deck, the host, the registry, presets and the first widgets are built (D1, D2). The preset editor is D3.
 Everything is **decided** unless marked **proposed** (a draft for review). Decisions cite their entry (D-xx,
 principles in `DECISIONS.md`). The plan lives in `ROADMAP.md`.
 
@@ -121,19 +121,35 @@ Built-in widgets first; third-party extensions only after this contract is stabl
 - The settings UI is generated from the schema (P11); widgets ship no settings screens.
 - Services, lifecycle and the standard states are as in the section above.
 
-**Proposed (for review)**
-- Manifest fields: `contract: 1` (the contract version), `id`, localised `name` and `description`, `icon` (theme
-  symbolic name with a fallback chain, D-26), `spans` (subset of 1×1, 2×1, 4×1) with a `defaultSpan`, an optional
-  `category` (Info, Media, System or Dev), a `settings` schema, `version` (of the widget's settings, see Persistence), the
-  `services` it subscribes to, and the permissions it needs (network, D-Bus names).
+**Contract v1 (decided, D-54)**
+- Manifest: one `manifest.json` per widget in `contents/ui/widgets/<id>/`. Fields: `contract` (1), `id`, `name` and
+  `description` (objects keyed by locale, `en` required), `icon` (theme symbolic name or a fallback chain, D-26), `spans`
+  (subset of 1x1, 2x1, 4x1) with a `defaultSpan`, `category` (Info, Media, System, Dev), `version` (of the widget's
+  settings, see Persistence), `services` (what the host injects: `clock`, `weather`) and a `settings` schema.
+- Views: one per supported span, named `View<span>.qml` (for example `View2x1.qml`) next to the manifest; shared
+  sub-components are allowed. A view lays out from its injected pixel box only, never from hardcoded cell sizes (a 1x1 is
+  154 wide on Small, 158 on Wide and 104 tall on Tall).
 - Settings field types: bool, enum, string, number (with `min`, `max`, `step`), location, timezone, app. Each has a label
   and a default; the host stores values per placement. There is no colour picker (D-45).
-- Lifecycle hooks: `onShown` and `onHidden` (the view exists only between them), `onSettingsChanged`. Anything that keeps
-  running is a service subscription, never a view timer.
-- Host provides to a view: its span and pixel box, its settings values, design tokens (`Tokens.js`, D-47), injected
-  services, a visibility flag, the locale and time format, a reduced-motion flag, and the host APIs above.
-- A widget reports its state (loading, ready, stale, error, needs setup) and the host draws the placeholder, including the
-  stale age ("updated 2 h ago").
+- The host injects (required properties): `span` and the pixel box (`boxWidth`, `boxHeight`), `settings` (resolved against
+  the schema), `tokens`, the declared services only, the locale and time format, a reduced-motion flag, and a host API
+  (open URL, launch app).
+- The host subscribes to the declared services when the view is created and releases them when it is destroyed, so a
+  view cannot forget to.
+- A widget reports its `widgetState` (loading, ready, stale, error, needsSetup), `lastUpdated` and, optionally, a
+  `clickAction`. The host draws the loading, error and needs-setup placeholders and injects `staleText` ("updated 2 h ago")
+  while stale, which the view shows in place of its detail line so the three-line structure holds; it runs the click
+  action through the host API before closing the deck (D-31 style).
+- The registry validates manifests as pure data (`logic/WidgetRegistry.js`) without instantiating any QML; an invalid
+  manifest is skipped with a log line. QML cannot list a directory or read a file, so `scripts/gen-widgets.cjs` mirrors
+  all manifests into `widgets/Manifests.js` (never edit it; a Node test fails on drift).
+
+**Cut from the early proposal**
+- No lifecycle hooks (`onShown`, `onHidden`, `onSettingsChanged`): a view exists only while its page shows, it is created
+  with `Component.onCompleted`, settings changes arrive through bindings and service subscriptions end with the view.
+- No visibility flag, for the same reason.
+- No permission model in v1: QML cannot enforce one. When third-party widgets arrive (D-25) enforcement must be real (a
+  separate process or a restricted engine), never a manifest field alone.
 
 ## Persistence (decided)
 
@@ -147,6 +163,5 @@ Built-in widgets first; third-party extensions only after this contract is stabl
 
 ## Open questions
 
-- Manifest, settings field types, hooks and host API surface (the proposed items above).
-- Permission model details, and how a widget declares the D-Bus names it may use.
+- How third-party widgets are isolated (D-25), since v1 has no permission model.
 - Context-aware presets (later).

@@ -37,6 +37,12 @@ CC6 (notification list density/scrolling) was dropped.
   `deckDummyPages` flag. The closed-deck performance re-check shows no regression (`docs/PERFORMANCE.md`, "After D1").
   Next: the widget host and registry (D2).
 
+- **D2: widget host, registry, presets and the first widgets (done; checked live in Notch and Pill).**
+  D-54 and D-55: contract v1, the manifest registry (JSON is the source of truth, a generated mirror with a drift test),
+  versioned presets with validation and migrations, preset pages in the deck, the widget host with the standard states, the
+  minute-tick clock service, and Clock, World Clock and Weather. D2's presets come from the hidden `devPresets` key;
+  `deckDummyPages` is retired. Next: D3, the preset editor and the catalogue.
+
 ## B1: bug batch (done)
 Found while moving code in Q2; behaviour was kept during the moves, then fixed one commit per item.
 1. **Light/Dark tile applied stock Breeze and wiped custom setups.** *Done as D-40* (`b0ad920`): the tile is now "Theme
@@ -91,6 +97,12 @@ click opens VS Code and a real task-list run once a Claude Code version has the 
 - Later: a dedicated AI Agent widget (multiple sessions, last message, subagents) once the widget contract exists.
 
 ## Backlog
+- **Align the idle face's weather icons with the widgets.** The panel's idle face still draws the bundled, colour, animated
+  Meteocons; the Weather widgets draw monochrome white glyphs (theme `weather-*-symbolic` first, D-55). Decide whether the idle
+  face should use the same glyphs (and drop its animation) so the two agree.
+- **Pre-release: manifest i18n pipeline.** KDE's tooling will not extract translatable text from our custom widget JSON
+  manifests (`name`, `description`, setting labels are locale-keyed objects with `en` only). Needs a step that exports them
+  to the translation catalogue and back, before the first public release.
 - Glow 60 fps cap ready on `perf/glow-60fps`; needs a real-pointer before/after measurement.
 - Reply shelf: multi-line input (v1 is a single line); host the notification's other actions (Mark as read, Mute) in the shelf.
 - **Native popup coexistence:** detect whether Plasma's own notification popups are active; never change it automatically (D-05). Show a one-time dismissible hint and a permanent note in settings with an "Open notification settings" button; document in the README. Investigate the officially supported way to disable Plasma popups without stopping the notification server. Also verify the island respects Do Not Disturb (no popups while DND is on); if it does not, that is a bug.
