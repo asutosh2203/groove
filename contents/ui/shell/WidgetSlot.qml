@@ -154,6 +154,8 @@ Rectangle {
 
     // A quiet skeleton while the first data arrives: static, so nothing repaints (principle 9).
     Column {
+        id: skeleton
+
         anchors.fill: parent
         anchors.margins: T.widgetPadding
         spacing: T.gap
@@ -167,7 +169,7 @@ Rectangle {
 
                 required property real modelData
 
-                width: parent.width * bar.modelData
+                width: skeleton.width * bar.modelData
                 height: T.widgetSkeletonHeight
                 radius: T.radiusSmall
                 color: T.chip
