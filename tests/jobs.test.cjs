@@ -98,3 +98,9 @@ test('every glyph chain ends on a name that exists everywhere', () => {
     assert.equal(J.glyphNames(null, 'edit-copy')[0], 'edit-copy-symbolic');
     assert.equal(J.glyphNames({ destUrl: 'trash:/', descriptionValue1: 'file:///a' }, '')[0], 'edit-delete-symbolic');
 });
+
+test('bytes: the counts, 0 when absent or invalid', () => {
+    assert.deepEqual(JSON.parse(JSON.stringify(ctx.bytes({ processedBytes: 5, totalBytes: 10 }))), { processed: 5, total: 10 });
+    assert.deepEqual(JSON.parse(JSON.stringify(ctx.bytes({ processedBytes: -3, totalBytes: 'x' }))), { processed: 0, total: 0 });
+    assert.deepEqual(JSON.parse(JSON.stringify(ctx.bytes(null))), { processed: 0, total: 0 });
+});

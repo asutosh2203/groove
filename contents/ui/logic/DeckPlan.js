@@ -27,27 +27,27 @@ function indexOf(cycle, id) {
     return -1;
 }
 
-// The page type Live is drawn as: one card is Small, two or more Wide (the last odd card sits in the left slot).
-function liveType(cardCount) {
-    return cardCount >= 2 ? "wide" : "small";
+// The page type Live is drawn as: one activity is Small, two or more Tall (LiveLayout.shape).
+function liveType(activityCount) {
+    return activityCount >= 2 ? "tall" : "small";
 }
 
-// geom: { cellW, cellH, inset, controlW, controlH, controlEditW, controlEditH }. Cell pages reserve the bottom inset
-// for the indicator and the Live chips whether or not they show; the Control Center keeps its own layout.
+// geom: { cellW, cellH, controlW, controlH, controlEditW, controlEditH }. The bottom inset for the indicator and the Live
+// chips lives inside a page's height (the host keeps content out of it), so it never changes a page's size.
 function pageSize(type, geom) {
     if (type === "control")
         return { "w": geom.controlW, "h": geom.controlH };
     const c = cells[type] || cells.small;
-    return { "w": c.w * geom.cellW, "h": c.h * geom.cellH + geom.inset };
+    return { "w": c.w * geom.cellW, "h": c.h * geom.cellH };
 }
 
-// The window is sized once, before the deck shows: the largest width and the largest height in the cycle. Live always
-// counts as Wide (a second activity can arrive while open) and the Control Center as its edit size.
+// The window is sized once, before the deck shows: the largest width and the largest height in the cycle. Live counts as
+// Tall (its largest shape) and the Control Center as its edit size.
 function windowSize(cycle, geom) {
     let w = 0;
     let h = 0;
     for (const page of cycle) {
-        const size = page.type === "live" ? pageSize("wide", geom) : page.type === "control" ? { "w": geom.controlEditW, "h": geom.controlEditH } : pageSize(page.type, geom);
+        const size = page.type === "live" ? pageSize("tall", geom) : page.type === "control" ? { "w": geom.controlEditW, "h": geom.controlEditH } : pageSize(page.type, geom);
         w = Math.max(w, size.w);
         h = Math.max(h, size.h);
     }
@@ -87,4 +87,10 @@ function reconcile(oldCycle, newCycle, currentId) {
             return oldCycle[i].id;
     }
     return "control";
+}
+
+// A media or job change does not pop in while the deck is open (D-42 widened, D-51): Live already shows them. Notices
+// and the keyboard layout still do (D-38).
+function suppressesBump(kind, deckOpen) {
+    return deckOpen && (kind === "media" || kind === "job");
 }

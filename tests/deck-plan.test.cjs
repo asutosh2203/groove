@@ -8,7 +8,7 @@ const ctx = vm.createContext({});
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../contents/ui/logic/DeckPlan.js'), 'utf8').replace(/^\.pragma library\s*/, ''), ctx);
 const j = (v) => JSON.parse(JSON.stringify(v));
 const ids = (c) => j(c.map(p => p.id));
-const geom = { cellW: 170, cellH: 120, inset: 16, controlW: 430, controlH: 540, controlEditW: 620, controlEditH: 570 };
+const geom = { cellW: 170, cellH: 120, controlW: 430, controlH: 540, controlEditW: 620, controlEditH: 570 };
 
 test('cycle: Control Center is always last, Live only when running', () => {
     assert.deepEqual(ids(ctx.buildCycle(false, false)), ['control']);
@@ -18,26 +18,27 @@ test('cycle: Control Center is always last, Live only when running', () => {
 });
 
 test('page sizes follow the grid and reserve the inset', () => {
-    assert.deepEqual(j(ctx.pageSize('small', geom)), { w: 340, h: 136 });
-    assert.deepEqual(j(ctx.pageSize('wide', geom)), { w: 680, h: 136 });
-    assert.deepEqual(j(ctx.pageSize('tall', geom)), { w: 340, h: 256 });
+    assert.deepEqual(j(ctx.pageSize('small', geom)), { w: 340, h: 120 });
+    assert.deepEqual(j(ctx.pageSize('wide', geom)), { w: 680, h: 120 });
+    assert.deepEqual(j(ctx.pageSize('tall', geom)), { w: 340, h: 240 });
     assert.deepEqual(j(ctx.pageSize('control', geom)), { w: 430, h: 540 });
 });
 
-test('live type: one card small, two or more wide', () => {
+test('live type: one activity small, two or more tall', () => {
+    assert.equal(ctx.liveType(0), 'small');
     assert.equal(ctx.liveType(1), 'small');
-    assert.equal(ctx.liveType(2), 'wide');
-    assert.equal(ctx.liveType(5), 'wide');
+    assert.equal(ctx.liveType(2), 'tall');
+    assert.equal(ctx.liveType(5), 'tall');
 });
 
-test('window union: Live counts as Wide, Control Center as its edit size', () => {
-    assert.deepEqual(j(ctx.windowSize(ctx.buildCycle(true, false), geom)), { w: 680, h: 570 });
+test('window union: Live counts as Tall, Control Center as its edit size', () => {
+    assert.deepEqual(j(ctx.windowSize(ctx.buildCycle(true, false), geom)), { w: 620, h: 570 });
     assert.deepEqual(j(ctx.windowSize(ctx.buildCycle(false, false), geom)), { w: 620, h: 570 });
     assert.deepEqual(j(ctx.windowSize(ctx.buildCycle(false, true), geom)), { w: 680, h: 570 });
 });
 
 test('window union takes width and height from different pages', () => {
-    const small = { cellW: 100, cellH: 400, inset: 0, controlW: 10, controlH: 10, controlEditW: 10, controlEditH: 10 };
+    const small = { cellW: 100, cellH: 400, controlW: 10, controlH: 10, controlEditW: 10, controlEditH: 10 };
     assert.deepEqual(j(ctx.windowSize([{ id: 'a', type: 'wide' }, { id: 'b', type: 'tall' }], small)), { w: 400, h: 800 });
 });
 
@@ -57,6 +58,14 @@ test('indicator: hidden for one page; pill, dots, gear otherwise', () => {
     const ind = j(ctx.indicator(ctx.buildCycle(true, true), 'dummy-wide'));
     assert.deepEqual(j(ind.map(i => i.kind)), ['pill', 'dot', 'dot', 'dot', 'gear']);
     assert.deepEqual(j(ind.map(i => i.current)), [false, false, true, false, false]);
+});
+
+test('only media and job bumps are suppressed, and only while the deck is open', () => {
+    assert.equal(ctx.suppressesBump('media', true), true);
+    assert.equal(ctx.suppressesBump('job', true), true);
+    assert.equal(ctx.suppressesBump('notice', true), false);
+    assert.equal(ctx.suppressesBump('keyboard', true), false);
+    assert.equal(ctx.suppressesBump('media', false), false);
 });
 
 test('reconcile: a surviving page stays, Live appearing does not jump', () => {

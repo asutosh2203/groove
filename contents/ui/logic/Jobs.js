@@ -123,3 +123,8 @@ function destination(details) {
     }
     return path.split("/").filter(part => part.length > 0).slice(-2).join("/");
 }
+
+// The job's byte counts, for the Live page's combined progress; 0 when a job does not report them.
+function bytes(details) {
+    return { "processed": details ? Math.max(0, Utils.finiteNumber(details.processedBytes, 0)) : 0, "total": details ? Math.max(0, Utils.finiteNumber(details.totalBytes, 0)) : 0 };
+}
