@@ -47,7 +47,7 @@ PlasmoidItem {
     property bool popupHovered: false
     readonly property bool holdPopupTimers: dialogVisible && islandOpen && popupMode === "activity" && (popupHovered || dialogActive && !resumeDeck || replyShelfService.holding)
     readonly property bool holdNoticeLifetime: holdPopupTimers && activityPopupMode === "notice"
-    readonly property bool hasActivity: systemControls.announcementActive || jobActivityEnabled && jobService.hasJobs || mediaActivityEnabled && mediaService.shown || notificationService.activityActive
+    readonly property bool hasActivity: systemControls.announcementActive || jobActivityEnabled && jobService.hasJobs || agentService.active || mediaActivityEnabled && mediaService.shown || notificationService.activityActive
     // Fixed allocation: the panel never resizes for visual transitions. The
     // visible shape is drawn inside whatever slot the panel actually gives us.
     // The visible body is islandBodyWidth in both shapes; the notch's concave ears flare shoulder px outside it, so its
@@ -258,6 +258,12 @@ PlasmoidItem {
         closeIsland();
     }
 
+    // A click on an agent tile: raise the window that hosts the session and close the deck (D-31, D-57).
+    function openAgent(sid) {
+        if (agentService.raise(sid))
+            closeIsland();
+    }
+
     function jobClickable(row) {
         return jobService.openTarget(row).kind === "show";
     }
@@ -427,8 +433,9 @@ PlasmoidItem {
 
     // The Live page's inputs (D-52). Only the cheap count is always live; the job details are built while the deck shows.
     readonly property bool liveMedia: mediaActivityEnabled && mediaService.shown
-    readonly property int liveCount: (liveMedia ? 1 : 0) + (jobActivityEnabled ? jobService.activeCount : 0)
+    readonly property int liveCount: (liveMedia ? 1 : 0) + agentService.sessions.length + (jobActivityEnabled ? jobService.activeCount : 0)
     readonly property alias deck: deckState
+    readonly property alias agents: agentService
 
     // The widget registry and the presets (D-54); the host reaches them as app.widgets, and the clock service as app.clock.
     readonly property alias widgets: presetStore
@@ -477,6 +484,7 @@ PlasmoidItem {
         deckVisible: root.dialogVisible && root.popupMode === "deck"
         liveMedia: root.liveMedia
         liveMediaKind: mediaService.kind
+        liveAgents: agentService.sessions
         liveJobs: root.jobActivityEnabled && root.dialogVisible && root.popupMode === "deck" ? jobService.runningRows() : []
         presets: presetStore.presets
         editing: presetEditor.active
@@ -531,6 +539,17 @@ PlasmoidItem {
                 autoCloseMs: root.ongoingPopupDurationMs
                 visualComponent: keyboardVisualComponent
                 expandedComponent: keyboardExpandedComponent
+            },
+            Activities.ActivityProvider {
+                key: "agent"
+                active: agentService.active
+                priority: ActivityResolver.priority.job
+                title: agentService.primary?.project ?? ""
+                subtitle: agentService.primary ? translations.agentAction(agentService.primary.action, agentService.primary.target) : ""
+                autoCloseMs: root.ongoingPopupDurationMs
+                visualComponent: agentVisualComponent
+                compactComponent: agentCompactComponent
+                expandedComponent: agentExpandedComponent
             },
             Activities.ActivityProvider {
                 key: "job"
@@ -667,6 +686,10 @@ PlasmoidItem {
 
         runner: commands
         polling: root.dialogVisible && root.ccShowing
+    }
+
+    AgentService {
+        id: agentService
     }
 
     JobService {
@@ -895,6 +918,31 @@ PlasmoidItem {
 
         MediaVisual {
             app: root
+        }
+    }
+
+    Component {
+        id: agentVisualComponent
+
+        AgentVisual {
+            app: root
+        }
+    }
+
+    Component {
+        id: agentCompactComponent
+
+        Activities.AgentCompact {
+            app: root
+        }
+    }
+
+    Component {
+        id: agentExpandedComponent
+
+        AgentTile {
+            app: root
+            sid: agentService.primary?.id ?? ""
         }
     }
 

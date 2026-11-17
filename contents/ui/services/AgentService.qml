@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import org.kde.plasma.workspace.dbus as DBus
 import org.kde.taskmanager as TaskManager
+import "../controlcenter/Tokens.js" as T
 import "../logic/Agents.js" as Agents
 
 // Coding-agent sessions (D-57), read from the per-user aggregator (integrations/claude-code). Nothing runs while its bus
@@ -19,8 +20,16 @@ Item {
     // Ordered by Agents.order: waiting, working, done.
     property var sessions: []
     readonly property bool hasAgents: sessions.length > 0
+    // Sessions that are running or waiting, not finished and lingering: what the closed capsule shows.
+    readonly property var primary: sessions.find(s => s.state !== "done") ?? null
+    readonly property bool active: primary !== null
     // session id -> true when a window of it can be raised (Agents.findWindow, ignoring the title tie-break).
     property var raisable: ({})
+    // session id -> the display name of the app hosting it ("Code"), for the tile's subtitle.
+    property var hostNames: ({})
+
+    // The clock behind the elapsed minutes; it moves once a minute and only while a run is going (P9).
+    property real nowMs: Date.now()
 
     // A session appeared.
     signal agentStarted()
@@ -30,6 +39,7 @@ Item {
     }
 
     function setSnapshot(json) {
+        nowMs = Date.now();
         const next = Agents.order(Agents.parse(json));
         const known = new Set(sessions.map(s => s.id));
         const grew = next.some(s => !known.has(s.id));
@@ -59,6 +69,7 @@ Item {
                 "appId": model.data(idx, TaskManager.AbstractTasksModel.AppId),
                 "launcherUrl": model.data(idx, TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon),
                 "title": model.data(idx, Qt.DisplayRole),
+                "appName": model.data(idx, TaskManager.AbstractTasksModel.AppName),
                 "isWindow": model.data(idx, TaskManager.AbstractTasksModel.IsWindow),
                 "lastActivated": last ? last.getTime() : 0
             });
@@ -71,9 +82,14 @@ Item {
     function refresh() {
         const tasks = windows();
         const next = {};
-        for (const s of sessions)
-            next[s.id] = Agents.findWindow(s, tasks) >= 0;
+        const names = {};
+        for (const s of sessions) {
+            const row = Agents.findWindow(s, tasks);
+            next[s.id] = row >= 0;
+            names[s.id] = row >= 0 ? String(tasks[row].appName || "") : "";
+        }
         raisable = next;
+        hostNames = names;
     }
 
     // Raises exactly the window that hosts the session (D-32: through the task model). False when there is none.
@@ -96,6 +112,13 @@ Item {
     Component.onCompleted: {
         if (available)
             fetch();
+    }
+
+    Timer {
+        interval: T.minuteTick
+        repeat: true
+        running: host.sessions.some(s => s.state === "working")
+        onTriggered: host.nowMs = Date.now()
     }
 
     DBus.DBusServiceWatcher {

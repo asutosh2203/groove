@@ -158,6 +158,52 @@ QtObject {
         return parts.join(" · ");
     }
 
+    // Agent sessions (D-57). The aggregator sends facts (an action and a short target); the wording is chosen here.
+    readonly property string agentNeedsOk: i18n("Needs your OK")
+
+    // "Claude Code · Code": the agent and the app it runs in, when a window of that app is known.
+    function agentSubtitle(name, app) {
+        return app ? i18n("%1 · %2", name, app) : name;
+    }
+
+    function agentMinutes(minutes) {
+        return i18n("%1 min", minutes);
+    }
+
+    function agentDone(minutes) {
+        return i18n("Done · %1 min", minutes);
+    }
+
+    function agentProgress(done, total) {
+        return i18n("%1 of %2", done, total);
+    }
+
+    // The closed capsule's tail after the project name: "· 3 of 7", or the elapsed minutes without a task list.
+    function agentCompactTail(progress, minutes) {
+        return progress ? i18n("· %1 of %2", progress.done, progress.total) : i18n("· %1 min", minutes);
+    }
+
+    // What the agent is doing now: "Editing PresetEditor.qml", "Running: npm test…".
+    function agentAction(action, target) {
+        switch (action) {
+        case "edit":
+            return target ? i18n("Editing %1", target) : i18n("Editing");
+        case "run":
+            return target ? i18n("Running: %1…", target) : i18n("Running a command");
+        case "read":
+            return target ? i18n("Reading %1", target) : i18n("Reading");
+        case "search":
+            return i18n("Searching");
+        default:
+            return i18n("Working");
+        }
+    }
+
+    // The waiting line: a command is "Wants to run: <command>"; anything else already reads as a sentence.
+    function agentWants(action, text) {
+        return action === "run" ? i18n("Wants to run: %1", text) : text;
+    }
+
     // The job list's header noun: "3 copies", or "3 transfers" for mixed kinds (LiveLayout.header).
     function liveHeader(kind, count) {
         switch (kind) {

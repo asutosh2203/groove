@@ -44,6 +44,7 @@ function parse(json) {
             "action": ACTIONS.indexOf(s.action) >= 0 ? s.action : "",
             "target": text(s.target, 60),
             "waitingCommand": text(s.waitingCommand, 120),
+            "waitingAction": ACTIONS.indexOf(s.waitingAction) >= 0 ? s.waitingAction : "",
             "startedAt": count(s.startedAt) * 1000,
             "updatedAt": count(s.updatedAt) * 1000,
             "lastMessage": text(s.lastMessage, 120)
@@ -61,9 +62,9 @@ function hasTasks(s) {
     return s.total > 0;
 }
 
-// Whole minutes since the session's run started; never below 1, the island shows minutes only.
+// Whole minutes the run took so far (a finished run stopped at its last update); never below 1, the island shows minutes only.
 function minutes(s, nowMs) {
-    return Math.max(1, Math.floor((nowMs - s.startedAt) / 60000));
+    return Math.max(1, Math.floor(((s.state === "done" ? s.updatedAt : nowMs) - s.startedAt) / 60000));
 }
 
 function elide(str, max) {

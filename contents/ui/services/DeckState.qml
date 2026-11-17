@@ -18,6 +18,8 @@ Item {
     required property bool liveMedia
     required property string liveMediaKind
     required property var liveJobs
+    // The agent sessions (Agents.js), ordered: waiting, working, done.
+    required property var liveAgents
     // The presets that show, from PresetStore.
     required property var presets
     required property bool editing
@@ -36,14 +38,14 @@ Item {
         const edit = DeckPlan.editWindow(geom);
         return { "w": Math.max(deck.w, edit.w), "h": Math.max(deck.h, edit.h) };
     }
-    readonly property var liveLayout: LiveLayout.layout({ "hasMedia": deckVisible && liveMedia, "jobs": deckVisible ? liveJobs : [] })
+    readonly property var liveLayout: LiveLayout.layout({ "hasMedia": deckVisible && liveMedia, "jobs": deckVisible ? liveJobs : [], "agents": deckVisible ? liveAgents : [] })
     readonly property int liveShownCount: deckVisible ? liveLayout.count : liveCount
     // The job row opened in place in the list (accordion); per session, reset when the deck closes.
     property string openJobId: ""
-    readonly property string openJob: Accordion.clamp(openJobId, liveLayout.jobs.map(job => job.id))
+    readonly property string openJob: Accordion.clamp(openJobId, liveLayout.items.map(item => item.id))
     // What the capsule's Live item shows follows what the Live page shows.
     // A string, so the capsule only hears about a real change (the layout is rebuilt on every progress tick).
-    readonly property string liveGlyphKind: LiveGlyphs.liveKind(liveLayout.mediaSlot, liveMediaKind, liveLayout.jobs.map(job => job.kind))
+    readonly property string liveGlyphKind: LiveGlyphs.liveKind(liveLayout.mediaSlot, liveMediaKind, liveLayout.jobs.map(job => job.kind), liveLayout.agents.length > 0)
     readonly property var liveGlyphs: LiveGlyphs.chain(liveGlyphKind)
     readonly property var indicator: DeckPlan.indicator(cycle, current, liveGlyphs)
 

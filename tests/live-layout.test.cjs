@@ -8,7 +8,8 @@ const ctx = vm.createContext({});
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../contents/ui/logic/LiveLayout.js'), 'utf8').replace(/^\.pragma library\s*/, ''), ctx);
 const j = (v) => JSON.parse(JSON.stringify(v));
 const job = (id, created, extra = {}) => ({ id, row: Number(id.slice(1)), created, percent: 50, processed: 0, total: 0, remaining: -1, kind: 'copy', ...extra });
-const lay = (hasMedia, jobs) => j(ctx.layout({ hasMedia, jobs }));
+const lay = (hasMedia, jobs, agents = []) => j(ctx.layout({ hasMedia, jobs, agents }));
+const agent = (id, extra = {}) => ({ id, state: 'working', ...extra });
 
 test('shape: 0 or 1 activity is Small, 2 or more Tall', () => {
     assert.deepEqual([0, 1, 2, 5].map(ctx.shape), ['small', 'small', 'tall', 'tall']);
@@ -145,4 +146,39 @@ test('an open accordion row adds its extra height, still capped at the Tall heig
     assert.equal(ctx.fitHeight(listLayout(false, 3), { ...geom, expandedExtra: 56 }), 224);
     assert.equal(ctx.fitHeight(listLayout(false, 4), { ...geom, expandedExtra: 56 }), 240);
     assert.equal(ctx.fitHeight(listLayout(false, 3), { ...geom, expandedExtra: 0 }), 168);
+});
+
+test('agents: ids are prefixed, they come first, and they count as activities', () => {
+    const l = lay(false, [job('j1', 5)], [agent('a'), agent('b')]);
+    assert.deepEqual(l.items.map(i => i.id), ['agent:a', 'agent:b', 'j1']);
+    assert.deepEqual(l.items.map(i => i.kind), ['agent', 'agent', 'job']);
+    assert.equal(l.count, 3);
+    assert.equal(l.shape, 'tall');
+});
+
+test('agents: a lone agent is a full tile; media plus one agent is two tiles; more is a list (D-52 slot rules)', () => {
+    assert.equal(lay(false, [], [agent('a')]).mode, 'tiles');
+    assert.equal(lay(false, [], [agent('a')]).trayArea, 'page');
+    assert.equal(lay(true, [], [agent('a')]).mode, 'tiles');
+    assert.equal(lay(true, [], [agent('a')]).trayArea, 'bottom');
+    assert.equal(lay(true, [job('j1', 1)], [agent('a')]).mode, 'list');
+    assert.equal(lay(false, [job('j1', 1)], [agent('a')]).mode, 'tiles');
+    assert.equal(lay(false, [job('j1', 1), job('j2', 2)], [agent('a')]).mode, 'list');
+});
+
+test('agents: the transfers header counts file jobs only, and is absent when there are none', () => {
+    const l = lay(true, [job('j1', 1), job('j2', 2)], [agent('a')]);
+    assert.equal(l.header.count, 2);
+    assert.equal(lay(false, [], [agent('a'), agent('b'), agent('c')]).header, null);
+});
+
+test('agents: list height counts the agent rows, and the header only when file jobs exist', () => {
+    const geom = { smallH: 150, tallH: 300, chrome: 20, headerH: 20, rowH: 40, gap: 8, mediaGap: 16, expandedExtra: 0 };
+    const h = (l) => ctx.fitHeight(l, geom);
+    // 3 agent rows, no header: 20 + 3*40 + 2*8 = 156
+    assert.equal(h(lay(false, [], [agent('a'), agent('b'), agent('c')])), 156);
+    // 1 agent + 2 jobs: 20 + 20 header + 3*40 + 3*8 = 184
+    assert.equal(h(lay(false, [job('j1', 1), job('j2', 2)], [agent('a')])), 184);
+    // unchanged for jobs only: 20 + 20 + 3*40 + 3*8 = 184
+    assert.equal(h(lay(false, [job('j1', 1), job('j2', 2), job('j3', 3)])), 184);
 });

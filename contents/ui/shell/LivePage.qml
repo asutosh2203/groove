@@ -21,37 +21,53 @@ Item {
     readonly property real trayY: layout.trayArea === "bottom" ? mediaHeight + mediaGap : 0
     readonly property real trayHeight: layout.trayArea === "bottom" ? height - trayY : height
 
-    // One model for both views, keyed by notification id, so a finishing job leaves with a fade and its progress ticks do
-    // not rebuild any row.
+    // One model per view, keyed by id, so a finishing job leaves with a fade and its progress ticks do not rebuild any
+    // row: every item (the tiles), the agents and the file jobs (the list's two groups). An agent's id is "agent:<sid>".
+    ListModel {
+        id: itemsModel
+    }
+
+    ListModel {
+        id: agentsModel
+    }
+
     ListModel {
         id: jobsModel
     }
 
-    function sync(jobs) {
-        for (let i = jobsModel.count - 1; i >= 0; --i) {
-            if (!jobs.some(j => j.id === jobsModel.get(i).jid))
-                jobsModel.remove(i);
+    function sync(model, items) {
+        for (let i = model.count - 1; i >= 0; --i) {
+            if (!items.some(it => it.id === model.get(i).jid))
+                model.remove(i);
         }
-        for (let k = 0; k < jobs.length; ++k) {
+        for (let k = 0; k < items.length; ++k) {
             let at = -1;
-            for (let i = k; i < jobsModel.count; ++i) {
-                if (jobsModel.get(i).jid === jobs[k].id) {
+            for (let i = k; i < model.count; ++i) {
+                if (model.get(i).jid === items[k].id) {
                     at = i;
                     break;
                 }
             }
+            const fields = { "jid": items[k].id, "row": items[k].row ?? -1, "kind": items[k].kind, "sid": items[k].sid ?? "" };
             if (at < 0) {
-                jobsModel.insert(k, { "jid": jobs[k].id, "row": jobs[k].row });
+                model.insert(k, fields);
             } else {
                 if (at !== k)
-                    jobsModel.move(at, k, 1);
-                jobsModel.setProperty(k, "row", jobs[k].row);
+                    model.move(at, k, 1);
+                model.setProperty(k, "row", fields.row);
             }
         }
     }
 
-    onLayoutChanged: page.sync(page.layout.jobs)
-    Component.onCompleted: page.sync(page.layout.jobs)
+    function syncAll() {
+        const items = page.layout.items;
+        page.sync(itemsModel, items);
+        page.sync(agentsModel, items.filter(it => it.kind === "agent"));
+        page.sync(jobsModel, items.filter(it => it.kind === "job"));
+    }
+
+    onLayoutChanged: page.syncAll()
+    Component.onCompleted: page.syncAll()
 
     Item {
         y: 0
@@ -100,7 +116,7 @@ Item {
         height: page.trayHeight
         interactive: false
         spacing: T.liveGap
-        model: jobsModel
+        model: itemsModel
         opacity: page.tiles ? 1 : 0
         visible: opacity > 0
 
@@ -128,10 +144,34 @@ Item {
             }
         }
 
-        delegate: JobTile {
-            app: page.app
+        delegate: Loader {
+            id: cell
+
+            required property int row
+            required property string kind
+            required property string sid
+
             width: ListView.view.width
             height: page.layout.mediaSlot ? page.trayHeight : page.slotHeight
+            sourceComponent: cell.kind === "agent" ? agentTile : jobTile
+
+            Component {
+                id: jobTile
+
+                JobTile {
+                    app: page.app
+                    row: cell.row
+                }
+            }
+
+            Component {
+                id: agentTile
+
+                AgentTile {
+                    app: page.app
+                    sid: cell.sid
+                }
+            }
         }
     }
 
@@ -153,6 +193,7 @@ Item {
         sourceComponent: JobList {
             app: page.app
             model: jobsModel
+            agents: agentsModel
             header: page.layout.header ?? ({ "kind": "mixed", "count": 0, "percent": -1, "remaining": -1, "rowGlyphs": true })
         }
     }

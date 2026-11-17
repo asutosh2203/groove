@@ -39,3 +39,11 @@ test('every kind has a chain of symbolic names, an unknown one falls to the tran
     assert.deepEqual(j(ctx.chain('nope')), j(ctx.chain('transfer')));
     assert.equal(j(ctx.chain('music'))[0], 'music-note-16th-symbolic');
 });
+
+test('an agent beats jobs but not media (D-57); its glyph is Kove\'s own', () => {
+    assert.equal(ctx.liveKind(false, 'music', ['copy'], true), 'agent');
+    assert.equal(ctx.liveKind(true, 'music', ['copy'], true), 'music');
+    assert.equal(ctx.liveKind(true, 'video', [], true), 'video');
+    assert.equal(ctx.liveKind(false, 'music', ['copy'], false), 'copy');
+    assert.deepEqual(j(ctx.chain('agent')), ['kove:prompt']);
+});

@@ -1,6 +1,8 @@
 .pragma library
 
-// The Live page (D-52): what it shows for the running media and jobs. Pure functions of plain data.
+// The Live page (D-52, D-57): what it shows for the running media, agents and jobs. Pure functions of plain data.
+// An agent session (Agents.js) is ordered already (waiting, working, done) and sits above the file jobs. Both appear in
+// `items` as { id, kind: "agent"|"job", ... }; an agent's id is "agent:<session id>", unique among job ids.
 // A job is { id, row, created, percent, processed, total, remaining, kind }: percent 0..100 or -1, bytes 0 when unknown,
 // remaining whole seconds or -1, kind from Jobs.kind.
 
@@ -14,11 +16,11 @@ function shape(count) {
     return count >= 2 ? "tall" : "small";
 }
 
-// Full tiles whenever they fit, else a list: media + 1 job, or 2 jobs without media, fit.
-function trayMode(hasMedia, jobCount) {
-    if (jobCount === 0)
+// Full tiles whenever they fit, else a list: media + 1 item, or 2 items without media, fit (an item is an agent or a job).
+function trayMode(hasMedia, itemCount) {
+    if (itemCount === 0)
         return "none";
-    return jobCount <= (hasMedia ? 1 : 2) ? "tiles" : "list";
+    return itemCount <= (hasMedia ? 1 : 2) ? "tiles" : "list";
 }
 
 // Byte-weighted combined percent when every job reports its size, else the plain mean of the known percentages, else -1.
@@ -57,20 +59,24 @@ function header(jobs) {
     };
 }
 
-// input: { hasMedia, jobs }. mediaSlot: media is the top card. trayArea: where the jobs go ("bottom" slot under media, the
-// whole "page", or "top" for a lone job on the Small page).
+// input: { hasMedia, jobs, agents }. mediaSlot: media is the top card. trayArea: where the items go ("bottom" slot under
+// media, the whole "page", or "top" for a lone item on the Small page). The list header summarises the file jobs only.
 function layout(input) {
     const jobs = order(input.jobs);
-    const count = (input.hasMedia ? 1 : 0) + jobs.length;
-    const mode = trayMode(input.hasMedia, jobs.length);
+    const agents = input.agents || [];
+    const items = agents.map(a => ({ "id": "agent:" + a.id, "kind": "agent", "sid": a.id })).concat(jobs.map(j => ({ "id": j.id, "kind": "job", "row": j.row, "job": j })));
+    const count = (input.hasMedia ? 1 : 0) + items.length;
+    const mode = trayMode(input.hasMedia, items.length);
     return {
         "count": count,
         "shape": shape(count),
         "mediaSlot": input.hasMedia,
         "mode": mode,
         "jobs": jobs,
+        "agents": agents,
+        "items": items,
         "trayArea": mode === "none" ? "none" : input.hasMedia ? "bottom" : "page",
-        "header": mode === "list" ? header(jobs) : null
+        "header": mode === "list" && jobs.length > 0 ? header(jobs) : null
     };
 }
 
@@ -82,8 +88,9 @@ function layout(input) {
 function fitHeight(layout, geom) {
     if (layout.mode !== "list")
         return null;
-    const rows = layout.jobs.length;
+    const rows = layout.items.length;
     const media = layout.mediaSlot ? geom.smallH - geom.chrome + geom.mediaGap : 0;
-    const content = media + geom.headerH + geom.gap + rows * geom.rowH + (rows - 1) * geom.gap + geom.expandedExtra;
+    const parts = rows + (layout.header ? 1 : 0);  // the rows, plus the header when file jobs exist
+    const content = media + (layout.header ? geom.headerH : 0) + rows * geom.rowH + (parts - 1) * geom.gap + geom.expandedExtra;
     return Math.max(geom.smallH, Math.min(geom.tallH, geom.chrome + content));
 }

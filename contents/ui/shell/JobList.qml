@@ -8,13 +8,15 @@ import "../controlcenter/Tokens.js" as T
 import "../logic/Accordion.js" as Accordion
 import "../logic/LiveGlyphs.js" as LiveGlyphs
 
-// The jobs as a list (D-52, accordion D-53): a summary header, then compact rows (name, percent, thin bar). It scrolls when the rows
+// The agents and jobs as a list (D-52, accordion D-53): the agents' compact rows, then a summary header and the jobs' compact rows (name, percent, thin bar). It scrolls when the rows
 // overflow, with a fade where more lie beyond.
 Item {
     id: list
 
     required property var app
     required property var model
+    // The agent sessions (D-57), their compact rows above the file jobs; empty when there are none.
+    required property var agents
     required property var header
 
     // Opening a row scrolls just enough to keep it fully in view; a row opened past the Tall cap would otherwise
@@ -25,52 +27,83 @@ Item {
             ids.push(list.model.get(i).jid);
         const target = Accordion.scrollTarget(ids, list.app.deck.openJob, rows.contentY, rows.height, T.liveRowHeight, T.liveTileHeight, rows.spacing);
         if (target !== rows.contentY)
+            rows.pinnedTop = false;
+        if (target !== rows.contentY)
             scrollAnimation.to = target;
         if (target !== rows.contentY)
             scrollAnimation.restart();
     }
 
-    ColumnLayout {
+    Item {
         anchors.fill: parent
-        spacing: T.liveGap
-
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: T.liveHeaderHeight
-            spacing: T.liveGap
-
-            CC.ThemeGlyph {
-                Layout.preferredWidth: T.fontBody
-                Layout.preferredHeight: T.fontBody
-                names: LiveGlyphs.chain(list.header.kind === "mixed" ? "transfer" : list.header.kind)
-                color: T.textPrimary
-            }
-
-            PlasmaLabel {
-                Layout.fillWidth: true
-                text: list.app.strings.liveHeader(list.header.kind, list.header.count)
-                color: T.textPrimary
-                font.pixelSize: T.fontBody
-                font.weight: Font.Bold
-                elide: Text.ElideRight
-            }
-
-            PlasmaLabel {
-                text: list.app.strings.jobProgress(list.header.percent, list.header.remaining)
-                color: T.textCaption
-                font.pixelSize: T.fontCaption
-            }
-        }
 
         ListView {
             id: rows
 
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+            anchors.fill: parent
             clip: true
             spacing: T.liveGap
             boundsBehavior: Flickable.StopAtBounds
             model: list.model
+            // The header's rows arrive after the view has placed itself, which would leave it scrolled past them; it
+            // stays at the top until the user scrolls or a row is opened.
+            property bool pinnedTop: true
+
+            onOriginYChanged: {
+                if (rows.pinnedTop)
+                    rows.positionViewAtBeginning();
+            }
+            onMovementStarted: rows.pinnedTop = false
+
+            // The agents' rows and the transfers header scroll with the jobs, so a crowded page never hides the jobs.
+            header: ColumnLayout {
+                width: ListView.view.width
+                spacing: T.liveGap
+
+                Repeater {
+                    model: list.agents
+
+                    delegate: AgentEntry {
+                        Layout.fillWidth: true
+                        app: list.app
+                    }
+                }
+
+                // The transfers group: its header counts file jobs only, and is absent when there are none.
+                RowLayout {
+                    visible: list.header.count > 0
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: T.liveHeaderHeight
+                    spacing: T.liveGap
+
+                    CC.ThemeGlyph {
+                        Layout.preferredWidth: T.fontBody
+                        Layout.preferredHeight: T.fontBody
+                        names: LiveGlyphs.chain(list.header.kind === "mixed" ? "transfer" : list.header.kind)
+                        color: T.textPrimary
+                    }
+
+                    PlasmaLabel {
+                        Layout.fillWidth: true
+                        text: list.app.strings.liveHeader(list.header.kind, list.header.count)
+                        color: T.textPrimary
+                        font.pixelSize: T.fontBody
+                        font.weight: Font.Bold
+                        elide: Text.ElideRight
+                    }
+
+                    PlasmaLabel {
+                        text: list.app.strings.jobProgress(list.header.percent, list.header.remaining)
+                        color: T.textCaption
+                        font.pixelSize: T.fontCaption
+                    }
+                }
+
+                Item {
+                    visible: list.header.count > 0
+                    Layout.preferredHeight: 0
+                }
+            }
 
             NumberAnimation {
                 id: scrollAnimation
@@ -239,21 +272,31 @@ Item {
         }
     }
 
+    // More rows lie beyond: a fade over the last rows and a chevron say so.
     Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: T.liveFade
-        visible: rows.contentHeight - rows.contentY - rows.height > 1
+        height: T.liveFadeMore
+        visible: !rows.atYEnd
         gradient: Gradient {
             GradientStop {
                 position: 0
                 color: "transparent"
             }
             GradientStop {
-                position: 1
+                position: 0.75
                 color: T.dialog
             }
+        }
+
+        CC.ThemeGlyph {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            width: T.fontBody
+            height: T.fontBody
+            names: ["go-down-symbolic", "arrow-down", "go-down"]
+            color: T.textSecondary
         }
     }
 }
