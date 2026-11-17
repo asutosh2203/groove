@@ -98,7 +98,11 @@ MouseArea {
         event.accepted = true;
     }
     onClicked: (mouse) => {
-        popupRoot.app.closeFromClick();
+        // Editing (D-56): only a click outside the island asks to close; the editor's controls use passive handlers, so
+        // their clicks reach this area too.
+        const inside = popupRoot.app.editor.active && contentPanel.contains(popupRoot.mapToItem(contentPanel, mouse.x, mouse.y));
+        if (!inside)
+            popupRoot.app.closeFromClick();
         mouse.accepted = true;
     }
     opacity: 1
