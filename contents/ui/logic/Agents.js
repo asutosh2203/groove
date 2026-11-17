@@ -78,10 +78,16 @@ function elide(str, max) {
     return t.length <= max ? t : t.slice(0, Math.max(0, max - 1)).trimEnd() + "…";
 }
 
-// What the closed capsule says (D-38, job priority): the project and "done of total" when there is a task list, else the
-// elapsed minutes. The caller formats it.
-function compactParts(s, nowMs) {
-    return { "project": s.project, "progress": hasTasks(s) ? { "done": s.done, "total": s.total } : null, "minutes": minutes(s, nowMs) };
+// What the closed capsule says (D-38, D-57), in priority order: "waiting" (the caller says "Needs your OK"), a task list
+// ("project · 3 of 7" and a bar), else "project · <verb>" where `kind` is the action kind (edit, run, read, search, or
+// "other" for working). The target is left out, so the text changes only when the kind does; elapsed time is the full tile's.
+function compactParts(s) {
+    return {
+        "project": s.project,
+        "waiting": s.state === "waiting",
+        "progress": hasTasks(s) ? { "done": s.done, "total": s.total } : null,
+        "kind": s.action || "other"
+    };
 }
 
 // The 0..1 value of the determinate bar.

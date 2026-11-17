@@ -178,9 +178,22 @@ QtObject {
         return i18n("%1 of %2", done, total);
     }
 
-    // The closed capsule's tail after the project name: "· 3 of 7", or the elapsed minutes without a task list.
-    function agentCompactTail(progress, minutes) {
-        return progress ? i18n("· %1 of %2", progress.done, progress.total) : i18n("· %1 min", minutes);
+    // The closed capsule's tail after the project name: "· 3 of 7" with a task list, else "· editing" (the action's kind).
+    function agentCompactTail(progress, kind) {
+        if (progress)
+            return i18n("· %1 of %2", progress.done, progress.total);
+        switch (kind) {
+        case "edit":
+            return i18n("· editing");
+        case "run":
+            return i18n("· running");
+        case "read":
+            return i18n("· reading");
+        case "search":
+            return i18n("· searching");
+        default:
+            return i18n("· working");
+        }
     }
 
     // What the agent is doing now: "Editing PresetEditor.qml", "Running: npm test…".

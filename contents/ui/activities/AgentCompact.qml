@@ -33,12 +33,12 @@ Item {
                 maximumLineCount: 1
             }
 
-            PlasmaLabel {
+            RollText {
                 visible: agentCompact.session !== null && !agentCompact.waiting
-                text: agentCompact.session ? agentCompact.app.strings.agentCompactTail(Agents.compactParts(agentCompact.session, agentCompact.app.agents.nowMs).progress, Agents.minutes(agentCompact.session, agentCompact.app.agents.nowMs)) : ""
+                Layout.alignment: Qt.AlignVCenter
+                text: agentCompact.session ? agentCompact.app.strings.agentCompactTail(Agents.compactParts(agentCompact.session).progress, Agents.compactParts(agentCompact.session).kind) : ""
                 color: T.textCaption
-                font.pixelSize: T.fontCaption
-                font.weight: Font.DemiBold
+                duration: agentCompact.app.reduceMotion ? 0 : T.motionFade
             }
         }
 

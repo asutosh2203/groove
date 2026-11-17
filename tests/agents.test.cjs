@@ -32,15 +32,25 @@ test('order: waiting, then working, then done; newest first within a state', () 
         ['q', 'w2', 'w1', 'd']);
 });
 
-test('minutes are whole and never below 1; compact parts carry the task list or the minutes', () => {
+test('minutes are whole and never below 1, and a finished run stops at its last update', () => {
     const x = p({ startedAt: 0 });
     assert.equal(A.minutes(x, 30 * 1000), 1);
     assert.equal(A.minutes(x, 18.9 * 60000), 18);
-    assert.deepEqual(j(A.compactParts(x, 5 * 60000)), { project: 'groove', progress: null, minutes: 5 });
-    const t = p({ done: 3, total: 7 });
-    assert.deepEqual(j(A.compactParts(t, 5 * 60000)).progress, { done: 3, total: 7 });
-    assert.ok(Math.abs(A.progress(t) - 3 / 7) < 1e-9);
+    assert.equal(A.minutes(p({ startedAt: 0, updatedAt: 120, state: 'done' }), 99 * 60000), 2);
+    assert.ok(Math.abs(A.progress(p({ done: 3, total: 7 })) - 3 / 7) < 1e-9);
     assert.equal(A.progress(x), 0);
+});
+
+test('compact parts: a task list gives done/total, else the action kind; the target never enters', () => {
+    assert.deepEqual(j(A.compactParts(p({ done: 3, total: 7, action: 'edit', target: 'a.qml' }))), { project: 'groove', waiting: false, progress: { done: 3, total: 7 }, kind: 'edit' });
+    const w = j(A.compactParts(p({ action: 'run', target: 'npm test' })));
+    assert.deepEqual([w.progress, w.kind, w.waiting], [null, 'run', false]);
+    assert.equal(j(A.compactParts(p({}))).kind, 'other');
+    assert.equal(j(A.compactParts(p({ action: 'edit', target: 'a.qml' }))).kind, j(A.compactParts(p({ action: 'edit', target: 'b.qml' }))).kind);
+});
+
+test('compact parts: waiting wins (the caller shows "Needs your OK")', () => {
+    assert.equal(j(A.compactParts(p({ state: 'waiting', done: 1, total: 3 }))).waiting, true);
 });
 
 test('elide cuts at the end with an ellipsis and leaves short text alone', () => {
