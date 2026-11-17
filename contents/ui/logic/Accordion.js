@@ -1,6 +1,6 @@
 .pragma library
 
-// Which job row is open in the Live list (D-51): at most one, by job id, "" for none. Pure functions of the open id and
+// Which job row is open in the Live list (D-53): at most one, by job id, "" for none. Pure functions of the open id and
 // the ids now in the list; the state itself is per session and resets when the deck closes.
 
 // A click on a row: opens it, swaps to it from another, or closes it when it was the open one.

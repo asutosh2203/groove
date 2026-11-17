@@ -112,6 +112,31 @@ debug hook (not in the repository), because any media event restarts its auto-cl
 - Still not measured: Pill mode, the notification popup, the Control Center with the glow (it shares the component),
   and a real pointer.
 
+## After D1 (2026-11-17, the deck and the capsule, D-51 to D-53)
+
+Dev copy on Plasma 6.8.2 / NVIDIA RTX 4060, Spotify playing the whole time (checked before and after), nothing else
+active, machine untouched. Each state is 3 runs of 30 s, settled 120 s after a plasmashell restart, no frame logging.
+The pre-D1 build is `5e0aaa4`; the others are HEAD. Raw files are in `perf/results/` (`*d1c-*`).
+
+| State | CPU per run | Median | GPU util per run |
+|---|---|---|---|
+| Before D1, compact media pill | 0.73, 2.00, 1.48% | 1.48% | 11, 16, 27% |
+| After D1, deck closed, compact media pill | 1.19, 1.30, 2.23% | 1.30% | 33, 30, 18% |
+| After D1, deck open on Live (media card) | 0.97, 0.93, 0.94% | 0.94% | 40, 35, 32% |
+
+- **No closed-deck regression:** the two closed-deck medians (1.48% before, 1.30% after) sit inside the run-to-run spread
+  (0.7 to 2.2%), so the deck costs nothing measurable while closed (principle 9). An earlier pair of single 30 s runs
+  (0.67% before, 1.60% after) was noise. One later change helps: the Live page's job details are only built while the
+  deck shows.
+- **Deck open:** about 0.94% with the media card visible, below the closed figure because the compact pill and its audio
+  bars are hidden while the island is open. Frames per second were not measured, and a page morph, the capsule fade and
+  a running job list were not measured.
+- **Against the baselines above:** these totals (0.9 to 1.5%) are higher than the G1 compact-media figure (0.64%, taken with
+  frame logging on and a different desktop load), for the old build as well as the new one, so the difference is the
+  machine's current load and not D1. The media-playing budget (D-34, at most 1% added over idle) cannot be judged from a
+  total without an idle run; none was taken here.
+- **GPU:** utilisation readings (11 to 40%) vary by run with the card's clock state (P5 to P8) and show no trend.
+
 ## What changed (commits)
 
 | Change | Commit |

@@ -4,7 +4,7 @@ import QtQuick
 import "../activities" as Activities
 import "../controlcenter/Tokens.js" as T
 
-// The Live page (D-51): media is always the card on top; jobs are full tiles when they fit, else a list (LiveLayout.js
+// The Live page (D-52): media is always the card on top; jobs are full tiles when they fit, else a list (LiveLayout.js
 // decides). The Tall page is two fixed slots, so content always fills one.
 Item {
     id: page

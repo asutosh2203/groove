@@ -131,7 +131,7 @@ const controlEditHeight = 570;
 const motionPage = 340;         // silhouette morph between pages
 const motionFade = 160;         // content cross-fade
 
-// The Live page (D-51): job tiles and the job list.
+// The Live page (D-52): job tiles and the job list.
 const liveGap = 8;
 const liveTilePadding = 10;
 const liveChip = 32;

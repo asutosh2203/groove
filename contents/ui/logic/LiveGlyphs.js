@@ -1,7 +1,7 @@
 .pragma library
 
 // The glyph for what the Live page shows, one source for the capsule's Live item, the job list header and every row
-// (D-51, D-26: theme symbolic names with fallback chains; the last name always exists in the themes this ships for).
+// (D-53, D-26: theme symbolic names with fallback chains; the last name always exists in the themes this ships for).
 // Kinds: "music" and "video" for media, Jobs.kind for jobs ("download", "upload", "delete", "copy", "move", "generic"),
 // and "transfer" for mixed kinds.
 

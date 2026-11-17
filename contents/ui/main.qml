@@ -414,7 +414,7 @@ PlasmoidItem {
 
     }
 
-    // The Live page's inputs (D-51). Only the cheap count is always live; the job details are built while the deck shows.
+    // The Live page's inputs (D-52). Only the cheap count is always live; the job details are built while the deck shows.
     readonly property bool liveMedia: mediaActivityEnabled && mediaService.shown
     readonly property int liveCount: (liveMedia ? 1 : 0) + (jobActivityEnabled ? jobService.activeCount : 0)
     readonly property alias deck: deckState

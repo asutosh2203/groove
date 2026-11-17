@@ -6,7 +6,7 @@ import ".."
 import "../controlcenter" as CC
 import "../controlcenter/Tokens.js" as T
 
-// One job as a full tile (D-51, D-46 style): kind glyph, title, app and destination, progress, speed, percent and time left.
+// One job as a full tile (D-52, D-46 style; D-53 for the click): kind glyph, title, app and destination, progress, speed, percent and time left.
 // It fills whatever slot it is given.
 Rectangle {
     id: tile

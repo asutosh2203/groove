@@ -8,7 +8,7 @@ import "../controlcenter/Tokens.js" as T
 import "../logic/Accordion.js" as Accordion
 import "../logic/LiveGlyphs.js" as LiveGlyphs
 
-// The jobs as a list (D-51): a summary header, then compact rows (name, percent, thin bar). It scrolls when the rows
+// The jobs as a list (D-52, accordion D-53): a summary header, then compact rows (name, percent, thin bar). It scrolls when the rows
 // overflow, with a fade where more lie beyond.
 Item {
     id: list

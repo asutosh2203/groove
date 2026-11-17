@@ -1,6 +1,6 @@
 .pragma library
 
-// The Live page (D-51): what it shows for the running media and jobs. Pure functions of plain data.
+// The Live page (D-52): what it shows for the running media and jobs. Pure functions of plain data.
 // A job is { id, row, created, percent, processed, total, remaining, kind }: percent 0..100 or -1, bytes 0 when unknown,
 // remaining whole seconds or -1, kind from Jobs.kind.
 
@@ -74,7 +74,7 @@ function layout(input) {
     };
 }
 
-// The Live page's height in list mode (D-51): the media card (when shown, at its Small-page height), the header and the rows,
+// The Live page's height in list mode (D-52): the media card (when shown, at its Small-page height), the header and the rows,
 // plus the page's chrome (top inset and the bottom inset that holds the indicator), clamped between the Small and Tall
 // heights. The list scrolls only past the Tall cap. Other modes keep the shape's own height: null.
 // geom: { smallH, tallH, chrome, headerH, rowH, gap, mediaGap, expandedExtra } (mediaGap: the room around the hairline under
