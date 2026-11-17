@@ -145,3 +145,16 @@ const liveMediaGap = 16;        // room around that line: half above it, half be
 const liveTileHeight = 96;      // a job row opened in place (accordion) is as tall as a tile
 const hoverScale = 1.02;        // the media card's artwork grows this much on hover
 const fileManagerRaiseDelay = 450;  // ms to let the file manager show an item before its window is raised
+
+// Widgets (D-54, D-55): the tile surface, its text scale and the hover peek.
+const widgetPadding = 10;
+const widgetHeroSize = 32;
+const widgetHeroSizeSmall = 20;
+const widgetHeroWeight = 500;
+const widgetGlyph = 24;             // the weather condition glyph on a tile
+const widgetGlyphSmall = 18;        // a day or hour column's glyph
+const widgetSunGlyph = 12;          // the sun glyph in the detail line
+const widgetStaleLine = 16;         // the "updated N ago" line the host reserves under a stale view
+const widgetSkeletonHeight = 8;
+const widgetDayColumn = 46;         // minimum width of a day or hour column
+const widgetPeekDwell = 150;        // ms of hover before the detail line peeks

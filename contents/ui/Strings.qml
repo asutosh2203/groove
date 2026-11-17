@@ -181,5 +181,62 @@ QtObject {
             return percent + "%";
         }
     }
+
+    // Widgets (D-54, D-55): the host's placeholders and the first widgets' words.
+    readonly property string widgetUnavailable: i18n("Widget unavailable")
+    readonly property string widgetError: i18n("Couldn't load")
+    readonly property string widgetSetLocation: i18n("Set a location")
+    readonly property string widgetUnknownZone: i18n("Unknown time zone")
+    readonly property string today: i18n("Today")
+    readonly property string tomorrow: i18n("Tomorrow")
+    readonly property string yesterday: i18n("Yesterday")
+    readonly property string now: i18n("Now")
+    readonly property string sunrise: i18n("Sunrise")
+    readonly property string sunset: i18n("Sunset")
+
+    // unit and n come from WidgetState.age.
+    function updatedAgo(unit, n) {
+        return unit === "minute" ? i18n("updated %1 min ago", n) : unit === "hour" ? i18n("updated %1 h ago", n) : i18n("updated %1 d ago", n);
+    }
+
+    function dayRelation(relation) {
+        return relation < 0 ? yesterday : relation > 0 ? tomorrow : today;
+    }
+
+    // key comes from WeatherCodes.conditionKey.
+    function condition(key) {
+        switch (key) {
+        case "sunny":
+            return i18n("Sunny");
+        case "clear":
+            return i18n("Clear");
+        case "mostlyClear":
+            return i18n("Mostly clear");
+        case "partlyCloudy":
+            return i18n("Partly cloudy");
+        case "cloudy":
+            return i18n("Cloudy");
+        case "fog":
+            return i18n("Fog");
+        case "drizzle":
+            return i18n("Drizzle");
+        case "freezingDrizzle":
+            return i18n("Freezing drizzle");
+        case "rain":
+            return i18n("Rain");
+        case "freezingRain":
+            return i18n("Freezing rain");
+        case "snow":
+            return i18n("Snow");
+        case "showers":
+            return i18n("Showers");
+        case "snowShowers":
+            return i18n("Snow showers");
+        case "thunderstorm":
+            return i18n("Thunderstorm");
+        default:
+            return "";
+        }
+    }
     // qmllint enable unqualified
 }
