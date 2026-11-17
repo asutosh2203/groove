@@ -1,4 +1,4 @@
-15 contents/ui/ControlCenterEditor.qml
+13 contents/ui/ControlCenterEditor.qml
 1 contents/ui/PausableTimer.qml
 1 contents/ui/activities/AudioBars.qml
 4 contents/ui/activities/JobCompact.qml

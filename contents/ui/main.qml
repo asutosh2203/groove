@@ -73,7 +73,7 @@ PlasmoidItem {
     readonly property int pageBaseHeight: popupMode === "deck" ? deckState.sizeOf(deckState.current).h : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupHeight : 104)
     property bool deckWindowActive: false
     readonly property int popupWidth: (deckWindowActive ? deckState.windowSize.w : pageWidth) + shapeEars
-    readonly property bool ccShowing: popupMode === "deck" && deckState.current === "control"
+    readonly property bool ccShowing: popupMode === "deck" && (presetEditor.active ? presetEditor.view === "gear" : deckState.current === "control")
     // D-43: a replyable notice gets a window with room for the shelf from before it first shows, and keeps it until the
     // popup is hidden: resizing a visible window shows one stretched frame on Wayland.
     readonly property int replyShelfHeight: 30
@@ -171,8 +171,7 @@ PlasmoidItem {
         if (!dialogVisible)
             return ;
 
-        if (ccShowing && controlLayoutService.editMode)
-            controlLayoutService.cancelEdit();
+        presetEditor.suspend();
 
         activityPopupTimer.stop();
         openHandoffTimer.stop();
@@ -195,6 +194,14 @@ PlasmoidItem {
             return ;
         }
         closeIsland();
+    }
+
+    // A click on the window's transparent area or a bare surface: with unsaved edits it asks before closing (D-56).
+    function closeFromClick() {
+        if (presetEditor.active && presetEditor.dirty)
+            presetEditor.promptOpen = true;
+        else
+            closeIsland();
     }
 
     function focusIslandDialog() {
@@ -236,6 +243,7 @@ PlasmoidItem {
         root.refreshSystemState();
         controlLayoutService.ensureLayout();
         deckState.open(intent);
+        presetEditor.resumeIfKept();
         openIsland("deck", false);
         Qt.callLater(root.focusIslandDialog);
     }
@@ -345,6 +353,7 @@ PlasmoidItem {
     readonly property alias launcher: appLauncher
     readonly property bool reduceMotion: Kirigami.Units.longDuration <= 1
     readonly property alias layoutService: controlLayoutService
+    readonly property alias editor: presetEditor
     readonly property alias media: mediaService
     readonly property alias notifications: notificationService
     readonly property alias replyShelf: replyShelfService
@@ -445,7 +454,7 @@ PlasmoidItem {
         id: weatherHub
 
         island: weatherService
-        locations: presetStore.weatherLocations
+        locations: presetStore.weatherLocations.concat(presetEditor.weatherLocations)
     }
 
     // A widget's click (D-54): run its action through the host and close the deck (D-31). Widgets never run commands.
@@ -470,7 +479,8 @@ PlasmoidItem {
         liveMediaKind: mediaService.kind
         liveJobs: root.jobActivityEnabled && root.dialogVisible && root.popupMode === "deck" ? jobService.runningRows() : []
         presets: presetStore.presets
-        controlEditing: controlLayoutService.editMode
+        editing: presetEditor.active
+        editSize: presetEditor.active ? DeckPlan.editSize(presetEditor.view, presetEditor.pageType, deckState.geom) : null
         geom: ({
             "cellW": T.deckCellW,
             "cellH": T.deckCellH,
@@ -485,8 +495,27 @@ PlasmoidItem {
             "controlW": T.controlWidth,
             "controlH": T.controlHeight,
             "controlEditW": T.controlEditWidth,
-            "controlEditH": T.controlEditHeight
+            "controlEditH": T.controlEditHeight,
+            "editInset": T.editInset,
+            "editBar": T.editBar,
+            "editChips": T.editChips,
+            "editGap": T.editGap,
+            "editSidebar": T.editSidebar,
+            "editSidebarMinH": T.editSidebarMinH,
+            "editHint": T.editHint,
+            "editOutlinePad": T.editOutlinePad,
+            "editZoom": T.editZoom
         })
+    }
+
+    PresetEditor {
+        id: presetEditor
+
+        storedPresets: String(root.settings.presets || "")
+        devPresets: String(root.settings.devPresets || "")
+        registry: presetStore.registry
+        layout: controlLayoutService
+        onSaveRequested: json => root.settings.presets = json
     }
 
     Activities.ActivityController {

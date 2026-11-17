@@ -128,6 +128,21 @@ const controlWidth = 430;
 const controlHeight = 540;
 const controlEditWidth = 620;
 const controlEditHeight = 570;
+// The preset editor (D-56): chrome sizes around the page at real size, and the zoom on entry.
+const editInset = 14;
+const editBar = 34;
+const editChips = 44;
+const editGap = 10;
+const editSidebar = 150;
+const editSidebarMinH = 170;
+const editHint = 24;
+const editOutlinePad = 8;
+const editZoom = 1.04;
+const editRow = 42;
+const editSearchPause = 500;       // ms of quiet before a place search starts
+const editChipW = 44;
+const editChipH = 28;
+const editSilhouetteGap = 2;
 const motionPage = 340;         // silhouette morph between pages
 const motionFade = 160;         // content cross-fade
 

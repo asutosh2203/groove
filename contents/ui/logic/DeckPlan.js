@@ -128,3 +128,29 @@ function suppressesBump(kind, deckOpen) {
 function insets(isControl, padding) {
     return isControl ? { "l": 14, "r": 14, "t": 12, "b": 16 } : { "l": padding, "r": padding, "t": padding, "b": padding };
 }
+
+// The preset editor (D-56). A page type's body at real size sits in a dashed outline beside the catalogue; the Control
+// Center tile editor keeps its own size. Chrome: a top bar above, the chips bar below.
+// geom adds: editInset, editBar, editChips, editGap, editSidebar, editSidebarMinH, editHint, editOutlinePad, editZoom.
+function editSize(view, type, geom) {
+    if (view === "gear")
+        return { "w": geom.controlEditW, "h": geom.controlEditH + geom.editGap + geom.editChips };
+    const c = cells[type] || cells.small;
+    const left = c.w * geom.cellW - 2 * geom.padding + 2 * geom.editOutlinePad;
+    const middle = Math.max(c.h * geom.cellH - 2 * geom.padding + 2 * geom.editOutlinePad + geom.editHint, geom.editSidebarMinH);
+    return {
+        "w": 2 * geom.editInset + left + geom.editGap + geom.editSidebar,
+        "h": 2 * geom.editInset + geom.editBar + geom.editGap + middle + geom.editGap + geom.editChips
+    };
+}
+
+// The window room edit mode needs, zoom included: the largest editor in either dimension.
+function editWindow(geom) {
+    let w = 0;
+    let h = 0;
+    for (const size of [editSize("gear", "small", geom), editSize("preset", "small", geom), editSize("preset", "wide", geom), editSize("preset", "tall", geom)]) {
+        w = Math.max(w, size.w);
+        h = Math.max(h, size.h);
+    }
+    return { "w": Math.ceil(w * geom.editZoom), "h": Math.ceil(h * geom.editZoom) };
+}

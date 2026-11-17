@@ -20,7 +20,9 @@ Item {
     required property var liveJobs
     // The presets that show, from PresetStore.
     required property var presets
-    required property bool controlEditing
+    required property bool editing
+    // The preset editor's body size while it is open (D-56), else null.
+    property var editSize: null
     required property var geom
 
     property string current: "control"
@@ -28,7 +30,12 @@ Item {
     property var previousCycle: []
 
     readonly property var cycle: DeckPlan.buildCycle(liveCount > 0, presets)
-    readonly property var windowSize: DeckPlan.windowSize(cycle, geom)
+    // Edit mode (zoom included) is pre-sized with the cycle, so entering it never resizes the window (D-43).
+    readonly property var windowSize: {
+        const deck = DeckPlan.windowSize(cycle, geom);
+        const edit = DeckPlan.editWindow(geom);
+        return { "w": Math.max(deck.w, edit.w), "h": Math.max(deck.h, edit.h) };
+    }
     readonly property var liveLayout: LiveLayout.layout({ "hasMedia": deckVisible && liveMedia, "jobs": deckVisible ? liveJobs : [] })
     readonly property int liveShownCount: deckVisible ? liveLayout.count : liveCount
     // The job row opened in place in the list (accordion); per session, reset when the deck closes.
@@ -61,14 +68,14 @@ Item {
     // The media card keeps its Small-page height wherever it sits.
     readonly property real mediaHeight: geom.cellH - liveChrome
 
-    // The capsule shows with two or more pages, except while the Control Center is being edited.
-    readonly property bool capsuleWanted: cycle.length > 1 && !(current === "control" && controlEditing)
+    // The capsule shows with two or more pages, except while editing (D-56: the chips bar is the navigator).
+    readonly property bool capsuleWanted: cycle.length > 1 && !editing
 
     // A page's body size.
     function sizeOf(id) {
+        if (editSize !== null)
+            return editSize;
         const type = pageType(id);
-        if (type === "control" && controlEditing)
-            return { "w": geom.controlEditW, "h": geom.controlEditH };
         const size = DeckPlan.pageSize(type, geom);
         const fit = id === "live" && deckVisible ? LiveLayout.fitHeight(liveLayout, {
                                                                         "smallH": geom.cellH,

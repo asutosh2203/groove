@@ -120,3 +120,23 @@ test('insets: equal padding on every side, the Control Center keeps its own', ()
     assert.deepEqual(j(ctx.insets(false, 12)), { l: 12, r: 12, t: 12, b: 12 });
     assert.deepEqual(j(ctx.insets(true, 12)), { l: 14, r: 14, t: 12, b: 16 });
 });
+
+const edit = { padding: 12, editInset: 14, editBar: 34, editChips: 44, editGap: 10, editSidebar: 150, editSidebarMinH: 170, editHint: 24, editOutlinePad: 8, editZoom: 1.04 };
+const egeom = Object.assign({}, geom, edit);
+
+test('the editor body is the page at real size in an outline, beside the catalogue, between a top bar and the chips', () => {
+    assert.deepEqual(j(ctx.editSize('preset', 'small', egeom)), { w: 28 + 332 + 10 + 150, h: 28 + 34 + 10 + 170 + 10 + 44 });
+    assert.deepEqual(j(ctx.editSize('preset', 'wide', egeom)), { w: 28 + 672 + 10 + 150, h: 296 });
+    assert.deepEqual(j(ctx.editSize('preset', 'tall', egeom)), { w: 520, h: 28 + 34 + 10 + 256 + 10 + 44 });
+    assert.deepEqual(j(ctx.editSize('gear', 'small', egeom)), { w: 620, h: 570 + 10 + 44 });
+    assert.deepEqual(j(ctx.editSize('preset', 'nope', egeom)), j(ctx.editSize('preset', 'small', egeom)));
+});
+
+test('the edit window holds the biggest editor, zoomed, and no editor outgrows it', () => {
+    const win = j(ctx.editWindow(egeom));
+    assert.deepEqual(win, { w: Math.ceil(860 * 1.04), h: Math.ceil(624 * 1.04) });
+    for (const [view, type] of [['gear', 'small'], ['preset', 'small'], ['preset', 'wide'], ['preset', 'tall']]) {
+        const s = ctx.editSize(view, type, egeom);
+        assert.ok(s.w * 1.04 <= win.w && s.h * 1.04 <= win.h);
+    }
+});

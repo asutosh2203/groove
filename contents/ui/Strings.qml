@@ -30,6 +30,55 @@ QtObject {
     function deckPage(id) {
         return i18n("Page %1", id);
     }
+
+    // The preset editor (D-56).
+    readonly property string editDone: i18n("Done")
+    readonly property string editCancel: i18n("Cancel")
+    readonly property string editBack: i18n("Back")
+    readonly property string editReset: i18n("Reset draft to default")
+    readonly property string editWidgets: i18n("Widgets")
+    readonly property string editAddWidget: i18n("Add widget")
+    readonly property string editWontFit: i18n("won't fit")
+    readonly property string editDoesntFit: i18n("Doesn't fit")
+    readonly property string editRemoveWidget: i18n("Remove widget")
+    readonly property string editGridHint: i18n("Click a widget for its settings")
+    readonly property string editDiscardTitle: i18n("Discard your changes?")
+    readonly property string editKeep: i18n("Keep editing")
+    readonly property string editDiscard: i18n("Discard")
+    readonly property string editRestored: i18n("Unsaved changes restored")
+    readonly property string editDevPresets: i18n("Dev presets active: preset changes won't be saved")
+    readonly property string editLocationPlaceholder: i18n("Search for a city")
+    readonly property string editSearching: i18n("Searching…")
+    readonly property string editSearchShort: i18n("Type at least two characters.")
+    readonly property string editSearchFailed: i18n("Search failed. Check your connection and try again.")
+    readonly property string editSearchNone: i18n("No matching places found.")
+    readonly property string editSettingsOf: i18n("Settings")
+    readonly property string editSize: i18n("Size")
+    readonly property string editPreview: i18n("Live preview")
+    readonly property string editGear: i18n("Control Center tiles")
+
+    function pageTypeName(type) {
+        return type === "wide" ? i18n("Wide") : type === "tall" ? i18n("Tall") : i18n("Small");
+    }
+
+    function spanName(span) {
+        return span === "4x1" ? i18n("Wide") : span === "2x1" ? i18n("Medium") : i18n("Small");
+    }
+
+    // Why a change or a save was refused.
+    function editHint(reason) {
+        switch (reason) {
+        case "nofit":
+            return i18n("Doesn't fit this page");
+        case "cap":
+            return i18n("Presets are limited to 3");
+        case "unreadable":
+            return i18n("Saved presets can't be read, so they can't be changed");
+        case "problem":
+            return i18n("A preset doesn't fit its page; fix it first");
+        }
+        return "";
+    }
     readonly property string previous: i18n("Previous")
     readonly property string pause: i18n("Pause")
     readonly property string play: i18n("Play")

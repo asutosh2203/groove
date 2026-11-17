@@ -8,6 +8,7 @@ import "../weather"
 import "../controlcenter/Tokens.js" as T
 import "../logic/DeckPlan.js" as DeckPlan
 import "../logic/ReplyShelf.js" as ReplyShelf
+import "editor"
 
 MouseArea {
     id: popupRoot
@@ -30,6 +31,9 @@ MouseArea {
     readonly property real panelWidth: collapsedWidth + (popupRoot.shapeWidth - collapsedWidth) * morph
     readonly property real panelHeight: collapsedHeight + (popupRoot.pageHeight - collapsedHeight) * morph + popupRoot.shelfExtent
     readonly property real collapsedRadius: popupRoot.app.notchShape ? popupRoot.app.notchBottomRadius : collapsedHeight / 2
+    // D-56: the island zooms about 104% on a soft spring while the edit mode is open (none with reduced motion).
+    readonly property real zoomTarget: !popupRoot.reduceMotion && popupRoot.app.editor.active && popupRoot.app.popupMode === "deck" && popupRoot.morph >= 1 ? T.editZoom : 1
+    property real zoom: popupRoot.zoomTarget
     readonly property real shelfExtent: popupRoot.app.replyShelfHeight * popupRoot.app.replyShelf.progress
     readonly property bool control: popupRoot.app.ccShowing
     readonly property var pageInsets: popupRoot.insets(popupRoot.control)
@@ -47,7 +51,7 @@ MouseArea {
     readonly property real panelX: popupRoot.app.popupCollapsedX * (1 - morph) + (popupRoot.app.popupWidth - popupRoot.shapeWidth) / 2 * morph
     readonly property real panelY: popupRoot.app.popupCollapsedY * (1 - morph) + (popupRoot.app.islandExpandsUp ? popupRoot.app.popupHeight - popupRoot.pageHeight : 0) * morph
 
-    readonly property bool glowEnabled: popupRoot.app.islandOpen && (popupRoot.control ? popupRoot.app.glowControlCenterEnabled : popupRoot.app.glowExpandedEnabled && (popupRoot.app.popupMode === "deck" || popupRoot.app.popupActivityMode() !== "idle"))
+    readonly property bool glowEnabled: popupRoot.app.islandOpen && !popupRoot.app.editor.active && (popupRoot.control ? popupRoot.app.glowControlCenterEnabled : popupRoot.app.glowExpandedEnabled && (popupRoot.app.popupMode === "deck" || popupRoot.app.popupActivityMode() !== "idle"))
 
     implicitWidth: popupRoot.app.popupWidth
     implicitHeight: popupRoot.app.popupHeight
@@ -69,6 +73,15 @@ MouseArea {
         if (event.key !== Qt.Key_Escape)
             return ;
 
+        if (popupRoot.app.editor.active) {
+            if (popupRoot.app.layoutService.dragActive || popupRoot.app.layoutService.resizeActive)
+                popupRoot.app.layoutService.resetInteraction();
+            else
+                popupRoot.app.editor.stepBack();
+            event.accepted = true;
+            return ;
+        }
+
         if (popupRoot.app.replyShelf.isOpen) {
             popupRoot.app.replyShelf.escapePressed();
             event.accepted = true;
@@ -85,7 +98,7 @@ MouseArea {
         event.accepted = true;
     }
     onClicked: (mouse) => {
-        popupRoot.app.closeIsland();
+        popupRoot.app.closeFromClick();
         mouse.accepted = true;
     }
     opacity: 1
@@ -112,6 +125,12 @@ MouseArea {
         radius: popupShadow.radius
         color: "transparent"
         clip: true
+        transform: Scale {
+            origin.x: contentPanel.width / 2
+            origin.y: 0
+            xScale: popupRoot.zoom
+            yScale: popupRoot.zoom
+        }
 
         RoundShape {
             id: roundSurface
@@ -141,7 +160,7 @@ MouseArea {
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.LeftButton
-            enabled: popupRoot.app.islandOpen
+            enabled: popupRoot.app.islandOpen && !popupRoot.app.editor.active
             propagateComposedEvents: true
             onClicked: (mouse) => {
                 popupRoot.app.closeIsland();
@@ -191,7 +210,23 @@ MouseArea {
             anchors.bottomMargin: popupRoot.app.popupMode === "deck" ? 0 : popupRoot.contentBottom + popupRoot.shelfExtent
             opacity: popupRoot.contentOpacity
             visible: opacity > 0
-            sourceComponent: popupRoot.app.popupMode === "deck" ? deckComponent : popupRoot.app.activities.expandedComponentFor(popupRoot.app.popupActivityMode())
+            sourceComponent: popupRoot.app.popupMode === "deck" ? (popupRoot.app.editor.active ? editComponent : deckComponent) : popupRoot.app.activities.expandedComponentFor(popupRoot.app.popupActivityMode())
+        }
+
+        // The editor lays out at its target size from the first frame and the silhouette morphs around it.
+        Component {
+            id: editComponent
+
+            Item {
+                EditPage {
+                    x: (parent.width - width) / 2
+                    width: popupRoot.app.deck.editSize ? popupRoot.app.deck.editSize.w : 0
+                    height: popupRoot.app.deck.editSize ? popupRoot.app.deck.editSize.h : 0
+                    app: popupRoot.app
+                    focusRoot: popupRoot
+                    controlPage: popupRoot.controlPage
+                }
+            }
         }
 
         Component {
@@ -443,6 +478,14 @@ MouseArea {
                 duration: T.motionFade
                 easing.type: T.easingStandard
             }
+        }
+    }
+
+    Behavior on zoom {
+        SpringAnimation {
+            spring: 3
+            damping: 0.32
+            epsilon: 0.0001
         }
     }
 

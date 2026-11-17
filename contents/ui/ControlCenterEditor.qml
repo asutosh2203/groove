@@ -465,7 +465,9 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        height: 34
+        // D-56: while the edit mode hosts this editor, its bar (title, reset, cancel, save) is the edit mode's top bar.
+        visible: !app.editor.active
+        height: app.editor.active ? 0 : 34
         spacing: 8
 
         PlasmaLabel {
@@ -498,7 +500,7 @@ Item {
             outlineColor: T.border
             focusColor: T.focusRing
             tooltipText: i18n("Edit layout")
-            onClicked: app.layoutService.beginEdit()
+            onClicked: app.editor.begin("gear")
         }
 
         IslandButton {
@@ -585,7 +587,7 @@ Item {
         anchors.right: app.layoutService.editMode ? palette.left : parent.right
         anchors.rightMargin: app.layoutService.editMode ? 10 : 0
         anchors.top: editBar.bottom
-        anchors.topMargin: 8
+        anchors.topMargin: app.editor.active ? 0 : 8
         anchors.bottom: parent.bottom
         clip: true
         interactive: !app.layoutService.dragActive && !app.layoutService.resizeActive
@@ -661,7 +663,7 @@ Item {
         visible: app.layoutService.editMode
         anchors.right: parent.right
         anchors.top: editBar.bottom
-        anchors.topMargin: 8
+        anchors.topMargin: app.editor.active ? 0 : 8
         anchors.bottom: parent.bottom
         width: app.layoutService.editMode ? 150 : 0
         radius: T.radiusCard

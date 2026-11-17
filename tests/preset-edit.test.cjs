@@ -132,3 +132,12 @@ test('discarding is just the original draft: staged deletes come back', () => {
     assert.equal(E.dirty(original, staged), true);
     assert.equal(original.presets.length, 2);
 });
+
+test('the draft weather locations include a place picked but not yet saved', () => {
+    const oslo = { name: 'Oslo', lat: 59.9, lon: 10.75 };
+    let d = draftOf(preset('a', 'small', ['weather', '1x1'], ['clock', '1x1']));
+    assert.deepEqual(j(E.weatherLocations(d, reg)), []);
+    d = E.setSetting(d, 'a', 0, 'location', oslo, reg).draft;
+    assert.deepEqual(j(E.weatherLocations(d, reg)), [oslo]);
+    assert.deepEqual(j(E.weatherLocations(d, { byId: {} })), []);
+});

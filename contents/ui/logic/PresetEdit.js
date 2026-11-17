@@ -211,3 +211,12 @@ function commit(draft, registry) {
     const b = blockers(draft, registry);
     return b.length > 0 ? { "ok": false, "blockers": b } : { "ok": true, "json": Presets.serialize(draft.presets) };
 }
+
+// The locations the draft's Weather placements use, so the weather hub can fetch a place the user has just picked before
+// anything is saved (the live preview). "island" is not listed.
+function weatherLocations(draft, registry) {
+    const manifest = registry.byId.weather;
+    if (!manifest)
+        return [];
+    return draft.presets.reduce((all, p) => all.concat(p.placements), []).filter(p => p.widget === "weather").map(p => Registry.resolveSettings(manifest, p.settings, p.settingsVersion).location).filter(l => l !== "island");
+}
