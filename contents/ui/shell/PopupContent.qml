@@ -19,18 +19,34 @@ MouseArea {
     readonly property real compactOpacity: Math.max(0, Math.min(1, (0.34 - morph) / 0.34))
     readonly property real collapsedWidth: popupRoot.app.realIslandWidth
     readonly property real collapsedHeight: popupRoot.app.realIslandHeight
-    readonly property real panelWidth: collapsedWidth + (popupRoot.app.popupWidth - collapsedWidth) * morph
-    readonly property real panelHeight: collapsedHeight + (popupRoot.app.popupBaseHeight - collapsedHeight) * morph + popupRoot.shelfExtent
+    // The silhouette morphs to the page size (D-51); the window itself is fixed. With reduced motion it snaps.
+    readonly property bool reduceMotion: Kirigami.Units.longDuration <= 1
+    property real pageWidth: popupRoot.app.pageWidth
+    property real pageHeight: popupRoot.app.pageBaseHeight
+    readonly property real panelWidth: collapsedWidth + (popupRoot.pageWidth - collapsedWidth) * morph
+    readonly property real panelHeight: collapsedHeight + (popupRoot.pageHeight - collapsedHeight) * morph + popupRoot.shelfExtent
     readonly property real collapsedRadius: popupRoot.app.notchShape ? popupRoot.app.notchBottomRadius : collapsedHeight / 2
     readonly property real shelfExtent: popupRoot.app.replyShelfHeight * popupRoot.app.replyShelf.progress
-    readonly property real contentLeft: (popupRoot.app.popupMode === "control" ? 14 : 12) + (popupRoot.app.notchShape ? popupRoot.app.notchShoulder + 2 : 0)
-    readonly property real contentRight: popupRoot.app.popupMode === "control" ? (popupRoot.app.notchShape ? 22 : contentLeft) : (contentLeft + (popupRoot.app.notchShape ? 0 : 3))
-    readonly property real contentBottom: popupRoot.app.popupMode === "control" ? 16 : (popupRoot.app.notchShape ? 14 : 10) - 2
-    readonly property real panelRadius: collapsedRadius + (popupRoot.app.popupRadius - collapsedRadius) * morph
-    readonly property real panelX: popupRoot.app.popupCollapsedX * (1 - morph)
-    readonly property real panelY: popupRoot.app.popupCollapsedY * (1 - morph)
+    readonly property bool control: popupRoot.app.ccShowing
+    readonly property real contentLeft: (popupRoot.control ? 14 : 12) + (popupRoot.app.notchShape ? popupRoot.app.notchShoulder + 2 : 0)
+    readonly property real contentRight: popupRoot.control ? (popupRoot.app.notchShape ? 22 : contentLeft) : (contentLeft + (popupRoot.app.notchShape ? 0 : 3))
+    readonly property real contentBottom: popupRoot.control ? 16 : (popupRoot.app.notchShape ? 14 : 10) - 2
 
-    readonly property bool glowEnabled: popupRoot.app.islandOpen && (popupRoot.app.popupMode === "control" ? popupRoot.app.glowControlCenterEnabled : popupRoot.app.glowExpandedEnabled && popupRoot.app.popupMode === "activity" && popupRoot.app.popupActivityMode() !== "idle")
+    // The content insets of a page: the Control Center's differ from the other pages'.
+    function insets(isControl) {
+        const left = (isControl ? 14 : 12) + (popupRoot.app.notchShape ? popupRoot.app.notchShoulder + 2 : 0);
+        return {
+            "l": left,
+            "r": isControl ? (popupRoot.app.notchShape ? 22 : left) : left + (popupRoot.app.notchShape ? 0 : 3),
+            "t": isControl ? 12 : (popupRoot.app.notchShape ? 14 : 10),
+            "b": isControl ? 16 : (popupRoot.app.notchShape ? 14 : 10) - 2
+        };
+    }
+    readonly property real panelRadius: collapsedRadius + (popupRoot.app.popupRadius - collapsedRadius) * morph
+    readonly property real panelX: popupRoot.app.popupCollapsedX * (1 - morph) + (popupRoot.app.popupWidth - popupRoot.pageWidth) / 2 * morph
+    readonly property real panelY: popupRoot.app.popupCollapsedY * (1 - morph) + (popupRoot.app.islandExpandsUp ? popupRoot.app.popupHeight - popupRoot.pageHeight : 0) * morph
+
+    readonly property bool glowEnabled: popupRoot.app.islandOpen && (popupRoot.control ? popupRoot.app.glowControlCenterEnabled : popupRoot.app.glowExpandedEnabled && (popupRoot.app.popupMode === "deck" || popupRoot.app.popupActivityMode() !== "idle"))
 
     implicitWidth: popupRoot.app.popupWidth
     implicitHeight: popupRoot.app.popupHeight
@@ -102,9 +118,9 @@ MouseArea {
             anchors.fill: parent
             visible: !popupRoot.app.notchShape
             radius: popupRoot.panelRadius
-            fillTop: popupRoot.app.popupMode === "control" ? T.surfaceControlTop : "#121216"
-            fillBottom: popupRoot.app.popupMode === "control" ? T.surfaceControlBottom : "#060608"
-            strokeColor: popupRoot.app.popupMode === "control" ? "#25252b" : "#202027"
+            fillTop: popupRoot.control ? T.surfaceControlTop : "#121216"
+            fillBottom: popupRoot.control ? T.surfaceControlBottom : "#060608"
+            strokeColor: popupRoot.control ? "#25252b" : "#202027"
             rimOpacity: popupRoot.app.rimLight
         }
 
@@ -116,9 +132,9 @@ MouseArea {
             visible: popupRoot.app.notchShape
             shoulder: popupRoot.app.notchShoulder
             bottomRadius: popupRoot.panelRadius
-            fillTop: popupRoot.app.popupMode === "control" ? T.surfaceControlTop : "#121216"
-            fillBottom: popupRoot.app.popupMode === "control" ? T.surfaceControlBottom : "#060608"
-            strokeColor: popupRoot.app.popupMode === "control" ? "#25252b" : "#202027"
+            fillTop: popupRoot.control ? T.surfaceControlTop : "#121216"
+            fillBottom: popupRoot.control ? T.surfaceControlBottom : "#060608"
+            strokeColor: popupRoot.control ? "#25252b" : "#202027"
         }
 
         MouseArea {
@@ -165,17 +181,26 @@ MouseArea {
             onClicked: popupRoot.app.notifications.open(noticeRow)
         }
 
+        // A deck page lays itself out inside the silhouette (Deck.qml); a pop-in is one expanded view with the same insets.
         Loader {
-            // The notch body is narrower than the window by its shoulders, so it
-            // needs extra side padding (and a bit more top/bottom) to breathe.
             anchors.fill: parent
-            anchors.leftMargin: popupRoot.contentLeft
-            anchors.rightMargin: popupRoot.contentRight
-            anchors.topMargin: popupRoot.app.popupMode === "control" ? 12 : (popupRoot.app.notchShape ? 14 : 10)
-            anchors.bottomMargin: popupRoot.contentBottom + popupRoot.shelfExtent
+            anchors.leftMargin: popupRoot.app.popupMode === "deck" ? 0 : popupRoot.contentLeft
+            anchors.rightMargin: popupRoot.app.popupMode === "deck" ? 0 : popupRoot.contentRight
+            anchors.topMargin: popupRoot.app.popupMode === "deck" ? 0 : (popupRoot.app.notchShape ? 14 : 10)
+            anchors.bottomMargin: popupRoot.app.popupMode === "deck" ? 0 : popupRoot.contentBottom + popupRoot.shelfExtent
             opacity: popupRoot.contentOpacity
             visible: opacity > 0
-            sourceComponent: popupRoot.app.popupMode === "control" ? popupRoot.controlPage : popupRoot.app.activities.expandedComponentFor(popupRoot.app.popupActivityMode())
+            sourceComponent: popupRoot.app.popupMode === "deck" ? deckComponent : popupRoot.app.activities.expandedComponentFor(popupRoot.app.popupActivityMode())
+        }
+
+        Component {
+            id: deckComponent
+
+            Deck {
+                app: popupRoot.app
+                popup: popupRoot
+                controlPage: popupRoot.controlPage
+            }
         }
 
         IdleContent {
@@ -389,6 +414,24 @@ MouseArea {
                     popupRoot.app.focusIslandDialog();
                 mouse.accepted = false;
             }
+        }
+
+    }
+
+    Behavior on pageWidth {
+        enabled: !popupRoot.reduceMotion && popupRoot.morph >= 1
+        NumberAnimation {
+            duration: T.motionPage
+            easing.type: T.easingStandard
+        }
+
+    }
+
+    Behavior on pageHeight {
+        enabled: !popupRoot.reduceMotion && popupRoot.morph >= 1
+        NumberAnimation {
+            duration: T.motionPage
+            easing.type: T.easingStandard
         }
 
     }

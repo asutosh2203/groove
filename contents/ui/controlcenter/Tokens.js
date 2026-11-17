@@ -107,3 +107,31 @@ const glowFalloff = 11;
 const glowTauMs = 23;        // follow time constant, frame-rate independent
 const glowFadeMs = 350;
 const glowSettlePx = 0.3;    // stop asking for frames within this distance of the pointer
+
+// The deck (D-51). Cell units follow D-48: Small 2x1, Wide 4x1, Tall 2x2.
+const deckCellW = 170;
+const deckCellH = 120;
+const deckInset = 16;           // bottom strip kept free for the page indicator
+const deckDot = 5;
+const deckPillW = 14;
+const deckGear = 11;
+const deckHit = 22;             // click target around an indicator mark
+const deckSpacing = 4;
+const deckDimOpacity = 0.4;
+const deckTileOpacity = 0.08;
+const controlWidth = 430;
+const controlHeight = 540;
+const controlEditWidth = 620;
+const controlEditHeight = 570;
+const motionPage = 340;         // silhouette morph between pages
+const motionFade = 160;         // content cross-fade
+
+// The Live page (D-51): job tiles and the job list.
+const liveGap = 8;
+const liveTilePadding = 10;
+const liveChip = 32;
+const liveGlyph = 18;
+const liveRowHeight = 30;
+const liveRowBar = 3;
+const liveHeaderHeight = 24;
+const liveFade = 24;            // the list's bottom fade where more rows lie beyond

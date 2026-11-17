@@ -22,6 +22,14 @@ QtObject {
     function replyPlaceholder(sender) {
         return i18n("Reply to %1…", sender);
     }
+    readonly property string deckLive: i18n("Live")
+    readonly property string deckControlCenter: i18n("Control Center")
+    readonly property string deckNextPair: i18n("Show more")
+    readonly property string deckPreviousPair: i18n("Show previous")
+
+    function deckPage(number) {
+        return i18n("Page %1", number);
+    }
     readonly property string previous: i18n("Previous")
     readonly property string pause: i18n("Pause")
     readonly property string play: i18n("Play")
@@ -69,6 +77,41 @@ QtObject {
             return "";
         const speed = Utils.formatByteSize(meta.speed) + "/s";
         return meta.remaining >= 0 ? speed + " · " + i18n("%1 left", duration(meta.remaining)) : speed;
+    }
+
+    // The speed half of a job tile's meta line ("12.4 MB/s", or "Paused").
+    function jobSpeed(meta) {
+        if (meta.kind === "paused")
+            return i18n("Paused");
+        return meta.kind === "speed" ? Utils.formatByteSize(meta.speed) + "/s" : "";
+    }
+
+    // "63% · 3 min left", leaving out whatever is unknown (percent -1, remaining -1).
+    function jobProgress(percent, remaining) {
+        const parts = [];
+        if (percent >= 0)
+            parts.push(percent + "%");
+        if (remaining >= 0)
+            parts.push(i18n("%1 left", duration(remaining)));
+        return parts.join(" · ");
+    }
+
+    // The job list's header noun: "3 copies", or "3 transfers" for mixed kinds (LiveLayout.header).
+    function liveHeader(kind, count) {
+        switch (kind) {
+        case "copy":
+            return i18np("%1 copy", "%1 copies", count);
+        case "move":
+            return i18np("%1 move", "%1 moves", count);
+        case "download":
+            return i18np("%1 download", "%1 downloads", count);
+        case "upload":
+            return i18np("%1 upload", "%1 uploads", count);
+        case "delete":
+            return i18np("%1 deletion", "%1 deletions", count);
+        default:
+            return i18np("%1 transfer", "%1 transfers", count);
+        }
     }
 
     function wifiTitle(hardwareEnabled, enabled) {

@@ -8,7 +8,7 @@ Item {
     id: jobPage
 
     property var app: null
-    readonly property int row: app ? app.jobs.activeRow() : -1
+    property int row: app ? app.jobs.activeRow() : -1
     readonly property int percentage: app ? app.jobs.percentage(row) : -1
     readonly property bool suspended: app ? app.jobs.isSuspended(row) : false
     readonly property var glyphNames: app ? app.jobs.glyphNames(row) : ["folder-download-symbolic"]

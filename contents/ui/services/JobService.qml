@@ -16,11 +16,39 @@ Item {
     // The number of running jobs went up.
     signal jobStarted()
 
-    readonly property bool hasJobs: notifications.model.activeJobsCount > 0
+    readonly property int activeCount: notifications.model.activeJobsCount
+    readonly property bool hasJobs: activeCount > 0
     property int lastActiveJobsCount: 0
 
     function activeRow() {
         return notifications.firstRowOfType(NotificationManager.Notifications.JobType);
+    }
+
+    // The running and paused jobs for the Live page (LiveLayout.js). Created is a plain date role (D-50 only bans
+    // JobDetailsRole through data()); the details come through the role delegate.
+    function runningRows() {
+        const out = [];
+        const types = notifications.types();
+        for (let i = 0; i < types.length; ++i) {
+            if (types[i] !== NotificationManager.Notifications.JobType)
+                continue;
+            const state = jobState(i);
+            if (state !== NotificationManager.Notifications.JobStateRunning && state !== NotificationManager.Notifications.JobStateSuspended)
+                continue;
+            const d = details(i);
+            const bytes = Jobs.bytes(d);
+            out.push({
+                "id": String(notifications.rowValue(i, NotificationManager.Notifications.IdRole, i)),
+                "row": i,
+                "created": notifications.createdMs(i),
+                "percent": percentage(i),
+                "processed": bytes.processed,
+                "total": bytes.total,
+                "remaining": Jobs.meta(d, false).remaining ?? -1,
+                "kind": Jobs.kind(d, icon(i))
+            });
+        }
+        return out;
     }
 
     function details(row) {

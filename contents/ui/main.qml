@@ -11,6 +11,7 @@ import "logic/KdeConnectState.js" as KdeConnectState
 import "logic/Utils.js" as Utils
 import "controlcenter/Tokens.js" as T
 import "logic/ActivityResolver.js" as ActivityResolver
+import "logic/DeckPlan.js" as DeckPlan
 import "activities" as Activities
 import "shell"
 import "weather"
@@ -36,13 +37,13 @@ PlasmoidItem {
     // True while the pointer is over a clickable notice popup (drives the whole-island highlight and the open glyph).
     // The playback position is only drawn by the compact media pill, the expanded media popup and the Control
     // Center's media card, so it is only polled while one of them can be seen.
-    readonly property bool mediaPositionVisible: mediaService.hasPlayer && mediaService.isPlaying && !panelController.fullscreenCovering && (popupMode === "control" ? dialogVisible : islandOpen ? popupMode === "activity" && popupActivityMode() === "media" : !panelHidden && activityMode() === "media")
+    readonly property bool mediaPositionVisible: mediaService.hasPlayer && mediaService.isPlaying && !panelController.fullscreenCovering && (popupMode === "deck" ? dialogVisible : islandOpen ? popupMode === "activity" && popupActivityMode() === "media" : !panelHidden && activityMode() === "media")
     property bool noticeHovered: false
     // True while the pointer is over an activity popup (notice, media, job...), clickable or not. Together with the
     // dialog holding keyboard focus it freezes the popup's timers, which finish with the time left once the pointer
     // or focus is gone.
     property bool popupHovered: false
-    readonly property bool holdPopupTimers: dialogVisible && islandOpen && popupMode === "activity" && (popupHovered || dialogActive || replyShelfService.holding)
+    readonly property bool holdPopupTimers: dialogVisible && islandOpen && popupMode === "activity" && (popupHovered || dialogActive && !resumeDeck || replyShelfService.holding)
     readonly property bool holdNoticeLifetime: holdPopupTimers && activityPopupMode === "notice"
     readonly property bool hasActivity: systemControls.announcementActive || jobActivityEnabled && jobService.hasJobs || mediaActivityEnabled && mediaService.shown || notificationService.activityActive
     // Fixed allocation: the panel never resizes for visual transitions. The
@@ -60,21 +61,28 @@ PlasmoidItem {
     readonly property real realIslandWidth: compactRepresentationItem && compactRepresentationItem.width > 0 ? compactRepresentationItem.width : islandWidth
     readonly property real realIslandHeight: compactRepresentationItem && compactRepresentationItem.height > 0 ? compactRepresentationItem.height : islandHeight
     readonly property int mediaPopupWidth: 340
-    readonly property int popupWidth: popupMode === "control" ? (controlLayoutService.editMode ? 620 : 430) : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupWidth : 294)
+    // The silhouette's size (D-51): the viewed deck page, or a pop-in's fixed size. The window itself is popupWidth x
+    // popupHeight: with the deck it is pre-sized once (D-43) and never changes while visible.
+    readonly property int pageWidth: popupMode === "deck" ? deckState.sizeOf(deckState.current).w : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupWidth : 294)
     readonly property int mediaPopupHeight: 120
-    readonly property int popupBaseHeight: popupMode === "control" ? (controlLayoutService.editMode ? 570 : 540) : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupHeight : 104)
+    readonly property int pageBaseHeight: popupMode === "deck" ? deckState.sizeOf(deckState.current).h : (popupActivityMode() === "media" || popupActivityMode() === "notice" ? mediaPopupHeight : 104)
+    property bool deckWindowActive: false
+    readonly property int popupWidth: deckWindowActive ? deckState.windowSize.w : pageWidth
+    readonly property bool ccShowing: popupMode === "deck" && deckState.current === "control"
     // D-43: a replyable notice gets a window with room for the shelf from before it first shows, and keeps it until the
     // popup is hidden: resizing a visible window shows one stretched frame on Wayland.
     readonly property int replyShelfHeight: 30
     readonly property bool replyCapableNotice: islandExpandsDown && notificationService.canReply(notificationService.activeNoticeId)
     property bool replyWindowReserved: false
-    readonly property int popupHeight: popupBaseHeight + (replyWindowReserved && popupMode === "activity" ? replyShelfHeight + 8 : 0)
+    readonly property int popupHeight: deckWindowActive ? deckState.windowSize.h : pageBaseHeight + (replyWindowReserved && popupMode === "activity" ? replyShelfHeight + 8 : 0)
     readonly property bool replyEligible: islandExpandsDown && dialogVisible && islandOpen && popupMode === "activity" && popupActivityMode() === "notice" && notificationService.canReply(notificationService.activeNoticeId)
-    readonly property int popupRadius: popupMode === "control" ? 28 : 26
+    readonly property int popupRadius: ccShowing ? 28 : 26
     readonly property bool islandExpandsUp: Plasmoid.location === PlasmaCore.Types.BottomEdge
     readonly property bool islandExpandsDown: Plasmoid.location === PlasmaCore.Types.TopEdge
     property bool dialogVisible: false
     onDialogVisibleChanged: {
+        if (!dialogVisible)
+            deckWindowActive = false;
         if (!dialogVisible && !replyCapableNotice)
             replyWindowReserved = false;
     }
@@ -91,7 +99,10 @@ PlasmoidItem {
     property bool dialogActive: false
     property real popupCollapsedX: (popupWidth - realIslandWidth) / 2
     property real popupCollapsedY: islandExpandsUp ? popupHeight - realIslandHeight : islandExpandsDown ? 0 : (popupHeight - realIslandHeight) / 2
-    property string popupMode: "control"
+    property string popupMode: "deck"
+    // A pop-in (notice, keyboard layout) opened over the deck: when it ends the deck comes back on the same page. The
+    // deck's own keyboard focus does not freeze the pop-in's timers; hovering it still does.
+    property bool resumeDeck: false
     property string activityPopupMode: "auto"
     property int clickButton: Qt.NoButton
 
@@ -130,6 +141,8 @@ PlasmoidItem {
         activityPopupTimer.stop();
         popupMode = mode;
         if (!wasOpen) {
+            deckWindowActive = mode === "deck";
+            resumeDeck = false;
             popupAcceptsFocus = false;
             popupMenuOpen = false;
             dialogActive = false;
@@ -153,7 +166,7 @@ PlasmoidItem {
         if (!dialogVisible)
             return ;
 
-        if (popupMode === "control" && controlLayoutService.editMode)
+        if (ccShowing && controlLayoutService.editMode)
             controlLayoutService.cancelEdit();
 
         activityPopupTimer.stop();
@@ -169,6 +182,16 @@ PlasmoidItem {
         closeDialogTimer.restart();
     }
 
+    // A pop-in ran its course (timer or dismissed): back to the deck page underneath, else close.
+    function endPopIn() {
+        if (resumeDeck && dialogVisible && popupMode === "activity") {
+            resumeDeck = false;
+            popupMode = "deck";
+            return ;
+        }
+        closeIsland();
+    }
+
     function focusIslandDialog() {
         popupAcceptsFocus = true;
         if (islandDialog.requestActivate)
@@ -182,7 +205,7 @@ PlasmoidItem {
             "requestedExists": requestedProvider !== null,
             "requestedActive": requestedProvider !== null && requestedProvider.active,
             "hasActivity": hasActivity,
-            "suppressed": nextMode === "media" && dialogVisible && popupMode === "control",
+            "suppressed": DeckPlan.suppressesBump(nextMode, dialogVisible && popupMode === "deck"),
             "activityPopupOpen": islandOpen && popupMode === "activity",
             "popupTimerRunning": activityPopupTimer.running,
             "nextPriority": activityController.priorityFor(nextMode),
@@ -196,15 +219,24 @@ PlasmoidItem {
 
     function showActivityPopup(autoClose, kind) {
         activityPopupMode = activityController.keyFor(kind || "auto");
+        const overDeck = dialogVisible && deckWindowActive && popupMode === "deck";
         openIsland("activity", autoClose);
+        if (overDeck)
+            resumeDeck = true;
     }
 
-    function showControlCenter() {
+    // Opens the deck on the page the entry rules choose: "click" or "double" (the Control Center).
+    function showDeck(intent) {
         systemControls.cancelAnnouncement();
         root.refreshSystemState();
         controlLayoutService.ensureLayout();
-        openIsland("control", false);
+        deckState.open(intent);
+        openIsland("deck", false);
         Qt.callLater(root.focusIslandDialog);
+    }
+
+    function showControlCenter() {
+        showDeck("double");
     }
 
     function toggleActivityPopup(autoClose) {
@@ -216,7 +248,7 @@ PlasmoidItem {
     }
 
     function toggleControlCenter() {
-        if (islandOpen && popupMode === "control") {
+        if (ccShowing && islandOpen) {
             closeIsland();
             return ;
         }
@@ -350,6 +382,30 @@ PlasmoidItem {
 
     }
 
+    // The Live page's inputs (D-51). Only the cheap count is always live; the job details are built while the deck shows.
+    readonly property bool liveMedia: mediaActivityEnabled && mediaService.shown
+    readonly property int liveCount: (liveMedia ? 1 : 0) + (jobActivityEnabled ? jobService.activeCount : 0)
+    readonly property alias deck: deckState
+
+    DeckState {
+        id: deckState
+
+        liveCount: root.liveCount
+        deckVisible: root.dialogVisible && root.popupMode === "deck"
+        liveMedia: root.liveMedia
+        liveJobs: root.jobActivityEnabled && root.dialogVisible && root.popupMode === "deck" ? jobService.runningRows() : []
+        dummyPages: root.settings.deckDummyPages === true
+        controlEditing: controlLayoutService.editMode
+        geom: ({
+            "cellW": T.deckCellW,
+            "cellH": T.deckCellH,
+            "controlW": T.controlWidth,
+            "controlH": T.controlHeight,
+            "controlEditW": T.controlEditWidth,
+            "controlEditH": T.controlEditHeight
+        })
+    }
+
     Activities.ActivityController {
         id: activityController
 
@@ -448,7 +504,7 @@ PlasmoidItem {
         onJobArrived: root.bump("job")
         onDismissed: (closePopup, wasShowing) => {
             if (wasShowing && closePopup && root.dialogVisible && root.popupMode === "activity" && root.activityPopupMode === "notice")
-                root.closeIsland();
+                root.endPopIn();
         }
         onOpened: {
             if (root.dialogVisible)
@@ -498,7 +554,7 @@ PlasmoidItem {
         id: connectivityService
 
         runner: commands
-        polling: root.dialogVisible && root.popupMode === "control"
+        polling: root.dialogVisible && root.ccShowing
     }
 
     JobService {
@@ -561,7 +617,7 @@ PlasmoidItem {
         hold: root.holdPopupTimers
         onTriggered: {
             if (root.popupMode === "activity")
-                root.closeIsland();
+                root.endPopIn();
 
         }
     }
@@ -615,6 +671,8 @@ PlasmoidItem {
                 root.closeIsland();
             else if (root.dialogVisible)
                 root.closeIsland();
+            else if (root.liveCount > 0 && ["notice", "keyboard"].indexOf(activityController.currentKey) < 0)
+                root.showDeck("click");
             else if (root.hasActivity) {
                 root.showActivityPopup(false);
                 Qt.callLater(root.focusIslandDialog);
@@ -623,7 +681,7 @@ PlasmoidItem {
             } else if (root.idleClickTarget === "weather") {
                 appLauncher.openForecast();
             } else {
-                root.showControlCenter();
+                root.showDeck("click");
             }
         }
     }

@@ -34,6 +34,13 @@ Item {
         return best();
     }
     readonly property bool hasPlayer: player !== null && player !== undefined
+    // When the shown player last started playing (D-39), the Live page's recency for the media card.
+    readonly property real startedAt: {
+        if (revision < 0 || !hasPlayer)
+            return 0;
+        const record = activity[player.objectName || player.identity];
+        return record ? record.startedAt : 0;
+    }
     // What the media card shows and which placeholder it falls back to (D-46); read only from the shown player.
     readonly property var card: MediaPlayers.cardText(player)
     readonly property string kind: MediaPlayers.mediaKind(player)
