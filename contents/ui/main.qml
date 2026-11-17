@@ -405,6 +405,7 @@ PlasmoidItem {
             "liveHeaderH": T.liveHeaderHeight,
             "liveRowH": T.liveRowHeight,
             "liveGap": T.liveGap,
+            "liveMediaGap": T.liveMediaGap,
             "controlW": T.controlWidth,
             "controlH": T.controlHeight,
             "controlEditW": T.controlEditWidth,

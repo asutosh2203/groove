@@ -16,8 +16,9 @@ Item {
     // Two equal slots without media; the media card always keeps its Small-page height and the jobs take the rest.
     readonly property real slotHeight: layout.shape === "tall" ? (height - T.liveGap) / 2 : height
     readonly property real mediaHeight: layout.mediaSlot && layout.shape === "tall" ? page.app.deck.mediaHeight : slotHeight
-    // The jobs' area: below the media card, else the whole page.
-    readonly property real trayY: layout.trayArea === "bottom" ? mediaHeight + T.liveGap : 0
+    // The jobs' area: below the media card (with room for the hairline in list mode), else the whole page.
+    readonly property real mediaGap: list ? T.liveMediaGap : T.liveGap
+    readonly property real trayY: layout.trayArea === "bottom" ? mediaHeight + mediaGap : 0
     readonly property real trayHeight: layout.trayArea === "bottom" ? height - trayY : height
 
     // One model for both views, keyed by notification id, so a finishing job leaves with a fade and its progress ticks do
@@ -52,16 +53,34 @@ Item {
     onLayoutChanged: page.sync(page.layout.jobs)
     Component.onCompleted: page.sync(page.layout.jobs)
 
-    // The media card is inset like a job tile's content, so the two line up (its artwork already sits a little outside its box).
+    // With jobs below it the media card is inset like a tile's content so the two line up (its artwork already sits a
+    // little outside its box); alone it keeps the shell's own insets.
     Item {
+        readonly property real pad: page.layout.jobs.length > 0 ? T.liveTilePadding : 0
+        readonly property real nudge: pad > 0 ? T.liveMediaNudge : 0
+
         y: 0
-        x: T.liveTilePadding + T.liveMediaNudge
-        width: page.width - T.liveTilePadding * 2 - T.liveMediaNudge
+        x: pad + nudge
+        width: page.width - pad * 2 - nudge
         height: page.mediaHeight
         opacity: page.layout.mediaSlot ? 1 : 0
         visible: opacity > 0
 
         Behavior on opacity {
+            NumberAnimation {
+                duration: T.motionFade
+                easing.type: T.easingStandard
+            }
+        }
+
+        Behavior on x {
+            NumberAnimation {
+                duration: T.motionFade
+                easing.type: T.easingStandard
+            }
+        }
+
+        Behavior on width {
             NumberAnimation {
                 duration: T.motionFade
                 easing.type: T.easingStandard
@@ -78,7 +97,7 @@ Item {
     }
 
     Rectangle {
-        y: page.mediaHeight + T.liveGap / 2
+        y: page.mediaHeight + T.liveMediaGap / 2
         width: page.width
         height: 1
         color: Qt.alpha(T.borderStrong, T.liveHairlineAlpha)

@@ -58,7 +58,8 @@ Item {
                                                                         "chrome": liveChrome,
                                                                         "headerH": geom.liveHeaderH,
                                                                         "rowH": geom.liveRowH,
-                                                                        "gap": geom.liveGap
+                                                                        "gap": geom.liveGap,
+                                                                        "mediaGap": geom.liveMediaGap
                                                                     }) : null;
         return fit === null ? size : { "w": size.w, "h": fit };
     }

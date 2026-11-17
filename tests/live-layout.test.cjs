@@ -111,7 +111,7 @@ test('layout carries the header only in list mode', () => {
     assert.equal(lay(true, [job('j1', 1), job('j2', 2)]).header.count, 2);
 });
 
-const geom = { smallH: 120, tallH: 240, chrome: 30, headerH: 24, rowH: 30, gap: 8 };
+const geom = { smallH: 120, tallH: 240, chrome: 30, headerH: 24, rowH: 30, gap: 8, mediaGap: 16 };
 const listLayout = (hasMedia, n) => j(ctx.layout({ hasMedia, jobs: Array.from({ length: n }, (_, i) => job('j' + i, i)) }));
 
 test('fit height: not a list, no fit height', () => {
@@ -135,7 +135,7 @@ test('fit height: overflow is capped at the Tall height', () => {
 });
 
 test('fit height: media + list adds the media card at its Small-page height', () => {
-    // 30 + (90 + 8) media + 24 + 8 + 2 rows (60) + 1 gap (8) = 228
-    assert.equal(ctx.fitHeight(listLayout(true, 2), geom), 228);
+    // 30 + (90 + 16) media + 24 + 8 + 2 rows (60) + 1 gap (8) = 236
+    assert.equal(ctx.fitHeight(listLayout(true, 2), geom), 236);
     assert.equal(ctx.fitHeight(listLayout(true, 3), geom), 240);
 });
