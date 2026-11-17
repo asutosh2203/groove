@@ -1,0 +1,10 @@
+version = 1
+
+# Third-party files that carry no SPDX header of their own. Licence texts live in LICENSES/.
+
+[[annotations]]
+path = ["contents/ui/weather/icons/sunrise-glyph.svg", "contents/ui/weather/icons/sunset-glyph.svg"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "GNOME Project and Adwaita icon theme contributors"
+SPDX-License-Identifier = "LGPL-3.0-only"
+SPDX-FileComment = "Copies of daytime-sunrise-symbolic.svg and daytime-sunset-symbolic.svg from the Adwaita icon theme (CC-BY-SA-3.0 OR LGPL-3.0-only), used under the LGPL. Renamed so Kirigami does not resolve them through the icon theme."

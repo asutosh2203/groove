@@ -4,7 +4,6 @@ import QtQuick
 import "../.." as Island
 import "../../controlcenter/Tokens.js" as T
 import "../../logic/WeatherForecast.js" as Forecast
-import "../../weather" as Weather
 
 // One column of the hourly strip: time (or "Now"), glyph and temperature. The sun event column shows the sun glyph and the
 // word Sunset or Sunrise where the temperature would be.
@@ -31,7 +30,7 @@ Column {
         width: T.widgetGlyphSmall
         height: T.widgetGlyphSmall
 
-        Weather.WeatherIcon {
+        WeatherGlyph {
             anchors.fill: parent
             visible: col.cell.kind !== "sun"
             code: col.cell.code

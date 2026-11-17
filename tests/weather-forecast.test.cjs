@@ -178,3 +178,17 @@ test('the city is the first part of the geocoder name', () => {
     assert.equal(ctx.cityName('  Lisbon , Portugal'), 'Lisbon');
     assert.equal(ctx.cityName(''), '');
 });
+
+test('every condition has theme symbolic names, with a night variant first at night', () => {
+    for (const code of [0, 1, 2, 3, 45, 48, 51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 99, 123, -1]) {
+        for (const day of [true, false]) {
+            const names = j(ctx.symbolicNames(code, day));
+            assert.ok(names.length > 0, String(code));
+            assert.ok(names.every(n => /^weather-[a-z-]+-symbolic$/.test(n)), names.join());
+        }
+    }
+    assert.deepEqual(j(ctx.symbolicNames(0, true)), ['weather-clear-symbolic']);
+    assert.deepEqual(j(ctx.symbolicNames(0, false)), ['weather-clear-night-symbolic', 'weather-clear-symbolic']);
+    assert.equal(j(ctx.symbolicNames(95, true))[0], 'weather-storm-symbolic');
+    assert.equal(j(ctx.symbolicNames(999, true))[0], 'weather-none-available-symbolic');
+});

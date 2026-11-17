@@ -5,7 +5,6 @@ import QtQuick.Layouts
 import "../.." as Island
 import "../../controlcenter/Tokens.js" as T
 import "../../logic/WeatherForecast.js" as Forecast
-import "../../weather" as Weather
 import ".." as Widgets
 
 // The 1x1 face of Weather (D-55), also the left block of the wider spans: place, condition glyph top right, the current
@@ -49,7 +48,7 @@ Item {
         label: block.base.service ? Forecast.cityName(block.base.service.locationName) : ""
         hero: block.base.service && block.base.service.hasData ? Forecast.deg(block.base.service.temperatureC, block.base.fahrenheit) : ""
 
-        Weather.WeatherIcon {
+        WeatherGlyph {
             anchors.top: parent.top
             anchors.right: parent.right
             width: T.widgetGlyph

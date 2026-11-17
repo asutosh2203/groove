@@ -20,6 +20,18 @@ Item {
         return glyph.names.length > 0 ? glyph.names[glyph.names.length - 1] : "";
     }
 
+    // Whether the theme has at least one of the names (the last name is otherwise assumed, so a caller that has a
+    // different fallback can tell).
+    readonly property bool anyValid: {
+        glyph.revision;
+        for (let i = 0; i < probes.count; ++i) {
+            const probe = probes.itemAt(i) as Kirigami.Icon;
+            if (probe && probe.valid)
+                return true;
+        }
+        return false;
+    }
+
     Repeater {
         id: probes
 

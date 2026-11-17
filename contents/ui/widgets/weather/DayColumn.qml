@@ -4,7 +4,6 @@ import QtQuick
 import "../.." as Island
 import "../../controlcenter/Tokens.js" as T
 import "../../logic/WeatherForecast.js" as Forecast
-import "../../weather" as Weather
 
 // One day of the 2x1 forecast: day name, condition glyph, high in white and low in grey.
 Column {
@@ -23,7 +22,7 @@ Column {
         font.pixelSize: T.fontCaption
     }
 
-    Weather.WeatherIcon {
+    WeatherGlyph {
         anchors.horizontalCenter: parent.horizontalCenter
         width: T.widgetGlyphSmall
         height: T.widgetGlyphSmall
