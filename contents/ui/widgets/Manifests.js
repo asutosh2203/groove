@@ -59,7 +59,7 @@ const list = [
                     ],
                     "labels": {
                         "locale": {
-                            "en": "Follow system"
+                            "en": "System"
                         },
                         "24h": {
                             "en": "24-hour"
@@ -219,7 +219,7 @@ const list = [
                     ],
                     "labels": {
                         "locale": {
-                            "en": "Follow system"
+                            "en": "System"
                         },
                         "24h": {
                             "en": "24-hour"

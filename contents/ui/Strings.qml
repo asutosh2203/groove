@@ -57,6 +57,10 @@ QtObject {
     readonly property string editPreview: i18n("Live preview")
     readonly property string editGear: i18n("Control Center tiles")
 
+    readonly property string editLocalTime: i18n("Local time")
+    readonly property string editZonePlaceholder: i18n("Search for a city")
+    readonly property string editZoneIdPlaceholder: i18n("Time zone id, e.g. Europe/Lisbon")
+    readonly property string editZoneUnknown: i18n("Unknown time zone")
     readonly property string editNew: i18n("New")
     readonly property string editInCycle: i18n("Shown in the deck")
     readonly property string editOutOfCycle: i18n("Hidden from the deck")

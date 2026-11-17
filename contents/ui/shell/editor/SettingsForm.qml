@@ -22,7 +22,8 @@ Item {
     readonly property var placement: form.ed.placement
     readonly property var manifest: form.placement ? form.ed.registry.byId[form.placement.widget] || null : null
     readonly property var model: form.manifest ? FormModel.build(form.manifest, form.placement, span => form.fitsSpan(span), Qt.locale().name) : null
-    readonly property real previewWidth: T.editSidebar + 2 * T.editInset
+    // Wide pages have room for a bigger preview.
+    readonly property real previewWidth: form.ed.pageType === "wide" ? 2 * T.deckCellW - 2 * T.deckPadding : T.editSidebar + 2 * T.editInset
 
     function fitsSpan(span) {
         const spans = form.ed.preset.placements.map(p => p.span);
@@ -96,7 +97,7 @@ Item {
                 Loader {
                     id: control
 
-                    sourceComponent: fieldRow.field.control === "segmented" ? segmentedControl : fieldRow.field.control === "location" ? locationControl : null
+                    sourceComponent: ({ "segmented": segmentedControl, "location": locationControl, "switch": switchControl, "text": textControl, "stepper": numberControl, "slider": numberControl, "dropdown": dropdownControl, "timezone": timezoneControl })[fieldRow.field.control] || null
                 }
 
                 Component {
@@ -105,6 +106,51 @@ Item {
                     Segmented {
                         options: fieldRow.field.options
                         value: String(fieldRow.field.value)
+                        onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
+                    }
+                }
+
+                Component {
+                    id: dropdownControl
+
+                    DropdownField {
+                        options: fieldRow.field.options
+                        value: String(fieldRow.field.value)
+                        onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
+                        onOpenChanged: fieldRow.z = open ? 1 : 0
+                    }
+                }
+
+                Component {
+                    id: switchControl
+
+                    SwitchControl {
+                        checked: fieldRow.field.value === true
+                        onToggled: checked => form.ed.setSetting(fieldRow.field.key, checked)
+                    }
+                }
+
+                Component {
+                    id: textControl
+
+                    TextEntry {
+                        width: T.editSidebar + T.editInset * 2
+                        app: form.app
+                        focusRoot: form.focusRoot
+                        value: String(fieldRow.field.value)
+                        onCommitted: text => form.ed.setSetting(fieldRow.field.key, text)
+                    }
+                }
+
+                Component {
+                    id: numberControl
+
+                    NumberEntry {
+                        slider: fieldRow.field.control === "slider"
+                        value: Number(fieldRow.field.value)
+                        min: fieldRow.field.min
+                        max: fieldRow.field.max
+                        step: fieldRow.field.step
                         onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
                     }
                 }
@@ -121,55 +167,65 @@ Item {
                         onEditingChanged: fieldRow.z = editing ? 1 : 0
                     }
                 }
+
+                Component {
+                    id: timezoneControl
+
+                    TimezoneField {
+                        width: T.editSidebar + T.editInset * 2
+                        app: form.app
+                        focusRoot: form.focusRoot
+                        value: String(fieldRow.field.value)
+                        onPicked: zone => form.ed.setSetting(fieldRow.field.key, zone)
+                        onEditingChanged: fieldRow.z = editing ? 1 : 0
+                    }
+                }
+            }
+        }
+    }
+
+    // Under the preview, so the fields keep the whole right column.
+    Rectangle {
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        visible: form.model !== null
+        width: removeLabel.implicitWidth + 2 * T.padding + T.iconTransport + T.gap
+        height: T.editChipH
+        radius: T.radiusInner
+        color: removeHover.hovered ? T.cardHover : T.raised
+
+        Row {
+            anchors.centerIn: parent
+            spacing: T.gap
+
+            Kirigami.Icon {
+                anchors.verticalCenter: parent.verticalCenter
+                width: T.iconTransport
+                height: T.iconTransport
+                source: "edit-delete-symbolic"
+                fallback: "edit-delete"
+                isMask: true
+                color: T.textCaption
+            }
+
+            PlasmaLabel {
+                id: removeLabel
+
+                anchors.verticalCenter: parent.verticalCenter
+                text: form.app.strings.editRemoveWidget
+                color: T.textCaption
+                font.pixelSize: T.fontBody
             }
         }
 
-        Item {
-            Layout.fillWidth: true
-            Layout.preferredHeight: T.editRow
+        HoverHandler {
+            id: removeHover
 
-            Rectangle {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                width: removeLabel.implicitWidth + 2 * T.padding + T.iconTransport + T.gap
-                height: T.editChipH
-                radius: T.radiusInner
-                color: removeHover.hovered ? T.cardHover : T.raised
+            cursorShape: Qt.PointingHandCursor
+        }
 
-                Row {
-                    anchors.centerIn: parent
-                    spacing: T.gap
-
-                    Kirigami.Icon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: T.iconTransport
-                        height: T.iconTransport
-                        source: "edit-delete-symbolic"
-                        fallback: "edit-delete"
-                        isMask: true
-                        color: T.textCaption
-                    }
-
-                    PlasmaLabel {
-                        id: removeLabel
-
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: form.app.strings.editRemoveWidget
-                        color: T.textCaption
-                        font.pixelSize: T.fontBody
-                    }
-                }
-
-                HoverHandler {
-                    id: removeHover
-
-                    cursorShape: Qt.PointingHandCursor
-                }
-
-                TapHandler {
-                    onTapped: form.ed.removePlacement(form.ed.formIndex)
-                }
-            }
+        TapHandler {
+            onTapped: form.ed.removePlacement(form.ed.formIndex)
         }
     }
 

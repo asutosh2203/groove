@@ -59,6 +59,9 @@ Item {
         onAccepted: search.submit(text)
         onActiveFocusChanged: {
             field.app.editor.fieldFocused = activeFocus;
+            // The current city is selected, so typing replaces it.
+            if (activeFocus)
+                Qt.callLater(selectAll);
             if (!activeFocus) {
                 search.clear();
                 text = field.shownName;
