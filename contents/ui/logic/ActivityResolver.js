@@ -10,7 +10,13 @@
 // lands in the Control Center list). Media is the floor above idle, so a message pre-empts the music and the music
 // returns when the message ends (D-13). The urgency kind comes from Notifications.urgencyKind, which maps KDE's enum
 // (Low 1, Normal 2, Critical 4) explicitly; nothing here compares urgency numbers.
-const priority = { "idle": 0, "media": 100, "job": 200, "noticeNormal": 300, "keyboard": 350, "noticeCritical": 400 };
+const priority = { "idle": 0, "agentWorking": 50, "media": 100, "job": 200, "noticeNormal": 300, "keyboard": 350, "noticeCritical": 400 };
+
+// D-58: a session that needs you ranks as a job; one that merely works (a countdown included) ranks below media, so a
+// long run never hides the cover for hours.
+function agentPriority(state) {
+    return state === "waiting" ? priority.job : state === "working" ? priority.agentWorking : priority.idle;
+}
 
 // The priority of a presented notification of this urgency kind ("critical" or "normal"; anything else is not an
 // activity, so it has none).

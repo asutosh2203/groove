@@ -543,7 +543,7 @@ PlasmoidItem {
             Activities.ActivityProvider {
                 key: "agent"
                 active: agentService.active
-                priority: ActivityResolver.priority.job
+                priority: ActivityResolver.agentPriority(agentService.primary?.state)
                 title: agentService.primary?.project ?? ""
                 subtitle: agentService.primary ? translations.agentAction(agentService.primary.action, agentService.primary.target) : ""
                 autoCloseMs: root.ongoingPopupDurationMs

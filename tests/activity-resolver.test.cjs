@@ -180,3 +180,21 @@ test('bump: a suppressed request (media change while the Control Center is open)
     assert.equal(R.bumpDecision(base), 'show');
     assert.equal(R.bumpDecision({ ...base, suppressed: true }), 'ignore');
 });
+
+// D-58: waiting agents rank as jobs, working ones (a countdown included) below media but above idle.
+test('agent priority: waiting is a job, working sits between idle and media, anything else is idle', () => {
+    assert.equal(R.agentPriority('waiting'), P.job);
+    assert.equal(R.agentPriority('working'), P.agentWorking);
+    assert.ok(P.media > P.agentWorking && P.agentWorking > P.idle);
+    for (const state of ['done', undefined, null, ''])
+        assert.equal(R.agentPriority(state), P.idle, String(state));
+});
+
+test('a working agent never hides the cover, a waiting one does, and a lone working agent still shows', () => {
+    const agent = (state) => ({ key: 'agent', active: true, priority: R.agentPriority(state) });
+    const media = { key: 'media', active: true, priority: P.media };
+    const idle = { key: 'idle', active: true, priority: P.idle };
+    assert.equal(shown([agent('working'), media, idle]), 'media');
+    assert.equal(shown([agent('waiting'), media, idle]), 'agent');
+    assert.equal(shown([agent('working'), idle]), 'agent');
+});
