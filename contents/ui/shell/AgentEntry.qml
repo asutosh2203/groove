@@ -128,12 +128,12 @@ Rectangle {
                 }
 
                 ProgressBar {
-                    visible: entry.hasTasks && !entry.finished
+                    visible: entry.session !== null && Agents.barMode(entry.session, entry.app.agents.nowMs) !== "none" && !entry.finished
                     Layout.fillWidth: true
                     Layout.preferredHeight: T.liveRowBar
                     from: 0
                     to: 1
-                    value: entry.session ? Agents.progress(entry.session) : 0
+                    value: entry.session ? Agents.barValue(entry.session, entry.app.agents.nowMs) : 0
                     accent: T.fill
                     trackColor: T.track
                     dimmed: entry.waiting

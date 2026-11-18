@@ -41,16 +41,90 @@ test('minutes are whole and never below 1, and a finished run stops at its last 
     assert.equal(A.progress(x), 0);
 });
 
-test('compact parts: a task list gives done/total, else the action kind; the target never enters', () => {
-    assert.deepEqual(j(A.compactParts(p({ done: 3, total: 7, action: 'edit', target: 'a.qml' }))), { project: 'groove', waiting: false, progress: { done: 3, total: 7 }, kind: 'edit' });
-    const w = j(A.compactParts(p({ action: 'run', target: 'npm test' })));
-    assert.deepEqual([w.progress, w.kind, w.waiting], [null, 'run', false]);
-    assert.equal(j(A.compactParts(p({}))).kind, 'other');
-    assert.equal(j(A.compactParts(p({ action: 'edit', target: 'a.qml' }))).kind, j(A.compactParts(p({ action: 'edit', target: 'b.qml' }))).kind);
+const T0 = 10000000; // ms
+const cd = (total, startedAt = T0) => ({ total, startedAt: startedAt / 1000 });
+
+test('compact: priority waiting > countdown > tasks > subagents > verb, and the target never enters', () => {
+    const sub = [{ id: 'x', type: 'Plan' }, { id: 'y', type: 'Explore' }];
+    const all = { done: 3, total: 7, action: 'edit', target: 'a.qml', countdown: cd(300), subagents: sub };
+    assert.equal(A.compact(p({ ...all, state: 'waiting' }), T0).mode, 'waiting');
+    assert.deepEqual(j(A.compact(p(all), T0 + 60000)), { project: 'groove', mode: 'countdown', kind: 'edit', minutesLeft: 4 });
+    const ended = j(A.compact(p(all), T0 + 301000));
+    assert.deepEqual([ended.mode, ended.done, ended.total], ['tasks', 3, 7]); // the bar hands back
+    assert.deepEqual([A.compact(p({ subagents: sub }), T0).mode, A.compact(p({ subagents: sub }), T0).count], ['subagents', 2]);
+    assert.equal(A.compact(p({ action: 'run' }), T0).mode, 'verb');
+    assert.equal(A.compact(p({}), T0).kind, 'other');
+    assert.equal(A.compact(p({ action: 'edit', target: 'a' }), T0).kind, A.compact(p({ action: 'edit', target: 'b' }), T0).kind);
 });
 
-test('compact parts: waiting wins (the caller shows "Needs your OK")', () => {
-    assert.equal(j(A.compactParts(p({ state: 'waiting', done: 1, total: 3 }))).waiting, true);
+test('compact countdown: whole minutes rounded up, never zero while it counts, no seconds anywhere', () => {
+    const x = p({ countdown: cd(300) });
+    assert.equal(A.compact(x, T0).minutesLeft, 5);
+    assert.equal(A.compact(x, T0 + 1000).minutesLeft, 5);
+    assert.equal(A.compact(x, T0 + 239000).minutesLeft, 2);
+    assert.equal(A.compact(x, T0 + 299500).minutesLeft, 1);
+    assert.equal(A.compact(p({ countdown: cd(0.5) }), T0).minutesLeft, 1);
+});
+
+test('clock formatting: m:ss, h:mm:ss from an hour, never negative', () => {
+    assert.deepEqual([0, 9, 72, 192, 3599, 3600, 3723, -5].map(A.formatClock), ['0:00', '0:09', '1:12', '3:12', '59:59', '1:00:00', '1:02:03', '0:00']);
+});
+
+test('one clock: countdown, then command (after 10 s), then session minutes', () => {
+    const run = { toolStartedAt: T0 / 1000, startedAt: (T0 - 125 * 60000) / 1000 };
+    assert.deepEqual(j(A.clock(p(run), T0 + 9000)), { kind: 'session', minutes: 125 });
+    assert.deepEqual(j(A.clock(p(run), T0 + 10000)), { kind: 'command', text: '0:10' });
+    assert.deepEqual(j(A.clock(p(run), T0 + 72000)), { kind: 'command', text: '1:12' });
+    assert.equal(A.clock(p(run), T0 + 3723000).text, '1:02:03');
+    const both = p({ ...run, countdown: cd(300) });
+    assert.deepEqual(j(A.clock(both, T0 + 108000)), { kind: 'countdown', text: '3:12' });
+    assert.deepEqual(j(A.clock(both, T0 + 400000)), { kind: 'countdown', text: '0:00' }); // holds, never negative
+    assert.equal(A.clock(p({ state: 'waiting', ...run }), T0 + 50000).kind, 'none');
+    assert.equal(A.clock(p({ state: 'done' }), T0).kind, 'none');
+});
+
+test('one bar: countdown while it counts, then tasks, else none; the count stays a count', () => {
+    const x = p({ countdown: cd(300), done: 3, total: 7 });
+    assert.equal(A.barMode(x, T0 + 100000), 'countdown');
+    assert.ok(Math.abs(A.barValue(x, T0 + 75000) - 0.25) < 1e-9);
+    assert.equal(A.barMode(x, T0 + 300000), 'tasks');
+    assert.ok(Math.abs(A.barValue(x, T0 + 400000) - 3 / 7) < 1e-9);
+    assert.equal(A.barMode(p({}), T0), 'none');
+    assert.equal(A.barMode(p({ done: 1, total: 2 }), T0), 'tasks');
+});
+
+test('seconds timer is needed only for a moving clock', () => {
+    assert.equal(A.needsSeconds(p({}), T0), false);
+    assert.equal(A.needsSeconds(p({ toolStartedAt: T0 / 1000 }), T0 + 1000), true);
+    assert.equal(A.needsSeconds(p({ countdown: cd(300), toolStartedAt: T0 / 1000 }), T0 + 1000), true);
+    assert.equal(A.needsSeconds(p({ countdown: cd(300), toolStartedAt: T0 / 1000 }), T0 + 400000), false); // held at 0:00
+    assert.equal(A.needsSeconds(p({ state: 'waiting', toolStartedAt: 5 }), T0), false);
+});
+
+test('line kind follows waiting > countdown > subagents > action', () => {
+    const sub = [{ id: 'x', type: 'Plan' }];
+    assert.equal(A.lineKind(p({ state: 'waiting', countdown: cd(5), subagents: sub }), T0), 'waiting');
+    assert.equal(A.lineKind(p({ countdown: cd(5), subagents: sub }), T0), 'countdown');
+    assert.equal(A.lineKind(p({ subagents: sub }), T0), 'subagents');
+    assert.equal(A.lineKind(p({}), T0), 'action');
+});
+
+test('subagent types are humanised, distinct, in order; unknown types fall back to a count', () => {
+    assert.deepEqual(['general-purpose', 'Explore', 'code_reviewer', '', null, '  plan '].map(A.humanType), ['General purpose', 'Explore', 'Code reviewer', '', '', 'Plan']);
+    const sm = j(A.subagentSummary(p({ subagents: [{ id: '1', type: 'Explore' }, { id: '2', type: 'general-purpose' }, { id: '3', type: 'Explore' }, { id: '4', type: '' }] })));
+    assert.deepEqual(sm, { count: 4, names: ['Explore', 'General purpose'] });
+    assert.deepEqual(j(A.subagentSummary(p({ subagents: [{ id: '1', type: '' }] }))), { count: 1, names: [] });
+});
+
+test('parse reads the W2.1 fields, bounds subagents and drops a bad countdown', () => {
+    const x = p({ toolStartedAt: 100.5, countdown: cd(300), subagents: Array.from({ length: 40 }, (_, i) => ({ id: 'a' + i, type: 'T'.repeat(99) })) });
+    assert.equal(x.toolStartedAt, 100500);
+    assert.deepEqual(x.countdown, { total: 300, startedAt: T0 });
+    assert.equal(x.subagents.length, 16);
+    assert.equal(x.subagents[0].type.length, 40);
+    for (const bad of [{ total: 0, startedAt: 5 }, { total: -3, startedAt: 5 }, { total: 'x', startedAt: 5 }, null, { total: 5 }])
+        assert.equal(p({ countdown: bad }).countdown, null);
+    assert.deepEqual([p({}).toolStartedAt, p({}).countdown, p({}).subagents], [0, null, []]);
 });
 
 test('elide cuts at the end with an ellipsis and leaves short text alone', () => {

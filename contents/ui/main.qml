@@ -690,6 +690,8 @@ PlasmoidItem {
 
     AgentService {
         id: agentService
+
+        deckVisible: root.dialogVisible && root.popupMode === "deck"
     }
 
     JobService {

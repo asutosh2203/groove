@@ -16,6 +16,17 @@ function count(v) {
     return isFinite(n) && n > 0 ? n : 0;
 }
 
+const MAX_SUBAGENTS = 16;
+// The command timer appears only for a command that has run this long (W2.1, D-58).
+const CLOCK_AFTER_SECONDS = 10;
+
+// { total (s), startedAt (s) } -> { total, startedAt (ms) }, or null for anything that is not a usable countdown.
+function countdown(c) {
+    const total = c ? Number(c.total) : 0;
+    const at = c ? Number(c.startedAt) : 0;
+    return total > 0 && at > 0 ? { "total": total, "startedAt": Math.round(at * 1000) } : null;
+}
+
 // The Agents1 snapshot JSON -> [session]. Anything unexpected (wrong version, bad JSON, a malformed entry) is dropped.
 function parse(json) {
     let snap;
@@ -47,7 +58,10 @@ function parse(json) {
             "waitingAction": ACTIONS.indexOf(s.waitingAction) >= 0 ? s.waitingAction : "",
             "startedAt": count(s.startedAt) * 1000,
             "updatedAt": count(s.updatedAt) * 1000,
-            "lastMessage": text(s.lastMessage, 120)
+            "lastMessage": text(s.lastMessage, 120),
+            "toolStartedAt": Math.round(Number(s.toolStartedAt) * 1000) || 0,
+            "countdown": countdown(s.countdown),
+            "subagents": (Array.isArray(s.subagents) ? s.subagents : []).filter(a => a && a.id).slice(0, MAX_SUBAGENTS).map(a => ({ "id": text(a.id, 64), "type": text(a.type, 40) }))
         });
     }
     return out;
@@ -76,18 +90,6 @@ function minutes(s, nowMs) {
 function elide(str, max) {
     const t = String(str || "");
     return t.length <= max ? t : t.slice(0, Math.max(0, max - 1)).trimEnd() + "…";
-}
-
-// What the closed capsule says (D-38, D-57), in priority order: "waiting" (the caller says "Needs your OK"), a task list
-// ("project · 3 of 7" and a bar), else "project · <verb>" where `kind` is the action kind (edit, run, read, search, or
-// "other" for working). The target is left out, so the text changes only when the kind does; elapsed time is the full tile's.
-function compactParts(s) {
-    return {
-        "project": s.project,
-        "waiting": s.state === "waiting",
-        "progress": hasTasks(s) ? { "done": s.done, "total": s.total } : null,
-        "kind": s.action || "other"
-    };
 }
 
 // The 0..1 value of the determinate bar.
@@ -138,4 +140,110 @@ function findWindow(session, tasks) {
         return -1;
     const byApp = windows.filter(i => AppMatch.findTask(session.scopeApp, [list[i]]) === 0);
     return byApp.length > 0 ? pick(session, list, byApp) : -1;
+}
+
+// ---- Richer tiles (D-58): one bar, one clock ----
+
+// Seconds left of an exact-sleep countdown, never below 0 (it holds at 0 until the tool finishes); -1 when there is none.
+function countdownLeft(s, nowMs) {
+    return s.countdown ? Math.max(0, s.countdown.total - (nowMs - s.countdown.startedAt) / 1000) : -1;
+}
+
+// A countdown that has not run out: it owns the bar.
+function counting(s, nowMs) {
+    return s.state === "working" && countdownLeft(s, nowMs) > 0;
+}
+
+// Seconds the current command has run, or -1 when none runs or it has not reached the threshold yet.
+function commandSeconds(s, nowMs) {
+    if (s.state !== "working" || !(s.toolStartedAt > 0))
+        return -1;
+    const sec = Math.floor((nowMs - s.toolStartedAt) / 1000);
+    return sec >= CLOCK_AFTER_SECONDS ? sec : -1;
+}
+
+// m:ss, or h:mm:ss from an hour.
+function formatClock(sec) {
+    const t = Math.max(0, Math.floor(sec));
+    const h = Math.floor(t / 3600);
+    const m = Math.floor(t % 3600 / 60);
+    const ss = String(t % 60).padStart(2, "0");
+    return h > 0 ? h + ":" + String(m).padStart(2, "0") + ":" + ss : m + ":" + ss;
+}
+
+// The only clock on a tile, in priority order: { kind: "countdown", text } | { kind: "command", text } |
+// { kind: "session", minutes } | { kind: "none" } (waiting and done show none).
+function clock(s, nowMs) {
+    if (s.state !== "working")
+        return { "kind": "none" };
+    if (s.countdown)
+        return { "kind": "countdown", "text": formatClock(Math.ceil(countdownLeft(s, nowMs))) };
+    const cmd = commandSeconds(s, nowMs);
+    return cmd >= 0 ? { "kind": "command", "text": formatClock(cmd) } : { "kind": "session", "minutes": minutes(s, nowMs) };
+}
+
+// The bar's source, in priority order: "countdown" while it counts, then "tasks", else "none".
+function barMode(s, nowMs) {
+    if (counting(s, nowMs))
+        return "countdown";
+    return hasTasks(s) ? "tasks" : "none";
+}
+
+// 0..1 of the bar for the current mode.
+function barValue(s, nowMs) {
+    return barMode(s, nowMs) === "countdown" ? Math.min(1, 1 - countdownLeft(s, nowMs) / s.countdown.total) : progress(s);
+}
+
+// A tile needs a seconds clock only while one is moving: a countdown that has not run out, or a command timer (also
+// before the 10 s threshold, so it can appear). The service runs its 1 Hz timer only then, and only while the deck shows.
+function needsSeconds(s, nowMs) {
+    return s.state === "working" && (counting(s, nowMs) || !s.countdown && s.toolStartedAt > 0);
+}
+
+// "general-purpose" -> "General purpose".
+function humanType(type) {
+    const t = String(type || "").replace(/[-_]+/g, " ").trim();
+    return t ? t.charAt(0).toUpperCase() + t.slice(1) : "";
+}
+
+// { count, names } for "2 subagents · Explore, Plan"; names are humanised, distinct, in start order (empty when no type is known).
+function subagentSummary(s) {
+    const names = [];
+    for (const a of s.subagents || []) {
+        const n = humanType(a.type);
+        if (n && names.indexOf(n) < 0)
+            names.push(n);
+    }
+    return { "count": (s.subagents || []).length, "names": names };
+}
+
+// What the bottom line's left side says, in priority order: "waiting", "countdown", "subagents", else "action".
+function lineKind(s, nowMs) {
+    if (s.state === "waiting")
+        return "waiting";
+    if (s.state === "done")
+        return "done";
+    if (s.countdown)
+        return "countdown";
+    return (s.subagents || []).length > 0 ? "subagents" : "action";
+}
+
+// The closed capsule, in priority order (never seconds): waiting, countdown ("N min left", minutes rounded up, so it
+// holds the minute until it passes), task list, subagents, else the action verb. `nowMs` is the service's coarse clock.
+function compact(s, nowMs) {
+    const out = { "project": s.project, "mode": "verb", "kind": s.action || "other" };
+    if (s.state === "waiting") {
+        out.mode = "waiting";
+    } else if (counting(s, nowMs)) {
+        out.mode = "countdown";
+        out.minutesLeft = Math.max(1, Math.ceil(countdownLeft(s, nowMs) / 60));
+    } else if (hasTasks(s)) {
+        out.mode = "tasks";
+        out.done = s.done;
+        out.total = s.total;
+    } else if ((s.subagents || []).length > 0) {
+        out.mode = "subagents";
+        out.count = s.subagents.length;
+    }
+    return out;
 }

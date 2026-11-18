@@ -28,8 +28,14 @@ Item {
     // session id -> the display name of the app hosting it ("Code"), for the tile's subtitle.
     property var hostNames: ({})
 
-    // The clock behind the elapsed minutes; it moves once a minute and only while a run is going (P9).
+    // The deck is on screen (set by main): the only time a seconds clock is drawn.
+    property bool deckVisible: false
+    // The one clock behind every agent time. It runs only while a session works: every second while the deck shows a
+    // moving seconds clock, every 5 s while a countdown moves the closed capsule's bar, otherwise once a minute (P9, D-58).
     property real nowMs: Date.now()
+    readonly property bool secondsClock: deckVisible && sessions.some(s => Agents.needsSeconds(s, nowMs))
+    readonly property bool countdownMoving: sessions.some(s => Agents.counting(s, nowMs))
+    onDeckVisibleChanged: nowMs = Date.now()
 
     // A session appeared.
     signal agentStarted()
@@ -115,7 +121,7 @@ Item {
     }
 
     Timer {
-        interval: T.minuteTick
+        interval: host.secondsClock ? T.secondTick : host.countdownMoving ? T.countdownTick : T.minuteTick
         repeat: true
         running: host.sessions.some(s => s.state === "working")
         onTriggered: host.nowMs = Date.now()

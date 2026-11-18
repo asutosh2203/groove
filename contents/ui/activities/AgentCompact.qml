@@ -4,7 +4,7 @@ import ".."
 import "../controlcenter/Tokens.js" as T
 import "../logic/Agents.js" as Agents
 
-// The closed capsule for an agent (D-57, D-38: a job's priority): "groove · 3 of 7", or the minutes without a task list.
+// The closed capsule for an agent (D-57, D-58, D-38: a job's priority): "groove · 4 min left" or "· 3 of 7" with a bar, "· 2 subagents", else a verb.
 // While it waits for you it says so, in the agent's accent (D-45).
 Item {
     id: agentCompact
@@ -12,6 +12,8 @@ Item {
     property var app: null
     readonly property var session: app ? app.agents.primary : null
     readonly property bool waiting: session?.state === "waiting"
+    // The service's coarse clock: it steps every 5 s during a countdown and every minute otherwise, never per second.
+    readonly property var compact: session ? Agents.compact(session, app.agents.nowMs) : null
 
     ColumnLayout {
         anchors.fill: parent
@@ -45,19 +47,19 @@ Item {
             RollText {
                 visible: agentCompact.session !== null && !agentCompact.waiting
                 Layout.alignment: Qt.AlignVCenter
-                text: agentCompact.session ? agentCompact.app.strings.agentCompactTail(Agents.compactParts(agentCompact.session).progress, Agents.compactParts(agentCompact.session).kind) : ""
+                text: agentCompact.session ? agentCompact.app.strings.agentCompactTail(agentCompact.compact) : ""
                 color: T.textCaption
                 duration: agentCompact.app.reduceMotion ? 0 : T.motionFade
             }
         }
 
         ProgressBar {
-            visible: agentCompact.session !== null && Agents.hasTasks(agentCompact.session)
+            visible: agentCompact.compact !== null && (agentCompact.compact.mode === "countdown" || agentCompact.compact.mode === "tasks")
             Layout.fillWidth: true
             Layout.preferredHeight: T.compactBar
             from: 0
             to: 1
-            value: agentCompact.session ? Agents.progress(agentCompact.session) : 0
+            value: agentCompact.session ? Agents.barValue(agentCompact.session, agentCompact.app.agents.nowMs) : 0
             accent: T.fill
             trackColor: T.track
             dimmed: agentCompact.waiting

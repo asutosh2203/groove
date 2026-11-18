@@ -178,11 +178,18 @@ QtObject {
         return i18n("%1 of %2", done, total);
     }
 
-    // The closed capsule's tail after the project name and its dot: "3 of 7" with a task list, else "editing" (the action's kind).
-    function agentCompactTail(progress, kind) {
-        if (progress)
-            return i18n("%1 of %2", progress.done, progress.total);
-        switch (kind) {
+    // The closed capsule's tail after the project name and its dot (Agents.compact): "4 min left" during a countdown (never
+    // seconds), "3 of 7", "2 subagents", else the action's kind ("editing").
+    function agentCompactTail(c) {
+        switch (c.mode) {
+        case "countdown":
+            return i18n("%1 min left", c.minutesLeft);
+        case "tasks":
+            return i18n("%1 of %2", c.done, c.total);
+        case "subagents":
+            return i18np("%1 subagent", "%1 subagents", c.count);
+        }
+        switch (c.kind) {
         case "edit":
             return i18n("editing");
         case "run":
@@ -194,6 +201,22 @@ QtObject {
         default:
             return i18n("working");
         }
+    }
+
+    // The clock's text during an exact-sleep countdown: "3:12 left".
+    function agentClockLeft(clock) {
+        return i18n("%1 left", clock);
+    }
+
+    // The action line during a countdown: "Waiting · sleep 5m".
+    function agentCountdownLine(target) {
+        return target ? i18n("Waiting · %1", target) : i18n("Waiting");
+    }
+
+    // "2 subagents · Explore, Plan"; with no known types just the count.
+    function agentSubagents(summary) {
+        const head = i18np("%1 subagent", "%1 subagents", summary.count);
+        return summary.names.length > 0 ? i18n("%1 · %2", head, summary.names.join(", ")) : head;
     }
 
     // What the agent is doing now: "Editing PresetEditor.qml", "Running: npm test…".

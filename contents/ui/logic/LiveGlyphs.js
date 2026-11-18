@@ -17,6 +17,9 @@ const chains = {
     "generic": ["edit-copy-symbolic", generic],
     "agent": ["kove:prompt"],  // Kove's own glyph (ui/icons); the themes have none
     "agentWaiting": ["kove:prompt-calm"],  // the accent badge replaces the thought dot
+    "agentRun": ["utilities-terminal-symbolic", "kove:prompt-calm"],
+    "agentCountdown": ["kove:hourglass"],  // the themes have no hourglass
+    "agentSubagents": ["kove:subagents"],
     "agentDone": ["object-select-symbolic", "emblem-ok-symbolic", "dialog-ok-symbolic"],
     "transfer": ["view-sort-symbolic", "document-swap-symbolic", generic]
 };

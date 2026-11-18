@@ -27,7 +27,32 @@ Rectangle {
     readonly property bool clickable: tile.app.agents.raisable[tile.sid] === true
     readonly property color accent: Agents.accentFor(tile.session?.agent ?? "", T.agentAccents, T.agentAccentDefault)
     readonly property string host: tile.app.agents.hostNames[tile.sid] ?? ""
-    readonly property int minutes: tile.session ? Agents.minutes(tile.session, tile.app.agents.nowMs) : 1
+    readonly property real nowMs: tile.app.agents.nowMs
+    readonly property string lineKind: tile.session ? Agents.lineKind(tile.session, tile.nowMs) : "action"
+    readonly property int minutes: tile.session ? Agents.minutes(tile.session, tile.nowMs) : 1
+    readonly property var clock: tile.session ? Agents.clock(tile.session, tile.nowMs) : ({ "kind": "none" })
+    readonly property var subagents: tile.session ? Agents.subagentSummary(tile.session) : ({ "count": 0, "names": [] })
+    readonly property string barMode: tile.session ? Agents.barMode(tile.session, tile.nowMs) : "none"
+    // The glyph at the start of the action line (D-58): a countdown, subagents, or a running command; none otherwise.
+    readonly property string lineGlyph: tile.lineKind === "countdown" ? "agentCountdown" : tile.lineKind === "subagents" ? "agentSubagents" : tile.lineKind === "action" && tile.session?.action === "run" ? "agentRun" : ""
+
+    // The bottom line's left side, by priority (Agents.lineKind).
+    function lineText() {
+        const x = tile.session;
+        if (!x)
+            return "";
+        switch (tile.lineKind) {
+        case "done":
+            return tile.app.strings.agentDone(tile.minutes);
+        case "waiting":
+            return tile.app.strings.agentWants(x.waitingAction, x.waitingCommand);
+        case "countdown":
+            return tile.app.strings.agentCountdownLine(x.target);
+        case "subagents":
+            return tile.app.strings.agentSubagents(tile.subagents);
+        }
+        return tile.app.strings.agentAction(x.action, x.target);
+    }
 
     radius: T.radiusInner
     color: clickable && hover.hovered ? T.rowHover : T.row
@@ -72,6 +97,29 @@ Rectangle {
                 color: T.card
                 border.color: T.border
                 border.width: 1
+
+                // A second, smaller prompt overlapping the first's corner while subagents run.
+                Rectangle {
+                    visible: tile.subagents.count > 0
+                    z: 1
+                    width: T.liveSubBadge
+                    height: T.liveSubBadge
+                    radius: T.radiusInner
+                    color: T.card
+                    border.color: T.border
+                    border.width: 1
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.margins: -T.liveBadgeInset
+
+                    CC.ThemeGlyph {
+                        anchors.centerIn: parent
+                        width: T.liveBadge
+                        height: T.liveBadge
+                        names: LiveGlyphs.chain("agent")
+                        color: T.iconIdle
+                    }
+                }
 
                 CC.ThemeGlyph {
                     anchors.centerIn: parent
@@ -155,12 +203,12 @@ Rectangle {
         }
 
         ProgressBar {
-            visible: tile.hasTasks && !tile.finished
+            visible: tile.barMode !== "none" && !tile.finished
             Layout.fillWidth: true
             Layout.preferredHeight: T.liveRowBar
             from: 0
             to: 1
-            value: tile.session ? Agents.progress(tile.session) : 0
+            value: tile.session ? Agents.barValue(tile.session, tile.nowMs) : 0
             accent: T.fill
             trackColor: T.track
             tipGradient: true
@@ -170,10 +218,19 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
+            spacing: T.compactGap
+
+            CC.ThemeGlyph {
+                visible: tile.lineGlyph !== ""
+                Layout.preferredWidth: T.liveLineGlyph
+                Layout.preferredHeight: T.liveLineGlyph
+                names: LiveGlyphs.chain(tile.lineGlyph)
+                color: T.textTertiary
+            }
 
             PlasmaLabel {
                 Layout.fillWidth: true
-                text: !tile.session ? "" : tile.finished ? tile.app.strings.agentDone(tile.minutes) : tile.waiting ? tile.app.strings.agentWants(tile.session.waitingAction, tile.session.waitingCommand) : tile.app.strings.agentAction(tile.session.action, tile.session.target)
+                text: tile.lineText()
                 color: T.textTertiary
                 font.pixelSize: T.fontCaption
                 elide: Text.ElideRight
@@ -181,8 +238,8 @@ Rectangle {
             }
 
             PlasmaLabel {
-                visible: !tile.finished && !tile.waiting
-                text: tile.app.strings.agentMinutes(tile.minutes)
+                visible: tile.clock.kind !== "none"
+                text: tile.clock.kind === "countdown" ? tile.app.strings.agentClockLeft(tile.clock.text) : tile.clock.kind === "command" ? tile.clock.text : tile.app.strings.agentMinutes(tile.clock.minutes ?? 1)
                 color: T.textCaption
                 font.pixelSize: T.fontCaption
             }
