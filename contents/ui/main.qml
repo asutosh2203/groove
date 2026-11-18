@@ -584,7 +584,7 @@ PlasmoidItem {
                 priority: ActivityResolver.priority.media
                 title: mediaService.card.title
                 subtitle: mediaService.card.subtitle
-                artwork: mediaService.hasPlayer ? mediaService.player.artUrl : ""
+                artwork: mediaService.artUrl
                 progressVisible: mediaService.hasPlayer && mediaService.length > 0
                 progressTo: Math.max(1, mediaService.hasPlayer ? mediaService.length : 1)
                 progressValue: mediaService.hasPlayer ? mediaService.player.position : 0
@@ -704,6 +704,7 @@ PlasmoidItem {
     MediaService {
         id: mediaService
 
+        runner: commands
         positionPolling: root.mediaPositionVisible
         onMediaEvent: root.bump("media")
     }

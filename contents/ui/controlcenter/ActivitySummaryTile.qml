@@ -53,7 +53,7 @@ Rectangle {
         MaskedArtworkTile {
             Layout.preferredWidth: activitySummary.artSize
             Layout.preferredHeight: activitySummary.artSize
-            artworkSource: app.media.hasPlayer ? app.media.player.artUrl : ""
+            artworkSource: app.media.artUrl
             cornerRadius: activitySummary.compact ? 10 : T.radiusInner
             glyphSize: activitySummary.compact ? 28 : 36
             mode: activitySummary.summaryMode
@@ -235,7 +235,7 @@ Rectangle {
 
             MaskedArtworkTile {
                 anchors.fill: parent
-                artworkSource: app.media.hasPlayer ? app.media.player.artUrl : ""
+                artworkSource: app.media.artUrl
                 // Card radius minus the inset: the corner continues the card's own curve.
                 cornerRadius: Math.max(6, T.radiusCard - twoColumnLayout.inset)
                 glyphSize: 36
@@ -390,7 +390,7 @@ Rectangle {
         anchors.centerIn: parent
         width: activitySummary.artSize
         height: width
-        artworkSource: app.media.hasPlayer ? app.media.player.artUrl : ""
+        artworkSource: app.media.artUrl
         cornerRadius: 10
         glyphSize: width * 0.7
         mode: activitySummary.summaryMode

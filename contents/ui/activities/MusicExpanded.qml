@@ -29,7 +29,7 @@ Item {
             Layout.minimumHeight: contentRow.height
             Layout.maximumHeight: contentRow.height
             Layout.preferredWidth: contentRow.height
-            source: musicPage.hasPlayer ? musicPage.app.media.player.artUrl : ""
+            source: musicPage.app.media.artUrl
             kind: musicPage.app.media.kind
             cornerRadius: (musicPage.app ? musicPage.app.popupRadius : 26) - contentRow.inset
             fallbackMode: "media"

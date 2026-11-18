@@ -7,7 +7,7 @@ MaskedArtwork {
 
     required property var app
 
-    artworkSource: self.app.media.hasPlayer ? self.app.media.player.artUrl : ""
+    artworkSource: self.app.media.artUrl
     cornerRadius: self.app.notchShape ? Math.round(Math.min(width, height) * 0.3) : Math.min(width, height) / 2 // notch: rounded square like expanded; pill: circle
     mode: "media"
     kind: self.app.media.kind

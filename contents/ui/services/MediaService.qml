@@ -14,6 +14,11 @@ import "../logic/Utils.js" as Utils
 Item {
     id: service
 
+    // The island's CommandRunner: remote cover art is fetched through it (ArtworkCache); null shows the player's URL as it is.
+    property var runner: null
+    // The shown player's cover art, ready to load: a cached local file, "" while it is being fetched, else the player's URL.
+    readonly property string artUrl: artCache.source
+
     // True while a position readout is visible (media pill, popup or Control Center card): the poll runs only then.
     property bool positionPolling: false
 
@@ -235,5 +240,12 @@ Item {
         }
 
         target: service.player
+    }
+
+    ArtworkCache {
+        id: artCache
+
+        runner: service.runner
+        url: service.hasPlayer ? String(service.player.artUrl || "") : ""
     }
 }
