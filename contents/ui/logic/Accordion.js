@@ -12,18 +12,3 @@ function toggle(openId, id) {
 function clamp(openId, ids) {
     return openId !== "" && ids.indexOf(openId) >= 0 ? openId : "";
 }
-
-// How far to scroll so the open row is fully in view: returns the new contentY. Rows are `step` apart (row height plus
-// gap) except the open one, which is `openHeight` tall. contentY stays as it is when the row already fits.
-function scrollTarget(ids, openId, contentY, viewHeight, rowHeight, openHeight, gap) {
-    const index = ids.indexOf(openId);
-    if (index < 0)
-        return contentY;
-    const top = index * (rowHeight + gap);
-    const bottom = top + openHeight;
-    if (top < contentY)
-        return top;
-    if (bottom > contentY + viewHeight)
-        return Math.max(0, bottom - viewHeight);
-    return contentY;
-}

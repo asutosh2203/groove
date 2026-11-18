@@ -24,6 +24,9 @@ Rectangle {
     readonly property color accent: Agents.accentFor(entry.session?.agent ?? "", T.agentAccents, T.agentAccentDefault)
 
     height: entry.open ? T.liveTileHeight : T.liveRowHeight
+    // The header's layout sizes rows by preferred height and would not follow an animated `height`: rows below would
+    // overlap an opened one and the list would not be tall enough to scroll to it.
+    Layout.preferredHeight: entry.height
     radius: T.radiusInner
     color: !entry.open && compactHover.hovered ? T.rowHover : T.row
     clip: true

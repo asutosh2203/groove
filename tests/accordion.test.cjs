@@ -19,14 +19,3 @@ test('clamp: the open row is kept while its job is in the list, else nothing is 
     assert.equal(ctx.clamp('', ['a']), '');
     assert.equal(ctx.clamp('a', []), '');
 });
-
-test('scroll target: unchanged when the open row fits, otherwise just enough to show it', () => {
-    const ids = ['a', 'b', 'c', 'd', 'e'];
-    // rows 30 + gap 8, open row 86, view 100
-    assert.equal(ctx.scrollTarget(ids, 'a', 0, 100, 30, 86, 8), 0);
-    assert.equal(ctx.scrollTarget(ids, 'e', 0, 100, 30, 86, 8), 152 + 86 - 100);
-    assert.equal(ctx.scrollTarget(ids, 'a', 120, 100, 30, 86, 8), 0);
-    assert.equal(ctx.scrollTarget(ids, 'zzz', 40, 100, 30, 86, 8), 40);
-    assert.equal(ctx.scrollTarget(ids, 'b', 20, 100, 30, 86, 8), 24);
-    assert.equal(ctx.scrollTarget(ids, 'b', 30, 100, 30, 86, 8), 30);
-});

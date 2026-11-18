@@ -5,7 +5,6 @@ import QtQuick.Layouts
 import ".."
 import "../controlcenter" as CC
 import "../controlcenter/Tokens.js" as T
-import "../logic/Accordion.js" as Accordion
 import "../logic/LiveGlyphs.js" as LiveGlyphs
 
 // The agents and jobs as a list (D-52, accordion D-53): the agents' compact rows, then a summary header and the jobs' compact rows (name, percent, thin bar). It scrolls when the rows
@@ -19,19 +18,38 @@ Item {
     required property var agents
     required property var header
 
-    // Opening a row scrolls just enough to keep it fully in view; a row opened past the Tall cap would otherwise
-    // grow below the visible part.
-    function keepOpenInView() {
-        const ids = [];
-        for (let i = 0; i < list.model.count; ++i)
-            ids.push(list.model.get(i).jid);
-        const target = Accordion.scrollTarget(ids, list.app.deck.openJob, rows.contentY, rows.height, T.liveRowHeight, T.liveTileHeight, rows.spacing);
-        if (target !== rows.contentY)
+    // Once the open animation has finished, scrolls just enough to show the opened row fully, clear of the bottom fade (its
+    // top wins when it is taller than the view). Agent rows sit in the view's header, which grows from the first row, so the final geometry is
+    // read from the item itself rather than computed.
+    function openItem() {
+        const open = list.app.deck.openJob;
+        const header = rows.headerItem;
+        for (const child of header ? header.children : []) {
+            if (child["jid"] === open)
+                return child;
+        }
+        for (let i = 0; i < list.model.count; ++i) {
+            if (list.model.get(i).jid === open)
+                return rows.itemAtIndex(i);
+        }
+        return null;
+    }
+
+    function ensureOpenVisible() {
+        const it = list.openItem();
+        if (!it)
+            return;
+        const top = it.mapToItem(rows.contentItem, 0, 0).y;
+        let y = rows.contentY;
+        if (top + it.height > y + rows.height - T.liveFadeMore)
+            y = Math.min(top + it.height - rows.height + T.liveFadeMore, Math.max(rows.originY, rows.originY + rows.contentHeight - rows.height));
+        if (top < y)
+            y = top;
+        if (y !== rows.contentY) {
             rows.pinnedTop = false;
-        if (target !== rows.contentY)
-            scrollAnimation.to = target;
-        if (target !== rows.contentY)
+            scrollAnimation.to = y;
             scrollAnimation.restart();
+        }
     }
 
     Item {
@@ -40,6 +58,7 @@ Item {
         ListView {
             id: rows
 
+            objectName: "rows"
             anchors.fill: parent
             clip: true
             spacing: T.liveGap
@@ -114,10 +133,17 @@ Item {
                 easing.type: T.easingStandard
             }
 
+            Timer {
+                id: settleTimer
+
+                interval: T.motionPage + 80
+                onTriggered: list.ensureOpenVisible()
+            }
+
             Connections {
                 function onOpenJobChanged() {
                     if (list.app.deck.openJob !== "")
-                        list.keepOpenInView();
+                        settleTimer.restart();
                 }
 
                 target: list.app.deck
@@ -274,11 +300,14 @@ Item {
 
     // More rows lie beyond: a fade over the last rows and a chevron say so.
     Rectangle {
+        objectName: "moreFade"
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         height: T.liveFadeMore
-        visible: !rows.atYEnd
+        // Fades out as the end comes near, in step with the scroll position.
+        opacity: Math.max(0, Math.min(1, (rows.originY + rows.contentHeight - rows.contentY - rows.height) / T.liveFadeMore))
+        visible: opacity > 0
         gradient: Gradient {
             GradientStop {
                 position: 0
