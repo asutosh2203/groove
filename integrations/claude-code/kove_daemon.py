@@ -44,9 +44,11 @@ def main():
     if bus.request_name(BUS_NAME, dbus.bus.NAME_FLAG_DO_NOT_QUEUE) != dbus.bus.REQUEST_NAME_REPLY_PRIMARY_OWNER:
         return forward(first)
 
-    hub, last, routes = L.Hub(DONE_MIN), [None], L.Routes()
-    notes = dbus.Interface(bus.get_object("org.freedesktop.Notifications", "/org/freedesktop/Notifications"),
-                           "org.freedesktop.Notifications")
+    hub, last, routes, timer = L.Hub(DONE_MIN), [None], L.Routes(), [None]
+
+    def notifier():
+        return dbus.Interface(bus.get_object("org.freedesktop.Notifications", "/org/freedesktop/Notifications"),
+                              "org.freedesktop.Notifications")
 
     class Agents(dbus.service.Object):
         @dbus.service.method(IFACE, out_signature="s")
@@ -76,7 +78,7 @@ def main():
             if DRY:
                 nid = 1000 + len(routes.ids)
             else:
-                nid = int(notes.Notify("Claude Code", dbus.UInt32(0), "", a["summary"], a["body"],
+                nid = int(notifier().Notify("Claude Code", dbus.UInt32(0), "", a["summary"], a["body"],
                                        ["default", "Open"], hints, -1))
             routes.remember(nid, a["sid"])
 
@@ -93,6 +95,7 @@ def main():
         except Exception as e:
             log("notify: %s" % type(e).__name__)
         publish()
+        schedule()
 
     path = sock_path()
     os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
@@ -119,18 +122,30 @@ def main():
         return True
 
     def tick():
+        timer[0] = None
         now = time.time()
         if hub.tick(now):
             publish()
         if hub.idle_for(now) >= IDLE_EXIT:
             loop.quit()
             return False
-        return True
+        schedule()
+        return False
+
+    def schedule():
+        """One wakeup, at the next expiry or the idle exit; none at all while only waiting sessions remain."""
+        if timer[0] is not None:
+            GLib.source_remove(timer[0])
+            timer[0] = None
+        due = hub.deadline(time.time(), IDLE_EXIT)
+        if due is not None:
+            timer[0] = GLib.timeout_add(max(50, int((due - time.time()) * 1000) + 50), tick)
 
     GLib.io_add_watch(srv.fileno(), GLib.IO_IN, on_connect)
-    GLib.timeout_add_seconds(1, tick)
     if first:
         on_event(first)
+    else:
+        schedule()
     try:
         loop.run()
     finally:

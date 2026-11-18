@@ -16,7 +16,7 @@ python3 - "$dest" "${1:-}" <<'PY'
 import json, os, shutil, sys, time
 dest, merge = sys.argv[1], sys.argv[2] == "--merge"
 cmd = "python3 -S %s/kove_hook.py" % dest
-events = ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PermissionRequest", "Notification", "TaskCreated", "TaskCompleted", "Stop", "SessionEnd"]
+events = ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionRequest", "PermissionDenied", "SubagentStart", "SubagentStop", "Notification", "TaskCreated", "TaskCompleted", "Stop", "SessionEnd"]
 snippet = {"hooks": {e: [{"hooks": [{"type": "command", "command": cmd}]}] for e in events}}
 if not merge:
     print(json.dumps(snippet, indent=2))

@@ -16,6 +16,9 @@ _TOOL_STATUS = {
 _TOOL_ACTION = {"Edit": "edit", "MultiEdit": "edit", "Write": "edit", "NotebookEdit": "edit", "Read": "read",
                 "Glob": "search", "Grep": "search", "WebSearch": "search", "WebFetch": "read"}
 _TEST_RE = re.compile(r"\b(pytest|unittest|jest|vitest|mocha|cargo test|go test|npm (run )?test|qmltestrunner|node --test|check-qml)\b")
+_SLEEP_RE = re.compile(r"sleep\s+(\d+(?:\.\d+)?|\.\d+)([smh])?", re.ASCII)
+_SLEEP_UNIT = {"": 1, "s": 1, "m": 60, "h": 3600}
+MAX_TRACKED = 16  # running tools and subagents per session: a missed Post/Stop event cannot accumulate
 _SCOPE_RE = re.compile(r"^app-(.+?)(?:-\d+)?\.scope$")
 
 
@@ -91,6 +94,14 @@ def task_counts(tasks):
     return done, len(tasks), current
 
 
+def parse_sleep(command):
+    """Total seconds when the WHOLE trimmed command is `sleep <number>[s|m|h]`, else None. Anything else (chains, pipes,
+    variables, several arguments, background runs) is not a countdown: never guess."""
+    m = _SLEEP_RE.fullmatch(str(command or "").strip())
+    total = float(m.group(1)) * _SLEEP_UNIT[m.group(2) or ""] if m else 0
+    return round(total, 3) if total > 0 else None
+
+
 def done_ping(elapsed, min_seconds):
     return elapsed >= min_seconds
 
@@ -109,6 +120,23 @@ class Session:
         self.tasks = {}
         self.action = self.target = self.waiting_cmd = self.waiting_action = self.last_message = ""
         self.done_until = None
+        self.running, self.subagents = {}, {}  # tool_use_id -> (start, countdown total or None); agent_id -> type
+
+    def expires_at(self):
+        """When this session drops out if nothing happens, or None (a waiting session never expires)."""
+        if self.state == "done":
+            return self.done_until
+        return None if self.state == "waiting" else self.updated + IDLE_TIMEOUT
+
+    def _track(self, ev, ti, now):
+        """Main-thread Bash only: a subagent's own tools must not drive the command timer or the countdown."""
+        tid = ev.get("tool_use_id")
+        if ev.get("tool_name") != "Bash" or ev.get("agent_id") or not tid:
+            return
+        self.running.pop(tid, None)
+        self.running[tid] = (now, parse_sleep(ti.get("command")))
+        while len(self.running) > MAX_TRACKED:
+            del self.running[next(iter(self.running))]
 
     def expired(self, now):
         if self.state == "done":
@@ -132,10 +160,20 @@ class Session:
         self.updated = now
         if self.state == "waiting":  # any event after a prompt means it was answered
             self.state, self.waiting_cmd, self.waiting_action = "working", "", ""
+        if kind in ("PostToolUse", "PostToolUseFailure", "PermissionDenied"):
+            self.running.pop(ev.get("tool_use_id"), None)
+        elif kind == "SubagentStart" and ev.get("agent_id"):
+            self.subagents.pop(ev["agent_id"], None)
+            self.subagents[ev["agent_id"]] = str(ev.get("agent_type") or "")[:40]
+            while len(self.subagents) > MAX_TRACKED:
+                del self.subagents[next(iter(self.subagents))]
+        elif kind == "SubagentStop":
+            self.subagents.pop(ev.get("agent_id"), None)
         tool, ti = ev.get("tool_name"), ev.get("tool_input") if isinstance(ev.get("tool_input"), dict) else {}
         if kind == "PermissionRequest":
             self.state, self.waiting_cmd = "waiting", waiting_command(tool, ti)
             self.waiting_action = action_for_tool(tool, ti)[0]
+            self.running = {}  # the prompt's wait would inflate the clock, and the real start is not reported
             return [{"op": "notify", "urgent": True, "summary": self.project + " · Needs your OK",
                      "body": status_for_tool(tool, ti), "sid": self.sid}]
         if kind == "Notification" and ev.get("notification_type") in ("idle_prompt", "elicitation_dialog"):
@@ -144,6 +182,7 @@ class Session:
                      "body": str(ev.get("message") or "")[:120], "sid": self.sid}]
         if kind == "PreToolUse":
             self.action, self.target = action_for_tool(tool, ti)
+            self._track(ev, ti, now)
             self._task_events(tool, ti)
         elif kind == "TaskCreated":
             self.tasks[str(ev.get("task_id"))] = {"subject": ev.get("task_subject", ""), "status": "pending"}
@@ -151,6 +190,7 @@ class Session:
             self.tasks[str(ev.get("task_id"))]["status"] = "completed"
         elif kind == "Stop":
             self.state, self.done_until = "done", now + DONE_LINGER
+            self.running, self.subagents = {}, {}
             self.last_message = first_sentence(ev.get("last_assistant_message"))
             if done_ping(now - self.started, self.done_min) and self.last_message:
                 return [{"op": "notify", "urgent": False, "summary": self.project + " · " + self.last_message, "body": "", "sid": self.sid}]
@@ -162,6 +202,10 @@ class Session:
              "scopeApp": self.scope_app, "state": self.state, "task": current, "done": done, "total": total,
              "action": self.action, "target": self.target, "waitingCommand": self.waiting_cmd, "waitingAction": self.waiting_action,
              "startedAt": int(self.started), "updatedAt": int(self.updated)}
+        cur = max(self.running.values(), default=None)
+        d["toolStartedAt"] = round(cur[0], 3) if cur else 0
+        d["countdown"] = {"total": cur[1], "startedAt": round(cur[0], 3)} if cur and cur[1] else None
+        d["subagents"] = [{"id": i, "type": t} for i, t in self.subagents.items()]
         if self.state == "done":
             d["lastMessage"] = self.last_message
         return d
@@ -193,6 +237,16 @@ class Hub:
         for k in gone:
             del self.sessions[k]
         return bool(gone)
+
+    def deadline(self, now, idle_exit):
+        """Absolute time of the next expiry or the idle exit, None when nothing is pending: the daemon sleeps until then."""
+        if self.sessions:
+            self.empty_since = None
+            due = [d for d in (s.expires_at() for s in self.sessions.values()) if d is not None]
+            return min(due) if due else None
+        if self.empty_since is None:
+            self.empty_since = now
+        return self.empty_since + idle_exit
 
     def idle_for(self, now):
         if self.sessions:

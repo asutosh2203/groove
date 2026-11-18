@@ -8,7 +8,14 @@ Shows your Claude Code sessions in the island as a native Live activity, and sen
   the elapsed minutes; with a task list it also shows the current task, "3 of 7" and a progress bar. Waiting shows
   "Needs your OK" in an accent colour with a dot on the glyph and "Wants to run: <command>". Done shows "Done · 18 min" and the
   first sentence of Claude's last message, and fades after 10 s. A busy page turns agents into compact rows above the transfers.
-- **Closed island:** the agent glyph and "project · 3 of 7" with a task list, else "project · editing" (or running, reading, searching, working); the verb rolls when it changes. While Claude waits for you it shows
+- **Timer, countdown and subagents (D-58).** The tile has one bar and one clock. Top right is only "3 of 7". The bar
+  is the countdown while one runs, else the task progress. The bottom right is the only clock: the countdown remaining
+  ("3:12 left", held at "0:00" until the command ends), else how long the current command has run (m:ss, once it passes
+  10 s), else the session's minutes. **Exact-sleep rule:** only a Bash command that is *exactly* `sleep <number>[s|m|h]`
+  (`sleep 300`, `sleep 5m`, `sleep 0.5`) is a countdown; `sleep 5 && x`, `sleep $N`, `sleep 1 2`, pipes, loops and
+  background runs are normal "Running: ..." lines. While subagents run the action line says "2 subagents · Explore, General
+  purpose" and a small second prompt sits behind the glyph. A command that waited for your permission shows no timer.
+- **Closed island:** the agent glyph and "project · 3 of 7" with a task list, during a countdown "project · 4 min left" with the thin bar (never seconds), "project · 2 subagents" while subagents run, else "project · editing" (or running, reading, searching, working); the verb rolls when it changes. While Claude waits for you it shows
   "Needs your OK" with the accent dot.
 - **Click** a tile or an opened row to raise the window Claude runs in. Kove finds it from the process chain (and, for a
   Flatpak, the app id); it never guesses. If no window is found the tile is simply not clickable.

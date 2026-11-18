@@ -7,7 +7,7 @@ import sys
 
 SPAWN_ON = ("SessionStart", "UserPromptSubmit")
 KEEP = ("session_id", "cwd", "hook_event_name", "tool_name", "tool_input", "notification_type", "message",
-        "task_id", "task_subject", "last_assistant_message")
+        "task_id", "task_subject", "tool_use_id", "agent_id", "agent_type", "last_assistant_message")
 
 
 FLATPAK_INFO = os.environ.get("KOVE_FLATPAK_INFO", "/.flatpak-info")  # overridable so tests can fake a sandbox

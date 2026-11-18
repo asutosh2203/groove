@@ -85,6 +85,92 @@ class T(unittest.TestCase):
     def snap(self, hub, i=0):
         return hub.snapshot()["sessions"][i]
 
+    def test_sleep_grammar(self):
+        ok = {"sleep 5": 5, "sleep 5s": 5, "sleep 5m": 300, "sleep 2h": 7200, "sleep 0.5": 0.5, "  sleep   90 \n": 90, "sleep 1.5m": 90}
+        for cmd, total in ok.items():
+            self.assertEqual(parse_sleep(cmd), total, cmd)
+        for cmd in ("sleep 5 && x", "sleep 5; x", "sleep $N", "sleep 1 2", "sleep 5 &", "sleep", "sleep 0", "sleep -1", "sleep 5d",
+                    "sleep 5 | cat", "x && sleep 5", "sleep 5\nls", "sleep 1e3", "sleep inf", "while true; do sleep 1; done",
+                    "./sleep 5", "sleep 5m # wait", "sleep $(echo 5)", "", None):
+            self.assertIsNone(parse_sleep(cmd), cmd)
+
+    def bash(self, h, tid, cmd, now, **kw):
+        return h.handle(self.ev("PreToolUse", tool_name="Bash", tool_use_id=tid, tool_input={"command": cmd}, **kw), now)
+
+    def test_command_timer_and_countdown(self):
+        h = Hub()
+        self.bash(h, "t1", "npm test", 100)
+        s = self.snap(h)
+        self.assertEqual((s["toolStartedAt"], s["countdown"]), (100, None))
+        h.handle(self.ev("PostToolUse", tool_use_id="t1"), 130)
+        self.assertEqual(self.snap(h)["toolStartedAt"], 0)
+        self.bash(h, "t2", "sleep 5m", 200)
+        self.assertEqual(self.snap(h)["countdown"], {"total": 300, "startedAt": 200})
+        h.handle(self.ev("PostToolUseFailure", tool_use_id="t2"), 210)  # a failed or interrupted tool ends too
+        self.assertIsNone(self.snap(h)["countdown"])
+        self.bash(h, "t3", "sleep 5 && echo hi", 300)
+        self.assertIsNone(self.snap(h)["countdown"])
+        self.assertEqual(self.snap(h)["toolStartedAt"], 300)
+
+    def test_subagent_tools_do_not_drive_the_timer_and_stop_clears(self):
+        h = Hub()
+        self.bash(h, "t1", "sleep 60", 10, agent_id="a1")
+        self.assertEqual(self.snap(h)["toolStartedAt"], 0)
+        self.bash(h, "t2", "make", 20)
+        self.bash(h, "t3", "sleep 30", 25)
+        self.assertEqual(self.snap(h)["countdown"]["startedAt"], 25)  # the latest running tool leads
+        h.handle(self.ev("PostToolUse", tool_use_id="t3"), 30)
+        self.assertEqual(self.snap(h)["toolStartedAt"], 20)
+        h.handle(self.ev("PermissionDenied", tool_use_id="t2"), 31)
+        self.assertEqual(self.snap(h)["toolStartedAt"], 0)
+        self.bash(h, "t4", "make", 40)
+        h.handle(self.ev("Stop"), 50)
+        self.assertEqual(self.snap(h)["toolStartedAt"], 0)
+
+    def test_permission_prompt_drops_the_unknown_start(self):
+        h = Hub()
+        self.bash(h, "t1", "sleep 30", 10)
+        h.handle(self.ev("PermissionRequest", tool_name="Bash", tool_input={"command": "sleep 30"}), 11)
+        self.assertEqual((self.snap(h)["toolStartedAt"], self.snap(h)["countdown"]), (0, None))
+
+    def test_subagents_tracked_and_bounded(self):
+        h = Hub()
+        h.handle(self.ev("SubagentStart", agent_id="a1", agent_type="Explore"), 1)
+        h.handle(self.ev("SubagentStart", agent_id="a2", agent_type="Plan"), 2)
+        self.assertEqual(self.snap(h)["subagents"], [{"id": "a1", "type": "Explore"}, {"id": "a2", "type": "Plan"}])
+        h.handle(self.ev("SubagentStop", agent_id="a1", agent_type="Explore"), 3)
+        self.assertEqual(self.snap(h)["subagents"], [{"id": "a2", "type": "Plan"}])
+        h.handle(self.ev("SubagentStop", agent_id="nope"), 4)
+        for i in range(40):
+            h.handle(self.ev("SubagentStart", agent_id="x%d" % i), 5)
+        self.assertEqual(len(self.snap(h)["subagents"]), MAX_TRACKED)
+        h.handle(self.ev("UserPromptSubmit"), 6)
+        self.assertEqual(self.snap(h)["subagents"], [])
+
+    def test_running_tools_bounded(self):
+        h = Hub()
+        for i in range(50):
+            self.bash(h, "t%d" % i, "make", i)
+        self.assertEqual(len(h.sessions["s1"].running), MAX_TRACKED)
+
+    def test_snapshot_never_carries_the_command(self):
+        h = Hub()
+        self.bash(h, "t1", "sleep 5m", 1)  # only the existing short target (D-57) shows it; the new fields are numbers
+        s = self.snap(h)
+        self.assertEqual(set(s["countdown"]), {"total", "startedAt"})
+        self.assertNotIn("command", json.dumps(s).replace("waitingCommand", ""))
+
+    def test_deadline(self):
+        h = Hub()
+        self.assertEqual(h.deadline(5, 60), 65)  # empty: the idle exit
+        self.assertEqual(h.deadline(30, 60), 65)
+        self.bash(h, "t1", "make", 100)
+        self.assertEqual(h.deadline(101, 60), 100 + IDLE_TIMEOUT)
+        h.handle(self.ev("PermissionRequest", tool_name="Bash", tool_input={}), 110)
+        self.assertIsNone(h.deadline(111, 60))  # waiting never expires: no wakeup at all
+        h.handle(self.ev("Stop"), 120)
+        self.assertEqual(h.deadline(121, 60), 120 + DONE_LINGER)
+
     def test_working_and_done(self):
         h = Hub()
         h.handle(self.ev("PreToolUse", tool_name="Edit", tool_input={"file_path": "a/m.qml"}), 1)
