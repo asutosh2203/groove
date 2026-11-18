@@ -225,3 +225,39 @@ these numbers are higher and noisier than "After D2" (media paused) and must onl
 
 - The "user idle for 5 minutes" pause: no event-driven idle source is available to QML here, and polling is not
   allowed. It is skipped until one exists.
+
+## After W2.1 (2026-11-18, agent timer, countdown and subagents, D-58)
+
+**Soak (60 min, `scripts/agent-soak.py`, raw: `perf/results/w21-soak.csv`).** A scripted fake session sent real hook events
+through the installed `kove_hook.py`: a tool call every 2 to 5 s, an exact `sleep 60` every 10 min, a subagent started and
+stopped every 3 min, the task list advancing every 2 min, a Stop and new prompt every 15 min. No real Claude. The deck was
+closed except for one minute at minutes 5, 15, 25 and so on (a debug timer on the deployed copy, since removed). Spotify
+was **paused** and nobody used the machine; the screen was asleep or locked for at least part of it, so the deck-open
+minutes may cost slightly more on a lit screen. CPU is the average over the 5-minute window before the row.
+
+| Minute | plasmashell CPU | plasmashell RSS | Aggregator CPU | Aggregator RSS | Log bytes |
+|---|---|---|---|---|---|
+| 0 | n/a | 619.1 MB | n/a | 33.6 MB | 336 |
+| 5 | 0.20% | 634.9 MB | 0.02% | 33.8 MB | 336 |
+| 10 | 0.07% | 639.7 MB | 0.01% | 33.8 MB | 336 |
+| 15 | 0.17% | 639.0 MB | 0.01% | 33.8 MB | 336 |
+| 20 | 0.08% | 639.3 MB | 0.01% | 33.8 MB | 336 |
+| 25 | 0.14% | 648.2 MB | 0.01% | 33.8 MB | 336 |
+| 30 | 0.11% | 648.4 MB | 0.01% | 33.8 MB | 336 |
+| 35 | 0.15% | 649.5 MB | 0.01% | 33.8 MB | 336 |
+| 40 | 0.08% | 649.5 MB | 0.01% | 33.8 MB | 336 |
+| 45 | 0.13% | 649.1 MB | 0.01% | 33.8 MB | 336 |
+| 50 | 0.08% | 649.1 MB | 0.01% | 33.9 MB | 336 |
+| 55 | 0.11% | 649.5 MB | 0.01% | 33.9 MB | 336 |
+| 60 | 0.09% | 648.6 MB | 0.01% | 33.9 MB | 336 |
+
+- **Flat.** CPU has no trend (plasmashell 0.07 to 0.20%, median 0.11%; the aggregator 0.01 to 0.02%). The aggregator's RSS
+  moved 0.3 MB in an hour and its log did not grow (the 336 bytes predate the soak). plasmashell's RSS stepped up about
+  30 MB during the first 25 minutes, when the deck was opened for the first three times (QML components and the Live page
+  load on first use), then held at 648 to 650 MB for the last 35 minutes, including three more deck opens.
+- **Closed-deck idle A/B** (3 runs of 30 s, settled 125 s after a restart, media paused, no agent session): before W2.1
+  (`c0c7b63`) 0.20, 0.16, 0.17%, median **0.17%**, 571 MB; after, 0.17, 0.16, 0.13%, median **0.16%**, 572 MB. No change.
+  Raw: `perf/results/*w21-ab-*`. This also answers the open D1 question (0.67% to 1.60%): nothing runs while the deck is
+  closed.
+- **Found on the way:** an aggregator that outlives a plasmashell restart kept a proxy to the old Notifications owner and
+  logged `notify: DBusException` for every later notification; it now creates the proxy per call.

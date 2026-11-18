@@ -106,6 +106,11 @@ persistence. Still open there: the proposed contract details and context-aware p
   waiting and done; compact rows above the transfers in a busy list; the closed capsule and the Live glyph (media > agent >
   jobs); click-through by process chain and scope app id, never a guess; Kove's own icon set (`contents/ui/icons`).
   Checked live in Notch and Pill, with fake sessions and with a real Claude Code session.
+- **W2.1 (done): richer agent tiles (D-58).** Command timer, exact-sleep countdown that takes the bar, subagents named on the
+  tile, the closed capsule's "N min left"; timestamp-driven with a deadline-based aggregator and a Kove clock that only ticks
+  per second while the deck shows a moving clock. Soak result: docs/PERFORMANCE.md "After W2.1".
+  Follow-ups: accordion overlap and scroll-into-view fixes (D-53), working agents rank below media on the closed capsule (D-58),
+  cover art cache (D-59).
 - Deliberately deferred: approve/reject buttons on the waiting tile (they need a second channel into Claude Code).
 - **Next on the agent track: a Claude widget** for the widget host (D-54). The aggregator is its data source, so it is a small job.
 - Future note only: other agents (Codex, Aider, Gemini CLI, ...) via small adapters. The island side is agent-agnostic; the
