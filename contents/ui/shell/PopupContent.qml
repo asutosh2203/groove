@@ -467,6 +467,7 @@ MouseArea {
         app: popupRoot.app
         control: popupRoot.control
         reduceMotion: popupRoot.reduceMotion
+        enabled: shown
         x: popupRoot.panelX + popupRoot.panelWidth / 2 - width / 2
         y: popupRoot.panelY + popupRoot.panelHeight + T.deckCapsuleGap
         opacity: shown ? 1 : 0

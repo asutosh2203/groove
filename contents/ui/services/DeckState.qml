@@ -30,6 +30,8 @@ Item {
     property string current: "control"
     property string lastUsed: ""
     property var previousCycle: []
+    // Set by the capsule while a scrub runs (D-62): the deck then shows same-size page changes as a pop.
+    property bool scrubbing: false
 
     readonly property var cycle: DeckPlan.buildCycle(liveCount > 0, presets)
     // Edit mode (zoom included) is pre-sized with the cycle, so entering it never resizes the window (D-43).

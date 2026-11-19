@@ -126,6 +126,17 @@ const deckDotSize = 5;
 const deckDotActiveWidth = 12;   // the current page's dot stretches to a short pill
 const deckSettle = 4;            // the capsule settles down this far as it fades in
 const deckSlideDistance = 24;   // how far a page slides during a transition
+// Capsule scrub (D-62)
+const scrubThreshold = 4;        // px of horizontal travel before a press becomes a scrub
+const scrubDwell = 120;          // ms: 0 switches the page on every crossing; > 0 only after resting that long (or on release)
+const scrubSwell = 0.06;         // the capsule's extra scale while scrubbing
+const scrubSwellMs = 140;
+const scrubDetentFrom = 0.85;    // the highlight snaps in from this scale and overshoots to 1
+const scrubDetentMs = 160;
+const scrubOvershoot = 1.7;      // OutBack overshoot
+const easingOvershoot = 34;      // Easing.OutBack
+const scrubPopMs = 140;          // same-size page change while scrubbing: a fade with a hint of scale
+const scrubPopScale = 0.97;
 const motionHover = 300;        // hover brightening, shared with the job tiles
 const deckSpacing = 4;
 const deckTileOpacity = 0.08;
