@@ -15,7 +15,8 @@ Item {
     // The settings object: the usage windows (numbers only) are kept in it so a restart shows the last known ring.
     property var cfg: null
 
-    readonly property string busName: "io.github.asutosh2203.Kove.Agents"
+    // Injectable so a test can watch a name no real aggregator owns.
+    property string busName: "io.github.asutosh2203.Kove.Agents"
     readonly property string busPath: "/io/github/asutosh2203/Kove/Agents"
     readonly property string busIface: "io.github.asutosh2203.Kove.Agents1"
 

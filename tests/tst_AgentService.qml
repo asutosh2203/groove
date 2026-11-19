@@ -2,7 +2,7 @@ import QtQuick
 import QtTest
 import "../contents/ui/services"
 
-// The aggregator is not running under test, so this covers the idle state and the snapshot path through setSnapshot.
+// The service watches a bus name no real aggregator owns, so this passes with or without one running. It covers the idle state and the snapshot path through setSnapshot.
 // The parsing, ordering and window matching are pure and tested in tests/agents.test.cjs.
 TestCase {
     id: tc
@@ -14,6 +14,8 @@ TestCase {
 
     AgentService {
         id: agents
+
+        busName: "io.github.asutosh2203.Kove.Agents.Test"
 
         onAgentStarted: tc.started++
     }
