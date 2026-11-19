@@ -13,8 +13,8 @@ import "logic/Utils.js" as Utils
 QtObject {
     // qmllint disable unqualified
     readonly property string appTitle: i18n("Dynamic Island")
-    readonly property string idleTitle: i18n("Control Center")
-    readonly property string idleSubtitle: i18n("Brightness, audio, network, power")
+    readonly property string idleTitle: i18n("Widgets")
+    readonly property string idleSubtitle: i18n("Click to cycle pages, double-click for Control Center")
     readonly property string notificationFallback: i18n("Notification")
     readonly property string replySend: i18n("Send reply")
     readonly property string replyFailed: i18n("Couldn't send: the notification is gone")
