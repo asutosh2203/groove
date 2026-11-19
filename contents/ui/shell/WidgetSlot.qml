@@ -104,6 +104,14 @@ Rectangle {
         visible: slot.showsContent
     }
 
+    Connections {
+        target: loader.item
+
+        function onRunAction(action) {
+            slot.app.runWidgetAction(action);
+        }
+    }
+
     // The injected properties (WidgetView). Bound, so a settings change reaches the view without recreating it.
     Binding {
         target: loader.item
@@ -124,7 +132,7 @@ Rectangle {
     Binding {
         target: loader.item
         property: "services"
-        value: ({ "clock": slot.declared.indexOf("clock") >= 0 ? slot.app.clock : null, "weather": slot.weather })
+        value: ({ "clock": slot.declared.indexOf("clock") >= 0 ? slot.app.clock : null, "weather": slot.weather, "agents": slot.declared.indexOf("agents") >= 0 ? slot.app.agents : null })
         when: loader.item !== null
         restoreMode: Binding.RestoreNone
     }

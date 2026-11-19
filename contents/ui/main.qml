@@ -472,7 +472,9 @@ PlasmoidItem {
             appLauncher.launch(String(action.value));
         else if (action.type === "calendar")
             appLauncher.openCalendar();
-        else
+        else if (action.type === "agent" && !agentService.raise(String(action.value)))
+            return ;
+        else if (action.type !== "agent")
             return ;
         closeIsland();
     }

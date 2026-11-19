@@ -4,6 +4,34 @@
 
 const list = [
     {
+        "id": "claude-code",
+        "manifest": {
+            "contract": 1,
+            "id": "claude-code",
+            "name": {
+                "en": "Claude Code"
+            },
+            "description": {
+                "en": "Your plan's usage and what your coding sessions got done"
+            },
+            "icon": [
+                "kove:prompt",
+                "utilities-terminal-symbolic"
+            ],
+            "spans": [
+                "1x1",
+                "2x1"
+            ],
+            "defaultSpan": "1x1",
+            "category": "Dev",
+            "version": 1,
+            "services": [
+                "agents"
+            ],
+            "settings": []
+        }
+    },
+    {
         "id": "clock",
         "manifest": {
             "contract": 1,

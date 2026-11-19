@@ -240,6 +240,52 @@ QtObject {
         return action === "run" ? i18n("Wants to run: %1", text) : text;
     }
 
+    // The Claude Code widget (D-60): budget and outcomes. Times arrive already formatted by the view.
+    readonly property string claudeLabel: i18n("Claude Code")
+    readonly property string claudeCaughtUp: i18n("All caught up")
+    readonly property string claudeNoRecent: i18n("No recent sessions")
+
+    function claudeLimit(weekly, when) {
+        return weekly ? i18n("Weekly limit · resets %1", when) : i18n("5h limit · resets %1", when);
+    }
+
+    function claudeWeek(pct, when) {
+        return i18n("This week %1% · resets %2", pct, when);
+    }
+
+    function claudeAttention(n) {
+        return i18np("%1 needs your OK", "%1 need your OK", n);
+    }
+
+    function claudeRunning(n) {
+        return i18n("%1 running", n);
+    }
+
+    function claudeCost(usd) {
+        return i18n("≈ $%1", usd.toFixed(2));
+    }
+
+    function claudeCostSessions(n) {
+        return i18np("est. · %1 session", "est. · %1 sessions", n);
+    }
+
+    function claudeLast(project, minutes) {
+        return i18n("Last: %1 · %2 min ago", project, minutes);
+    }
+
+    // A row: the project, then " · message" (the current action when nothing was said yet).
+    function claudeRowTail(text) {
+        return text ? i18n(" · %1", text) : "";
+    }
+
+    function claudeLines(added, removed) {
+        return i18n("+%1 −%2", added, removed);
+    }
+
+    function claudeNeedsOkLine(text) {
+        return text ? i18n("Needs your OK · %1", text) : i18n("Needs your OK");
+    }
+
     // The job list's header noun: "3 copies", or "3 transfers" for mixed kinds (LiveLayout.header).
     function liveHeader(kind, count) {
         switch (kind) {

@@ -6,7 +6,7 @@
 const CONTRACT = 1;
 const SPANS = ["1x1", "2x1", "4x1"];
 const CATEGORIES = ["Info", "Media", "System", "Dev"];
-const SERVICES = ["clock", "weather"];
+const SERVICES = ["clock", "weather", "agents"];
 const TYPES = ["bool", "enum", "string", "number", "location", "timezone", "app"];
 const ID = /^[a-z][a-z0-9-]{0,40}$/;
 const KEY = /^[a-zA-Z][a-zA-Z0-9]{0,30}$/;

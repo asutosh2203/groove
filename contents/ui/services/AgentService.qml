@@ -5,6 +5,7 @@ import org.kde.plasma.workspace.dbus as DBus
 import org.kde.taskmanager as TaskManager
 import "../controlcenter/Tokens.js" as T
 import "../logic/Agents.js" as Agents
+import "../logic/ClaudeWidget.js" as Claude
 
 // Coding-agent sessions (D-57), read from the per-user aggregator (integrations/claude-code). Nothing runs while its bus
 // name is absent: the watchers are event-driven, there is no polling, and the task model loads only while a session exists.
@@ -23,6 +24,15 @@ Item {
     // Sessions that are running or waiting, not finished and lingering: what the closed capsule shows.
     readonly property var primary: sessions.find(s => s.state !== "done") ?? null
     readonly property bool active: primary !== null
+    // For the Claude Code widget (D-60), all in memory and gone with plasmashell. The limit windows survive snapshots that lack
+    // them (usage is account-wide); sawLimits is what tells a subscriber from an API-key setup; spend is sid -> cost.
+    property var usage: ({})
+    property bool sawLimits: false
+    property var spend: ({})
+    // Finished sessions, newest first (Claude.remember), with the keys to raise their window.
+    property var recent: []
+    // Which two sessions the Claude 2x1 shows (Claude.assign). It lives here so it survives the page being left.
+    property var rowSlots: ({ "slots": [null, null], "waitSince": ({}) })
     // session id -> true when a window of it can be raised (Agents.findWindow, ignoring the title tie-break).
     property var raisable: ({})
     // session id -> the display name of the app hosting it ("Code"), for the tile's subtitle.
@@ -41,7 +51,28 @@ Item {
     signal agentStarted()
 
     function byId(id) {
-        return sessions.find(s => s.id === id) ?? null;
+        return sessions.find(s => s.id === id) ?? recent.find(s => s.id === id) ?? null;
+    }
+
+    function same(a, b) {
+        return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    function track(json, next) {
+        const windows = Agents.parseUsage(json);
+        if (Object.keys(windows).length > 0) {
+            const merged = Claude.mergeUsage(usage, windows);
+            if (!same(merged, usage))
+                usage = merged;
+            sawLimits = true;
+        }
+        spend = Claude.trackSpend(spend, next);
+        const kept = Claude.remember(recent, next);
+        if (!same(kept, recent))
+            recent = kept;
+        const placed = Claude.assign(rowSlots, next, kept);
+        if (!same(placed, rowSlots))
+            rowSlots = placed;
     }
 
     function setSnapshot(json) {
@@ -50,6 +81,7 @@ Item {
         const known = new Set(sessions.map(s => s.id));
         const grew = next.some(s => !known.has(s.id));
         sessions = next;
+        track(json, next);
         refresh();
         if (grew)
             agentStarted();
@@ -89,7 +121,7 @@ Item {
         const tasks = windows();
         const next = {};
         const names = {};
-        for (const s of sessions) {
+        for (const s of sessions.concat(recent)) {
             const row = Agents.findWindow(s, tasks);
             next[s.id] = row >= 0;
             names[s.id] = row >= 0 ? String(tasks[row].appName || "") : "";
@@ -153,7 +185,7 @@ Item {
     Loader {
         id: tasksLoader
 
-        active: host.hasAgents
+        active: host.hasAgents || host.recent.length > 0
         sourceComponent: TaskManager.TasksModel {
             filterByVirtualDesktop: false
             filterByScreen: false

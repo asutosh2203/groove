@@ -28,6 +28,9 @@ Item {
     property var clickAction: null
     property string message: ""
 
+    // A view that acts on its own parts (a row) asks the host to run the action, as clickAction does for the whole tile.
+    signal runAction(var action)
+
     readonly property real boxWidth: width
     readonly property real boxHeight: height
 }

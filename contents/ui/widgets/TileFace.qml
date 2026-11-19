@@ -14,6 +14,9 @@ Item {
     property string heroSuffix
     property string detail
     property real heroSize: T.widgetHeroSize
+    // Room the hero leaves on the left for something drawn beside it (the usage ring), and its opacity when resting.
+    property real heroInset: 0
+    property real heroOpacity: 1
     // Room the label leaves on the right for something drawn over it (the weather glyph).
     property real labelInset: 0
     property alias detailItem: detailLabel
@@ -36,8 +39,10 @@ Item {
         id: heroLabel
 
         anchors.left: parent.left
+        anchors.leftMargin: face.heroInset
         anchors.verticalCenter: parent.verticalCenter
-        width: face.width - (suffixLabel.visible ? suffixLabel.implicitWidth + T.deckSpacing : 0)
+        width: face.width - face.heroInset - (suffixLabel.visible ? suffixLabel.implicitWidth + T.deckSpacing : 0)
+        opacity: face.heroOpacity
         text: face.hero
         color: T.textPrimary
         font.pixelSize: face.heroSize

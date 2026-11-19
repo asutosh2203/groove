@@ -16,6 +16,12 @@ function count(v) {
     return isFinite(n) && n > 0 ? n : 0;
 }
 
+// 0..100 as a whole number, or null when unknown (null early in a session and after /compact: no bar then).
+function percent(v) {
+    const n = v === null || v === undefined ? NaN : Math.round(Number(v));
+    return isFinite(n) ? Math.max(0, Math.min(100, n)) : null;
+}
+
 const MAX_SUBAGENTS = 16;
 // The command timer appears only for a command that has run this long (W2.1, D-58).
 const CLOCK_AFTER_SECONDS = 10;
@@ -25,6 +31,31 @@ function countdown(c) {
     const total = c ? Number(c.total) : 0;
     const at = c ? Number(c.startedAt) : 0;
     return total > 0 && at > 0 ? { "total": total, "startedAt": Math.round(at * 1000) } : null;
+}
+
+function money(v) {
+    const n = Number(v);
+    return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0;
+}
+
+// The account-wide limit windows of a snapshot (D-60) -> { fiveHour, sevenDay } with resetsAt in ms; a missing or malformed
+// window is simply absent, never a reason to clear one already known.
+function parseUsage(json) {
+    let snap;
+    try {
+        snap = JSON.parse(json);
+    } catch (e) {
+        return {};
+    }
+    const out = {};
+    const u = snap && snap.v === 1 && snap.usage && typeof snap.usage === "object" ? snap.usage : {};
+    for (const k of ["fiveHour", "sevenDay"]) {
+        const pct = u[k] ? percent(u[k].pct) : null;
+        const at = u[k] ? Number(u[k].resetsAt) : 0;
+        if (pct !== null && at > 0)
+            out[k] = { "pct": pct, "resetsAt": Math.round(at * 1000) };
+    }
+    return out;
 }
 
 // The Agents1 snapshot JSON -> [session]. Anything unexpected (wrong version, bad JSON, a malformed entry) is dropped.
@@ -59,6 +90,10 @@ function parse(json) {
             "startedAt": count(s.startedAt) * 1000,
             "updatedAt": count(s.updatedAt) * 1000,
             "lastMessage": text(s.lastMessage, 120),
+            "contextPct": percent(s.contextPct),
+            "costUsd": money(s.costUsd),
+            "linesAdded": count(s.linesAdded),
+            "linesRemoved": count(s.linesRemoved),
             "toolStartedAt": Math.round(Number(s.toolStartedAt) * 1000) || 0,
             "countdown": countdown(s.countdown),
             "subagents": (Array.isArray(s.subagents) ? s.subagents : []).filter(a => a && a.id).slice(0, MAX_SUBAGENTS).map(a => ({ "id": text(a.id, 64), "type": text(a.type, 40) }))

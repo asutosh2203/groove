@@ -14,4 +14,5 @@ Anything the themes already provide stays a theme symbolic name (D-26).
 | `prompt` | An agent: a ">" chevron, an underscore and a thought dot (working, done) |
 | `prompt-calm` | The same without the thought dot (waiting: the accent badge replaces it) |
 | `hourglass` | An exact-sleep countdown on an agent tile |
+| `moon` | A resting widget: an outline crescent and two dot stars ("all caught up") |
 | `subagents` | An agent's subagents are running (a fork) |
