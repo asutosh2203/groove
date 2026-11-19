@@ -17,6 +17,26 @@ def sock_path():
     return os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "kove", "agents.sock")
 
 
+WINDOWS = (("five_hour", "fiveHour"), ("seven_day", "sevenDay"))
+
+
+def _num(v):
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and v == v and abs(v) != float("inf") else None
+
+
+def usage_windows(p):
+    """The limit windows of a payload's `rate_limits` -> {fiveHour|sevenDay: {pct, resetsAt}}; absent or malformed windows are
+    simply absent. Numbers only: the one place usage is read, for the status line and for any hook payload that carries it."""
+    limits = p.get("rate_limits") if isinstance(p, dict) and isinstance(p.get("rate_limits"), dict) else {}
+    out = {}
+    for src, dst in WINDOWS:
+        w = limits.get(src) if isinstance(limits.get(src), dict) else {}
+        pct, at = _num(w.get("used_percentage")), _num(w.get("resets_at"))
+        if pct is not None and at is not None and at > 0:
+            out[dst] = {"pct": max(0, min(100, round(pct))), "resetsAt": int(at)}
+    return out
+
+
 def log(msg):
     try:
         d = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "kove")
@@ -76,6 +96,9 @@ def main():
         msg["tool_input"] = tool_input_slim(msg["tool_input"])
     if "last_assistant_message" in msg:  # only the first sentence is shown
         msg["last_assistant_message"] = str(msg["last_assistant_message"])[:600]
+    usage = usage_windows(ev)
+    if usage:  # not in Claude Code's hook payloads today; a future one that carries rate_limits reports with no change here
+        msg["usage"] = usage
     if msg.get("hook_event_name") in SPAWN_ON:
         msg["pids"], msg["scope"] = where()
     data = json.dumps(msg).encode()

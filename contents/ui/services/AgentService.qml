@@ -12,6 +12,9 @@ import "../logic/ClaudeWidget.js" as Claude
 Item {
     id: host
 
+    // The settings object: the usage windows (numbers only) are kept in it so a restart shows the last known ring.
+    property var cfg: null
+
     readonly property string busName: "io.github.asutosh2203.Kove.Agents"
     readonly property string busPath: "/io/github/asutosh2203/Kove/Agents"
     readonly property string busIface: "io.github.asutosh2203.Kove.Agents1"
@@ -62,8 +65,11 @@ Item {
         const windows = Agents.parseUsage(json);
         if (Object.keys(windows).length > 0) {
             const merged = Claude.mergeUsage(usage, windows);
-            if (!same(merged, usage))
+            if (!same(merged, usage)) {
                 usage = merged;
+                if (cfg)
+                    cfg.usageCache = Agents.serializeUsage(merged);
+            }
             sawLimits = true;
         }
         spend = Claude.trackSpend(spend, next);
@@ -148,6 +154,11 @@ Item {
             setSnapshot("");
     }
     Component.onCompleted: {
+        const stored = Agents.parseStoredUsage(String(cfg?.usageCache || ""), Date.now());
+        if (Object.keys(stored).length > 0) {
+            usage = stored;
+            sawLimits = true;
+        }
         if (available)
             fetch();
     }

@@ -14,7 +14,7 @@ const face = (o) => j(C.face(model(o), NOW));
 
 test('parse: usage windows in ms, absent or malformed windows are absent', () => {
     const u = (usage) => j(A.parseUsage(JSON.stringify({ v: 1, sessions: [], usage })));
-    assert.deepEqual(u({ fiveHour: { pct: 34.4, resetsAt: 100 }, sevenDay: { pct: 'x', resetsAt: 5 } }), { fiveHour: { pct: 34, resetsAt: 100000 } });
+    assert.deepEqual(u({ fiveHour: { pct: 34.4, resetsAt: 100 }, sevenDay: { pct: 'x', resetsAt: 5 } }), { fiveHour: { pct: 34, resetsAt: 100000, at: 0 } });
     assert.deepEqual(u(undefined), {});
     assert.deepEqual(j(A.parseUsage('{nope')), {});
     assert.deepEqual(j(A.parseUsage(JSON.stringify({ v: 2, usage: { fiveHour: { pct: 1, resetsAt: 9 } } }))), {});
@@ -291,4 +291,41 @@ test('1x1 resting: both windows show quietly beside the moon; one window shows o
     assert.equal(face({ usage: {}, sawLimits: false }).side, null);
     const running = face({ usage: { fiveHour: win(34, 60), sevenDay: win(55, 3000) }, sessions: [s({})] });
     assert.deepEqual([running.side, running.hero.kind, running.peek.kind], [null, 'ring', 'week']);
+});
+
+test('usage is stamped with its report time, merged by recency, and kept as numbers only across restarts', () => {
+    const u = (usage) => j(A.parseUsage(JSON.stringify({ v: 1, sessions: [], usage })));
+    assert.deepEqual(u({ fiveHour: { pct: 34, resetsAt: 100, at: 90 }, sevenDay: { pct: 5, resetsAt: 100 } }), { fiveHour: { pct: 34, resetsAt: 100000, at: 90000 }, sevenDay: { pct: 5, resetsAt: 100000, at: 0 } });
+    const older = { fiveHour: { pct: 10, resetsAt: NOW + 5, at: 100 } };
+    const newer = { fiveHour: { pct: 20, resetsAt: NOW + 5, at: 200 } };
+    assert.equal(j(C.mergeUsage(newer, older)).fiveHour.pct, 20); // a replay of an older report never wins
+    assert.equal(j(C.mergeUsage(older, newer)).fiveHour.pct, 20);
+    assert.equal(j(C.mergeUsage(older, { fiveHour: { pct: 11, resetsAt: NOW + 5, at: 100 } })).fiveHour.pct, 11); // a tie takes the report
+    assert.equal(C.usageAt({ fiveHour: { at: 5 }, sevenDay: { at: 9 } }), 9);
+    assert.equal(C.usageAt({}), 0);
+    const stored = A.serializeUsage({ fiveHour: { pct: 34, resetsAt: NOW + MIN, at: NOW - MIN }, sevenDay: { pct: 12, resetsAt: NOW - 1, at: 1 } });
+    assert.deepEqual(Object.keys(JSON.parse(stored)), ['v', 'usage']); // nothing but the numbers
+    assert.deepEqual(j(A.parseStoredUsage(stored, NOW)), { fiveHour: { pct: 34, resetsAt: NOW + MIN, at: NOW - MIN } }); // the past window expires on load
+    assert.deepEqual(j(A.parseStoredUsage('{nope', NOW)), {});
+    assert.deepEqual(j(A.parseStoredUsage(JSON.stringify({ v: 2, usage: { fiveHour: { pct: 1, resetsAt: NOW + 9 } } }), NOW)), {});
+    assert.deepEqual(j(A.parseStoredUsage(JSON.stringify({ v: 1, usage: { fiveHour: { pct: 'x', resetsAt: NOW + 9 } } }), NOW)), {});
+});
+
+test('stale: usage older than 10 minutes shows its age, unless something waits for you or its age is unknown', () => {
+    const at = (minAgo) => ({ fiveHour: { pct: 34, resetsAt: NOW + 60 * MIN, at: NOW - minAgo * MIN } });
+    assert.equal(face({ usage: at(9) }).stale, false);
+    const old = face({ usage: at(11) });
+    assert.deepEqual([old.stale, old.usageAt, old.hero.kind], [true, NOW - 11 * MIN, 'moon']);
+    assert.equal(face({ usage: at(11), sessions: [s({})] }).stale, true); // while running too
+    assert.equal(face({ usage: at(11), sessions: [s({ state: 'waiting', waitingCommand: 'ls' })] }).stale, false);
+    assert.equal(face({ usage: { fiveHour: win(34, 60) } }).stale, false); // no report time: unknown age
+    assert.equal(face({ usage: {}, sawLimits: false }).stale, false);
+});
+
+test('terminalOnly: sessions run, no limit was ever reported, no cost: the peek explains where usage comes from', () => {
+    assert.deepEqual(j(face({ usage: {}, sawLimits: false, sessions: [s({})] }).peek), { kind: 'terminalOnly' });
+    assert.equal(face({ usage: {}, sawLimits: true, sessions: [s({})] }).peek, null); // limits were seen once (they expired)
+    assert.equal(face({ usage: {}, sawLimits: false, sessions: [] }).peek, null); // nothing running
+    assert.equal(face({ usage: {}, sawLimits: false, spend: { a: 1.5 }, sessions: [s({})] }).peek, null); // an API-key setup
+    assert.equal(face({ usage: {}, sawLimits: false, sessions: [s({ state: 'waiting', waitingCommand: 'ls', waitingAction: 'run' })] }).peek.kind, 'wants');
 });

@@ -247,15 +247,19 @@ class Hub:
         self.sessions, self.done_min, self.empty_since = {}, done_min, None
         self.metrics, self.usage = {}, {}  # sid -> status-line numbers; account-wide limit windows (D-60)
 
-    def _status(self, ev, now):
-        """A status-line report (D-60). A window is replaced only by a report that carries it and dropped only when its
+    def _take_usage(self, usage, now):
+        """A window is replaced only by a report that carries it (stamped with when it arrived) and dropped only when its
         reset passes: usage is account-wide, so a new session without limits yet must not blank it."""
-        sid = str(ev["session_id"])
-        for name, w in (ev.get("usage") if isinstance(ev.get("usage"), dict) else {}).items():
+        for name, w in (usage if isinstance(usage, dict) else {}).items():
             w = w if isinstance(w, dict) else {}
             at, pct = _number(w.get("resetsAt")), _number(w.get("pct"))
             if name in USAGE_WINDOWS and at is not None and pct is not None and at > now:
-                self.usage[name] = {"pct": max(0, min(100, round(pct))), "resetsAt": int(at)}
+                self.usage[name] = {"pct": max(0, min(100, round(pct))), "resetsAt": int(at), "at": int(now)}
+
+    def _status(self, ev, now):
+        """A status-line report (D-60)."""
+        sid = str(ev["session_id"])
+        self._take_usage(ev.get("usage"), now)
         ctx = _number(ev.get("contextPct"))
         m = {"contextPct": None if ctx is None else max(0, min(100, round(ctx))),
              "costUsd": round(max(0, _number(ev.get("costUsd")) or 0), 2),
@@ -269,6 +273,8 @@ class Hub:
 
     def handle(self, ev, now):
         sid, kind = ev.get("session_id"), ev.get("hook_event_name")
+        if kind != "StatusLine":
+            self._take_usage(ev.get("usage"), now)  # any hook payload that carries rate_limits reports it, session or not
         if sid and kind == "StatusLine":  # never creates a session: the status line renders before any prompt
             return self._status(ev, now)
         if not sid or kind == "SessionStart":  # a session only exists once it does something

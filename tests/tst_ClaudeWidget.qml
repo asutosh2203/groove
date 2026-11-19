@@ -27,6 +27,7 @@ Item {
 
             readonly property string claudeLabel: "Claude Code"
             readonly property string claudeCaughtUp: "All caught up"
+            readonly property string claudeTerminalOnly: "Usage comes from terminal sessions"
             readonly property string claudeNoRecent: "No recent sessions"
             function claudeLimit(weekly, when) { return (weekly ? "Weekly" : "5h") + " limit · " + when; }
             function claudeWeek(p, d) { return "This week " + p; }
@@ -41,6 +42,19 @@ Item {
             function claudeNeedsOkLine(t) { return "Needs your OK · " + t; }
             function agentWants(a, t) { return "Wants to run: " + t; }
             function agentAction(a, t) { return "doing " + t; }
+        }
+
+        Component {
+            id: serviceWithConfig
+
+            AgentService {
+            }
+        }
+
+        QtObject {
+            id: store
+
+            property string usageCache: ""
         }
 
         Component {
@@ -245,6 +259,61 @@ Item {
             const v = createTemporaryObject(view1, host);
             tryVerify(() => texts(v).indexOf("All caught up") >= 0);
             verify(texts(v).indexOf("wk 55") >= 0 && texts(v).indexOf("5h 32") >= 0);
+        }
+
+        function test_old_usage_shows_its_age_in_place_of_the_detail_and_turns_the_peek_off() {
+            const reported = Math.floor(Date.now() / 1000) - 11 * 60;
+            const reset = Math.floor(Date.now() / 1000) + 3600;
+            snap([session("a", "working")], { "fiveHour": { "pct": 32, "resetsAt": reset, "at": reported }, "sevenDay": { "pct": 55, "resetsAt": reset + 86400, "at": reported } });
+            const v = createTemporaryObject(view1, host);
+            tryVerify(() => texts(v).indexOf("32%") >= 0);
+            compare(v.widgetState, "stale");
+            compare(v.lastUpdated, reported * 1000);
+            v.staleText = "updated 11 min ago"; // the host's text for a stale view (D-55)
+            tryVerify(() => texts(v).indexOf("updated 11 min ago") >= 0);
+            verify(texts(v).every(t => t.indexOf("5h limit") !== 0));
+            const week = withText(v, "This week 55");
+            mouseMove(v, 60, 50);
+            wait(400);
+            compare(week.opacity, 0);
+            mouseMove(v, 300, 300);
+        }
+
+        function test_fresh_usage_is_not_stale() {
+            const now = Math.floor(Date.now() / 1000);
+            snap([session("a", "working")], { "fiveHour": { "pct": 32, "resetsAt": now + 3600, "at": now - 60 } });
+            const v = createTemporaryObject(view1, host);
+            tryVerify(() => texts(v).indexOf("32%") >= 0);
+            compare(v.widgetState, "ready");
+        }
+
+        function test_sessions_running_with_no_usage_ever_seen_explain_where_usage_comes_from() {
+            snap([session("a", "working")]);
+            const v = createTemporaryObject(view1, host);
+            tryVerify(() => texts(v).indexOf("1 running") >= 0);
+            const note = withText(v, "Usage comes from terminal");
+            verify(note !== null);
+            compare(note.opacity, 0);
+            mouseMove(v, 60, 50);
+            tryVerify(() => note.opacity === 1, 2000);
+            mouseMove(v, 300, 300);
+        }
+
+        function test_usage_windows_survive_a_restart_as_numbers_only_and_expire_at_their_reset() {
+            const now = Date.now();
+            store.usageCache = "";
+            const first = createTemporaryObject(serviceWithConfig, host, { "cfg": store });
+            first.setSnapshot(JSON.stringify({ "v": 1, "sessions": [], "usage": { "fiveHour": { "pct": 34, "resetsAt": Math.floor(now / 1000) + 3600, "at": Math.floor(now / 1000) } } }));
+            const kept = JSON.parse(store.usageCache);
+            compare(Object.keys(kept).join(), "v,usage");
+            compare(kept.usage.fiveHour.pct, 34);
+            const second = createTemporaryObject(serviceWithConfig, host, { "cfg": store });
+            compare(second.usage.fiveHour.pct, 34);
+            compare(second.sawLimits, true);
+            store.usageCache = JSON.stringify({ "v": 1, "usage": { "fiveHour": { "pct": 34, "resetsAt": now - 1000, "at": now - 5000 } } });
+            const third = createTemporaryObject(serviceWithConfig, host, { "cfg": store });
+            compare(Object.keys(third.usage).length, 0);
+            compare(third.sawLimits, false);
         }
     }
 }

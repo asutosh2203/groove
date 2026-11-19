@@ -17,9 +17,10 @@ Item {
     readonly property var face: block.base.face
     readonly property var s: block.base.strings
     readonly property string kind: block.face.hero.kind
-    readonly property string detail: block.s ? block.detailText(block.face.detail) : ""
+    readonly property bool stale: block.base.staleText.length > 0
+    readonly property string detail: block.stale ? block.base.staleText : block.s ? block.detailText(block.face.detail) : ""
     readonly property string peek: block.s ? block.peekText(block.face.peek) : ""
-    readonly property bool peekShown: block.peeking && block.peek.length > 0
+    readonly property bool peekShown: block.peeking && block.peek.length > 0 && !block.stale
     readonly property color accent: T.agentAccents["claude-code"]
 
     function whenText(d) {
@@ -52,6 +53,8 @@ Item {
             return block.s.agentWants(p.action, p.text);
         case "last":
             return block.s.claudeLast(p.project, p.minutes);
+        case "terminalOnly":
+            return block.s.claudeTerminalOnly;
         }
         return "";
     }
@@ -172,7 +175,9 @@ Item {
             color: T.textSecondary
             font.pixelSize: T.fontCaption
             elide: Text.ElideRight
-            maximumLineCount: 1
+            // The usage note is a sentence: it wraps to two lines; every other peek is one elided line.
+            wrapMode: block.face.peek && block.face.peek.kind === "terminalOnly" ? Text.WordWrap : Text.NoWrap
+            maximumLineCount: block.face.peek && block.face.peek.kind === "terminalOnly" ? 2 : 1
 
             Behavior on opacity {
                 enabled: !block.base.reduceMotion

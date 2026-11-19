@@ -693,6 +693,7 @@ PlasmoidItem {
     AgentService {
         id: agentService
 
+        cfg: root.settings
         deckVisible: root.dialogVisible && root.popupMode === "deck"
     }
 

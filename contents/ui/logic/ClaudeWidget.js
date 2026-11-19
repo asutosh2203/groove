@@ -20,10 +20,24 @@ function activeUsage(usage, nowMs) {
     return out;
 }
 
-// A report that lacks a window never clears it: usage is account-wide and a new session has none yet.
+// A report that lacks a window never clears it: usage is account-wide and a new session has none yet. A window is replaced by
+// one that is at least as recent (a replay of an older one, after a restart, never wins).
 function mergeUsage(prev, next) {
-    return Object.assign({}, prev || {}, next || {});
+    const out = Object.assign({}, prev || {});
+    for (const k of Object.keys(next || {})) {
+        if (!(out[k] && (out[k].at || 0) > (next[k].at || 0)))
+            out[k] = next[k];
+    }
+    return out;
 }
+
+// When the newest of these windows was reported (ms), 0 for none.
+function usageAt(windows) {
+    return Object.keys(windows || {}).reduce((best, k) => Math.max(best, windows[k].at || 0), 0);
+}
+
+// Usage that has not been reported for this long is shown with its age (D-60): only terminal sessions report it.
+const USAGE_STALE_MS = 10 * 60 * 1000;
 
 // sid -> highest cost seen this run, for sessions that cost something (bounded; the oldest entry goes first).
 function trackSpend(map, sessions) {
@@ -89,7 +103,8 @@ function minutesAgo(r, nowMs) {
 //   hero:   ring {pct} | cost {usd} | count {n} | moon
 //   detail: limit {window, resetsAt} | attention {n} | caughtUp | costSessions {n} | project {name} | none
 //   side:   [{ window, pct }] shown muted at the top right while resting with usage known | null
-//   peek:   week {pct, resetsAt} (while running) | wants {action, text} | last {project, minutes} | null
+//   usageAt, stale: when the shown usage was reported, and whether it is old enough to be shown with its age
+//   peek:   week {pct, resetsAt} (while running) | terminalOnly (running, no usage ever seen) | wants {action, text} | last {project, minutes} | null
 function face(m, nowMs) {
     const active = activeUsage(m.usage, nowMs);
     const spent = spendTotal(m.spend);
@@ -98,7 +113,7 @@ function face(m, nowMs) {
     const waiting = run.filter(s => s.state === "waiting");
     const resting = run.length === 0;
     const win = active.fiveHour ? "fiveHour" : "sevenDay";
-    const out = { "mode": md, "resting": resting, "attention": waiting.length, "moon": false, "peek": null, "side": null, "target": null };
+    const out = { "mode": md, "resting": resting, "attention": waiting.length, "moon": false, "peek": null, "side": null, "target": null, "usageAt": usageAt(active), "stale": false };
 
     if (md === "usage")
         out.hero = resting ? { "kind": "moon" } : { "kind": "ring", "pct": active[win].pct };
@@ -106,6 +121,9 @@ function face(m, nowMs) {
         out.hero = { "kind": "cost", "usd": spent.usd };
     else
         out.hero = resting ? { "kind": "moon" } : { "kind": "count", "n": run.length };
+
+    // Attention outranks the age: a request waiting for you is never hidden behind "updated N min ago".
+    out.stale = md === "usage" && waiting.length === 0 && out.usageAt > 0 && nowMs - out.usageAt > USAGE_STALE_MS;
 
     if (waiting.length > 0) {
         out.detail = { "kind": "attention", "n": waiting.length };
@@ -124,6 +142,9 @@ function face(m, nowMs) {
         out.detail = { "kind": "costSessions", "n": spent.sessions };
     } else {
         out.detail = { "kind": "project", "name": run[0].project };
+        // Sessions run but no limit was ever reported: the VS Code extension does not report usage, terminal sessions do.
+        if (!m.sawLimits)
+            out.peek = { "kind": "terminalOnly" };
     }
     out.moon = resting && out.hero.kind !== "moon";
     // The session a click raises: the waiting one, else the most recent live one; nothing when none runs.

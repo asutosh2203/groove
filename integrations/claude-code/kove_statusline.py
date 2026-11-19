@@ -8,15 +8,10 @@ import socket
 import sys
 import time
 
-from kove_hook import log, sock_path
+from kove_hook import _num, log, sock_path, usage_windows
 
 MIN_INTERVAL = 2.0  # seconds between reports of one session
-WINDOWS = (("five_hour", "fiveHour"), ("seven_day", "sevenDay"))
 HERE = os.path.dirname(os.path.abspath(__file__))
-
-
-def _num(v):
-    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and v == v and abs(v) != float("inf") else None
 
 
 def extract(p):
@@ -24,13 +19,7 @@ def extract(p):
     if not isinstance(p, dict) or not isinstance(p.get("session_id"), str) or not p["session_id"]:
         return None
     msg = {"hook_event_name": "StatusLine", "session_id": p["session_id"][:128]}
-    limits = p.get("rate_limits") if isinstance(p.get("rate_limits"), dict) else {}
-    usage = {}
-    for src, dst in WINDOWS:
-        w = limits.get(src) if isinstance(limits.get(src), dict) else {}
-        pct, at = _num(w.get("used_percentage")), _num(w.get("resets_at"))
-        if pct is not None and at is not None and at > 0:
-            usage[dst] = {"pct": max(0, min(100, round(pct))), "resetsAt": int(at)}
+    usage = usage_windows(p)
     if usage:
         msg["usage"] = usage
     ctx = p.get("context_window") if isinstance(p.get("context_window"), dict) else {}

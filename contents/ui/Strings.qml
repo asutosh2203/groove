@@ -253,6 +253,8 @@ QtObject {
         return i18n("This week %1% · resets %2", pct, when);
     }
 
+    readonly property string claudeTerminalOnly: i18n("Usage comes from terminal sessions")
+
     // The resting widget's quiet usage lines, short: "5h 34%", "wk 12%".
     function claudeUsageShort(weekly, pct) {
         return weekly ? i18n("wk %1%", pct) : i18n("5h %1%", pct);

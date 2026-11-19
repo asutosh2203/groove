@@ -53,7 +53,36 @@ function parseUsage(json) {
         const pct = u[k] ? percent(u[k].pct) : null;
         const at = u[k] ? Number(u[k].resetsAt) : 0;
         if (pct !== null && at > 0)
-            out[k] = { "pct": pct, "resetsAt": Math.round(at * 1000) };
+            out[k] = { "pct": pct, "resetsAt": Math.round(at * 1000), "at": u[k].at > 0 ? Math.round(Number(u[k].at) * 1000) : 0 };
+    }
+    return out;
+}
+
+// The windows as kept in the plasmoid config (numbers only: pct, reset and report time, in ms) and back. A stored window
+// that is malformed or already past its reset is dropped on load.
+function serializeUsage(usage) {
+    const out = {};
+    for (const k of ["fiveHour", "sevenDay"]) {
+        if (usage && usage[k])
+            out[k] = { "pct": usage[k].pct, "resetsAt": usage[k].resetsAt, "at": usage[k].at || 0 };
+    }
+    return JSON.stringify({ "v": 1, "usage": out });
+}
+
+function parseStoredUsage(json, nowMs) {
+    let stored;
+    try {
+        stored = JSON.parse(json);
+    } catch (e) {
+        return {};
+    }
+    const u = stored && stored.v === 1 && stored.usage && typeof stored.usage === "object" ? stored.usage : {};
+    const out = {};
+    for (const k of ["fiveHour", "sevenDay"]) {
+        const pct = u[k] ? percent(u[k].pct) : null;
+        const resetsAt = u[k] ? Number(u[k].resetsAt) : 0;
+        if (pct !== null && resetsAt > nowMs)
+            out[k] = { "pct": pct, "resetsAt": resetsAt, "at": u[k].at > 0 ? Number(u[k].at) : 0 };
     }
     return out;
 }

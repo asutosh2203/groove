@@ -226,10 +226,64 @@ class HubUsageTest(unittest.TestCase):
         h = Hub()
         h.handle({"session_id": "s", "hook_event_name": "StatusLine", "usage": {"fiveHour": {"pct": 900, "resetsAt": FUTURE}, "bogus": {"pct": 1, "resetsAt": FUTURE}},
                   "contextPct": -5, "costUsd": "x", "linesAdded": 1e30, "linesRemoved": None}, 1)
-        self.assertEqual(h.usage, {"fiveHour": {"pct": 100, "resetsAt": FUTURE}})
+        self.assertEqual(h.usage, {"fiveHour": {"pct": 100, "resetsAt": FUTURE, "at": 1}})
         self.assertEqual(h.metrics["s"]["contextPct"], 0)
         self.assertEqual(h.metrics["s"]["costUsd"], 0)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HookUsageTest(unittest.TestCase):
+    """Any hook payload that carries rate_limits reports usage (a VS Code session would, if Claude Code ever adds it)."""
+
+    def payload(self, **kw):
+        return dict({"session_id": "vs1", "cwd": "/x/p", "hook_event_name": "PreToolUse", "tool_name": "Read",
+                     "tool_input": {"file_path": "/x"}, "transcript_path": "/secret/t.jsonl",
+                     "rate_limits": {"five_hour": {"used_percentage": 41.6, "resets_at": 4102444800},
+                                     "seven_day": {"used_percentage": "x", "resets_at": 4102444800}}}, **kw)
+
+    def run_hook(self, payload):
+        d = tempfile.mkdtemp()
+        os.makedirs(os.path.join(d, "kove"))
+        srv = socket.socket(socket.AF_UNIX)
+        srv.bind(os.path.join(d, "kove", "agents.sock"))
+        srv.listen(2)
+        srv.settimeout(5)
+        env = dict(os.environ, XDG_RUNTIME_DIR=d, XDG_STATE_HOME=d)
+        subprocess.run([sys.executable, "-S", os.path.join(HERE, "kove_hook.py")], input=json.dumps(payload).encode(), env=env, timeout=10)
+        c, _ = srv.accept()
+        return json.loads(c.makefile().read())
+
+    def test_the_hook_forwards_the_windows_and_nothing_else_new(self):
+        msg = self.run_hook(self.payload())
+        self.assertEqual(msg["usage"], {"fiveHour": {"pct": 42, "resetsAt": 4102444800}})  # the malformed window is absent
+        self.assertNotIn("transcript_path", msg)
+        self.assertNotIn("rate_limits", msg)
+
+    def test_a_payload_without_rate_limits_adds_nothing(self):
+        p = self.payload()
+        del p["rate_limits"]
+        self.assertNotIn("usage", self.run_hook(p))
+
+    def test_the_hub_takes_usage_from_any_event_with_the_same_absence_rules(self):
+        h = Hub()
+        h.handle({"session_id": "vs1", "hook_event_name": "PreToolUse", "tool_name": "Read", "cwd": "/x/p",
+                  "usage": {"fiveHour": {"pct": 42, "resetsAt": 4102444800}, "sevenDay": {"pct": 10, "resetsAt": 4102444800}}}, 100)
+        self.assertEqual(h.snapshot()["usage"]["fiveHour"], {"pct": 42, "resetsAt": 4102444800, "at": 100})
+        # a later event carrying only one window replaces that one and never clears the other
+        h.handle({"session_id": "vs1", "hook_event_name": "PreToolUse", "tool_name": "Read", "cwd": "/x/p",
+                  "usage": {"fiveHour": {"pct": 50, "resetsAt": 4102444800}}}, 200)
+        u = h.snapshot()["usage"]
+        self.assertEqual((u["fiveHour"]["pct"], u["fiveHour"]["at"], u["sevenDay"]["at"]), (50, 200, 100))
+        # an event without usage, or with an expired window, changes nothing
+        h.handle({"session_id": "vs1", "hook_event_name": "PreToolUse", "tool_name": "Read", "cwd": "/x/p"}, 300)
+        h.handle({"session_id": "vs1", "hook_event_name": "PreToolUse", "tool_name": "Read", "cwd": "/x/p",
+                  "usage": {"fiveHour": {"pct": 99, "resetsAt": 5}}}, 400)
+        self.assertEqual(h.snapshot()["usage"]["fiveHour"]["pct"], 50)
+        # usage arrives even from an event with no session id
+        h2 = Hub()
+        h2.handle({"hook_event_name": "Notification", "usage": {"sevenDay": {"pct": 7, "resetsAt": 4102444800}}}, 10)
+        self.assertEqual(h2.snapshot()["usage"]["sevenDay"]["pct"], 7)
+        self.assertEqual(h2.snapshot()["sessions"], [])

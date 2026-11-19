@@ -16,6 +16,9 @@ Widgets.WidgetView {
     property double nowMs: Date.now()
     readonly property var facts: base.agents ? ({ "usage": base.agents.usage, "sawLimits": base.agents.sawLimits, "spend": base.agents.spend, "sessions": base.agents.sessions, "recent": base.agents.recent }) : ({ "usage": {}, "sawLimits": false, "spend": {}, "sessions": [], "recent": [] })
     readonly property var face: Claude.face(base.facts, base.nowMs)
+    // Usage not reported for a while (D-60): the host shows "updated N min ago" in place of the detail line (D-55).
+    widgetState: base.face.stale ? "stale" : "ready"
+    lastUpdated: base.face.usageAt
     readonly property int cols: base.span === "2x1" ? 2 : 1
     readonly property real cellWidth: (base.boxWidth - T.gap * (base.cols - 1)) / base.cols
     readonly property double stamp: base.agents ? base.agents.nowMs : 0

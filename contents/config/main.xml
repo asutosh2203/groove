@@ -74,6 +74,9 @@
         <entry name="devPresets" type="String">
             <default></default>
         </entry>
+        <entry name="usageCache" type="String">
+            <default></default>
+        </entry>
         <entry name="weatherForecastCache" type="String">
             <default></default>
         </entry>
