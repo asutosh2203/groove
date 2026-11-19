@@ -33,11 +33,14 @@ Notifications and the keyboard layout stay pop-ins over the deck, not pages (the
   and following its bottom edge as the island morphs. Left to right in deck order it holds a glyph for Live, one dot per
   preset (at most 3) and a glyph for the Control Center. The current page is full white (its dot stretches to a short pill),
   the others a muted neutral that brightens on hover (D-45, lightness only). Glyphs are theme symbolic icons with
-  fallback chains (D-26). A click on an item goes to that page; there is no swipe and no scroll paging in D1, so content
+  fallback chains (D-26). A click on an item goes to that page; there is no swipe and no scroll paging (the capsule scrub, D-62, is the one drag), so content
   (the jobs list) keeps its own vertical scroll. The capsule is hidden with one page, in Control Center edit mode and
   while a pop-in shows (it returns after). It is a satellite of the deck, not a second island: it has the island's surface
   but no glow, and it shares the deck's window, so principle 1 (one shell) still holds. Pages themselves pad all four
   sides equally and never grow for navigation.
+- The capsule also scrubs (D-62): press and drag across it to move between pages (item boundaries at the midpoints between
+  centres; the highlight follows the pointer, the page switches per crossing or after `scrubDwell`, and on release). Page
+  content is deliberately not draggable.
 - If three presets feel restrictive, fallback B: a three-section capsule (Live / Presets / Control Center) whose middle item
   shows the current preset and cycles the presets when clicked again. Not built.
 - Entry: a capsule click opens the deck (Live if something runs, else the last-used page). The idle hot zones keep

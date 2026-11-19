@@ -49,6 +49,9 @@ CC6 (notification list density/scrolling) was dropped.
   merged in as the gear chip, a transactional session with a discard prompt, a draft kept on focus loss, and the
   `devPresets` lock. Checked live in Notch and Pill. Next: use it for a few days, then
   refine (see the list below), then the first-run starter presets.
+- **D4: capsule scrub (done).** D-62: press and drag across the page-control capsule to move
+  between pages, with the swell and a visible detent. `scrubDwell` is 120 ms: pure live (0) was tried by hand and a fast flick
+  lurched through every page. Checked live in Notch and Pill.
   - Possible later: right-click a preset page to edit that preset (a shortcut; the capsule stays symmetric, D-51). A scrolling
     form for widgets with more than four settings. A catalogue search. Keyboard reordering. An `app` field type when a
     widget needs it.

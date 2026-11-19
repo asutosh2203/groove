@@ -281,3 +281,9 @@ aggregator). Samples every 5 minutes; the first row has no CPU figure.
 - **The status-line helper** (`kove_statusline.py`, run by Claude Code on every render): 15.5 ms median, 16.4 ms p95, 17.3 ms
   max over 100 runs, against 5.9 ms for a bare `python3 -S`. About the same with or without an aggregator listening.
   It sends only when the numbers change, at most once per 2 s per session.
+
+## After D4 (capsule scrub, D-62)
+- **Closed-deck idle A/B** (3 runs of 30 s, 125 s after a restart, YouTube video PLAYING in the user's browser, so higher than
+  the 0.16% media-paused figure of W2.1): before (HEAD) 0.43, 0.47, 0.50%, median **0.47%**, 653 MB; after 0.53, 0.45, 0.50%,
+  median **0.50%**, 634 MB. Within noise. The scrub adds no timer or animation outside a scrub (the dwell `Timer` and the
+  detent animation only start during one). Raw: `perf/results/*d4-ab-*`.
