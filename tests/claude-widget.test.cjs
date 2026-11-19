@@ -72,10 +72,10 @@ test('1x1 attention overrides the detail; the peek is the command, elided', () =
     assert.equal(f.hero.kind, 'ring');
 });
 
-test('1x1 resting: dimmed ring, moon in the label row, caught up, last-session peek', () => {
+test('1x1 resting: the moon stays the hero, the usage sits beside it, caught up, last-session peek', () => {
     const recent = [{ id: 'r', project: 'Afterplay', endedAt: NOW - 18 * MIN }];
     const f = face({ recent });
-    assert.deepEqual([f.resting, f.moon, f.hero.kind, f.detail.kind, f.target], [true, true, 'ring', 'caughtUp', null]);
+    assert.deepEqual([f.resting, f.moon, f.hero.kind, f.detail.kind, f.target], [true, false, 'moon', 'caughtUp', null]);
     assert.deepEqual(f.peek, { kind: 'last', project: 'Afterplay', minutes: 18 });
     assert.equal(face({}).peek, null);
     assert.equal(face({ sessions: [s({ state: 'done' })] }).resting, true); // a lingering done session is not live
@@ -251,20 +251,44 @@ test('slotHeights: the slots fill the span, with the same padding above and belo
     assert.deepEqual(j(C.slotHeights(40, gap, [30, 30])), [30, 30]);
 });
 
-test('contentHeight: the name line, plus the hairline when the context is known, plus the accent line when waiting', () => {
-    const h = (o) => C.contentHeight(o, 12, 2, 12, 4);
-    assert.equal(h({ context: 40, state: 'working' }), 18);
-    assert.equal(h({ context: null, state: 'working' }), 12);
-    assert.equal(h({ context: 40, state: 'waiting' }), 34);
-    assert.equal(h({ context: null, state: 'waiting' }), 28);
+test('contextLevel: nothing up to 80%, warn above 80, critical above 90, nothing when unknown', () => {
+    const l = (v) => C.contextLevel(v);
+    assert.deepEqual([null, undefined, NaN, 0, 40, 80].map(l), ['none', 'none', 'none', 'none', 'none', 'none']);
+    assert.deepEqual([81, 90].map(l), ['warn', 'warn']);
+    assert.deepEqual([91, 100].map(l), ['critical', 'critical']);
+    assert.equal(j(C.rows([s({ contextPct: 85 })], []))[0].level, 'warn');
 });
 
-test('layout: slots inset from the tile and from each other, filling the height', () => {
-    const rows = [{ context: 40, state: 'waiting' }, { context: 40, state: 'working' }];
-    const l = j(C.layout(rows, 100, 4, 12, 2, 4));
-    assert.equal(l.tops[0], 4);
-    assert.equal(l.tops[1], 4 + l.heights[0] + 4);
-    assert.equal(l.tops[1] + l.heights[1], 100 - 4);
+test('contentHeight: the name line, plus the bar when the context is nearly full, plus the accent line when waiting', () => {
+    const h = (o) => C.contentHeight(o, 12, 2, 12, 4);
+    assert.equal(h({ level: 'warn', state: 'working' }), 18);
+    assert.equal(h({ level: 'critical', state: 'working' }), 18);
+    assert.equal(h({ level: 'none', state: 'working' }), 12);
+    assert.equal(h({ level: 'warn', state: 'waiting' }), 34);
+    assert.equal(h({ level: 'none', state: 'waiting' }), 28);
+});
+
+test('layout: the slots run from the divider\'s top to its bottom, `between` apart, as tall as their content needs', () => {
+    const rows = [{ level: 'warn', state: 'waiting' }, { level: 'none', state: 'working' }];
+    const l = j(C.layout(rows, 104, 10, 4, 12, 2, 4));
+    assert.equal(l.tops[0], 10);
+    assert.equal(l.tops[1], 10 + l.heights[0] + 4);
+    assert.equal(l.tops[1] + l.heights[1], 104 - 10);
     assert.ok(l.heights[0] > l.heights[1]);
-    assert.deepEqual(j(C.layout([], 100, 4, 12, 2, 4)), { tops: [], heights: [] });
+    const plain = { level: 'none', state: 'working' };
+    const two = j(C.layout([plain, plain], 104, 10, 4, 12, 2, 4));
+    assert.equal(two.heights[0], two.heights[1]);
+    assert.equal(two.tops[1] + two.heights[1], 94);
+    assert.deepEqual(j(C.layout([], 104, 10, 4, 12, 2, 4)), { tops: [], heights: [] });
+});
+
+test('1x1 resting: both windows show quietly beside the moon; one window shows one line; a running widget has none', () => {
+    const recent = [{ id: 'r', project: 'Afterplay', state: 'done', endedAt: NOW - 18 * MIN }];
+    const both = face({ usage: { fiveHour: win(34, 60), sevenDay: win(55, 3000) }, recent });
+    assert.deepEqual([both.resting, both.hero.kind, both.moon, both.peek.kind], [true, 'moon', false, 'last']);
+    assert.deepEqual(both.side, [{ window: 'fiveHour', pct: 34 }, { window: 'sevenDay', pct: 55 }]);
+    assert.deepEqual(face({ usage: { fiveHour: win(34, 60) }, recent }).side, [{ window: 'fiveHour', pct: 34 }]);
+    assert.equal(face({ usage: {}, sawLimits: false }).side, null);
+    const running = face({ usage: { fiveHour: win(34, 60), sevenDay: win(55, 3000) }, sessions: [s({})] });
+    assert.deepEqual([running.side, running.hero.kind, running.peek.kind], [null, 'ring', 'week']);
 });

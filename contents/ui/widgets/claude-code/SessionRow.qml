@@ -25,8 +25,9 @@ Item {
     Island.HoverHighlight {
         containerRadius: T.radiusInner
         gap: T.hoverInset
-        color: row.lifted ? T.chip : T.rowHover
-        shown: row.lifted || (row.clickable && hover.hovered)
+        // A faint card at rest so the slot's padding reads as the row's own; hover and the lift brighten it.
+        color: row.lifted || (row.clickable && hover.hovered) ? T.chip : T.rowHover
+        shown: true
     }
 
     HoverHandler {
@@ -57,10 +58,41 @@ Item {
             spacing: T.deckSpacing
 
             Rectangle {
+                id: dot
+
+                // A working row's dot breathes between white and the idle grey; nothing animates unless it works, shows and
+                // motion is allowed (P9).
+                property color pulse: T.textPrimary
+
                 Layout.preferredWidth: T.liveBadgeRow
                 Layout.preferredHeight: T.liveBadgeRow
                 radius: T.liveBadgeRow / 2
-                color: row.waiting ? row.accent : row.info.state === "working" ? T.textPrimary : T.textTertiary
+                color: row.waiting ? row.accent : row.info.state === "working" ? dot.pulse : T.textTertiary
+
+                SequentialAnimation {
+                    running: row.info.state === "working" && row.visible && !row.base.reduceMotion
+                    loops: Animation.Infinite
+                    onRunningChanged: {
+                        if (!running)
+                            dot.pulse = T.textPrimary;
+                    }
+
+                    ColorAnimation {
+                        target: dot
+                        property: "pulse"
+                        to: T.textTertiary
+                        duration: T.motionPulse
+                        easing.type: T.easingPulse
+                    }
+
+                    ColorAnimation {
+                        target: dot
+                        property: "pulse"
+                        to: T.textPrimary
+                        duration: T.motionPulse
+                        easing.type: T.easingPulse
+                    }
+                }
             }
 
             Island.PlasmaLabel {
@@ -90,7 +122,7 @@ Item {
             }
         }
 
-        // Context fill; no line at all while the context is unknown.
+        // Context fill, only once the window is nearly full (Claude.contextLevel): yellow above 80%, red above 90%.
         Rectangle {
             id: track
 
@@ -98,13 +130,13 @@ Item {
             height: T.widgetHairline
             radius: T.radiusSmall
             color: T.borderStrong
-            visible: row.info.context !== null
+            visible: row.info.level !== "none"
 
             Rectangle {
                 width: track.width * (row.info.context ?? 0) / 100
                 height: parent.height
                 radius: T.radiusSmall
-                color: row.info.state === "done" ? T.textTertiary : T.textSecondary
+                color: row.info.level === "critical" ? T.critical : T.warning
             }
         }
 

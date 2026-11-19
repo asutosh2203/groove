@@ -73,6 +73,13 @@ function remember(recent, sessions) {
     return out.sort((a, b) => b.endedAt - a.endedAt).slice(0, RECENT_CAP);
 }
 
+// A row's context bar only shows once the window is nearly full: warn above 80%, critical above 90%, else none.
+function contextLevel(pct) {
+    if (typeof pct !== "number" || !(pct === pct))
+        return "none";
+    return pct > 90 ? "critical" : pct > 80 ? "warn" : "none";
+}
+
 function minutesAgo(r, nowMs) {
     return Math.max(1, Math.floor((nowMs - r.endedAt) / 60000));
 }
@@ -81,7 +88,8 @@ function minutesAgo(r, nowMs) {
 // -> { mode, resting, attention, hero, detail, peek, target, moon } with kinds the view turns into text:
 //   hero:   ring {pct} | cost {usd} | count {n} | moon
 //   detail: limit {window, resetsAt} | attention {n} | caughtUp | costSessions {n} | project {name} | none
-//   peek:   week {pct, resetsAt} | wants {action, text} | last {project, minutes} | null
+//   side:   [{ window, pct }] shown muted at the top right while resting with usage known | null
+//   peek:   week {pct, resetsAt} (while running) | wants {action, text} | last {project, minutes} | null
 function face(m, nowMs) {
     const active = activeUsage(m.usage, nowMs);
     const spent = spendTotal(m.spend);
@@ -90,10 +98,10 @@ function face(m, nowMs) {
     const waiting = run.filter(s => s.state === "waiting");
     const resting = run.length === 0;
     const win = active.fiveHour ? "fiveHour" : "sevenDay";
-    const out = { "mode": md, "resting": resting, "attention": waiting.length, "moon": false, "peek": null, "target": null };
+    const out = { "mode": md, "resting": resting, "attention": waiting.length, "moon": false, "peek": null, "side": null, "target": null };
 
     if (md === "usage")
-        out.hero = { "kind": "ring", "pct": active[win].pct };
+        out.hero = resting ? { "kind": "moon" } : { "kind": "ring", "pct": active[win].pct };
     else if (md === "spend")
         out.hero = { "kind": "cost", "usd": spent.usd };
     else
@@ -104,6 +112,8 @@ function face(m, nowMs) {
         out.peek = { "kind": "wants", "action": waiting[0].waitingAction, "text": Agents.elide(waiting[0].waitingCommand, 60) };
     } else if (resting) {
         out.detail = { "kind": "caughtUp" };
+        if (md === "usage")
+            out.side = ["fiveHour", "sevenDay"].filter(k => active[k]).map(k => ({ "window": k, "pct": active[k].pct }));
         if (m.recent.length > 0)
             out.peek = { "kind": "last", "project": m.recent[0].project, "minutes": minutesAgo(m.recent[0], nowMs) };
     } else if (md === "usage") {
@@ -126,7 +136,7 @@ function rows(sessions, recent) {
     const run = live(sessions);
     const ids = new Set(run.map(s => s.id));
     const mk = s => ({ "id": s.id, "state": s.state, "project": s.project, "message": s.state === "done" ? s.lastMessage : "",
-        "action": s.action || "", "target": s.target || "", "added": s.linesAdded, "removed": s.linesRemoved, "context": s.contextPct,
+        "action": s.action || "", "target": s.target || "", "added": s.linesAdded, "removed": s.linesRemoved, "context": s.contextPct, "level": contextLevel(s.contextPct),
         "wants": s.state === "waiting" ? Agents.elide(s.waitingCommand, 60) : "", "wantsAction": s.waitingAction || "" });
     return run.map(mk).concat(recent.filter(r => !ids.has(r.id)).map(mk));
 }
@@ -190,13 +200,13 @@ function assign(prev, sessions, recent) {
     return { "slots": slots, "waitSince": waitSince };
 }
 
-// A row's content height: the name line, the context hairline (none while the context is unknown) and the accent line.
+// A row's content height: the name line, the context bar (only when the context is nearly full) and the accent line.
 function contentHeight(row, lineH, hairline, accentH, gap) {
-    return lineH + (row.context !== null ? gap + hairline : 0) + (row.state === "waiting" ? gap + accentH : 0);
+    return lineH + (row.level !== "none" ? gap + hairline : 0) + (row.state === "waiting" ? gap + accentH : 0);
 }
 
-// Slot heights that fill `span` with `gap` between slots: each is its content plus the same padding above and below, so a
-// row with one more line gets a taller slot and every highlight looks alike. With no room left the padding is zero.
+// Slot heights that fill `span` with `gap` between them: each is its content plus the same padding above and below, so a row
+// with one more line gets a taller slot and every highlight looks alike. With no room left the padding is zero.
 function slotHeights(span, gap, contents) {
     const n = contents.length;
     if (n === 0)
@@ -206,15 +216,15 @@ function slotHeights(span, gap, contents) {
     return contents.map(c => c + 2 * pad);
 }
 
-// The slots' y and height inside a tile `height` tall: `inset` from its edges and between the slots (the highlight's own
-// inset, D-61), each as tall as its row's content needs. rows: the facts of the shown sessions, top to bottom.
-function layout(rows, height, inset, lineH, hairline, gap) {
-    const heights = slotHeights(height - 2 * inset, inset, rows.map(r => contentHeight(r, lineH, hairline, lineH, gap)));
+// The slots' y and height inside a tile `height` tall: `edge` from its top and bottom (the divider's own ends), `between` apart
+// (the highlight's inset, D-61), each as tall as its row's content needs. rows: the facts of the shown sessions, top to bottom.
+function layout(rows, height, edge, between, lineH, hairline, gap) {
+    const heights = slotHeights(height - 2 * edge, between, rows.map(r => contentHeight(r, lineH, hairline, lineH, gap)));
     const tops = [];
-    let y = inset;
+    let y = edge;
     for (const h of heights) {
         tops.push(y);
-        y += h + inset;
+        y += h + between;
     }
     return { "tops": tops, "heights": heights };
 }

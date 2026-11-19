@@ -253,6 +253,11 @@ QtObject {
         return i18n("This week %1% · resets %2", pct, when);
     }
 
+    // The resting widget's quiet usage lines, short: "5h 34%", "wk 12%".
+    function claudeUsageShort(weekly, pct) {
+        return weekly ? i18n("wk %1%", pct) : i18n("5h %1%", pct);
+    }
+
     function claudeAttention(n) {
         return i18np("%1 needs your OK", "%1 need your OK", n);
     }

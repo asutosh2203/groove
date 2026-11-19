@@ -30,6 +30,7 @@ Item {
             readonly property string claudeNoRecent: "No recent sessions"
             function claudeLimit(weekly, when) { return (weekly ? "Weekly" : "5h") + " limit · " + when; }
             function claudeWeek(p, d) { return "This week " + p; }
+            function claudeUsageShort(w, p) { return (w ? "wk " : "5h ") + p; }
             function claudeAttention(n) { return n + " needs your OK"; }
             function claudeRunning(n) { return n + " running"; }
             function claudeCost(u) { return "$" + u.toFixed(2); }
@@ -100,6 +101,17 @@ Item {
             return out;
         }
 
+        function withText(item, start) {
+            if (item.text !== undefined && String(item.text).indexOf(start) === 0)
+                return item;
+            for (let i = 0; i < item.children.length; ++i) {
+                const found = withText(item.children[i], start);
+                if (found)
+                    return found;
+            }
+            return null;
+        }
+
         function sortedRows(item) {
             return rowItems(item).sort((a, b) => a.y - b.y);
         }
@@ -130,7 +142,7 @@ Item {
             snap([session("a", "done")]);
             const v = createTemporaryObject(view1, host);
             tryVerify(() => texts(v).indexOf("All caught up") >= 0);
-            verify(texts(v).indexOf("34%") >= 0);
+            verify(texts(v).indexOf("5h 34") >= 0);
             compare(v.clickAction, null);
         }
 
@@ -177,16 +189,17 @@ Item {
             verify(texts(v).some(t => t.indexOf("Added it.") >= 0));
         }
 
-        function test_two_rows_at_most_filling_the_column() {
+        function test_two_rows_at_most_filling_the_divider() {
             snap([session("a", "working", { "startedAt": 100 }), session("b", "working", { "startedAt": 90 }), session("c", "working", { "startedAt": 80 })], plan());
             const v = createTemporaryObject(view2, host);
             tryVerify(() => rowItems(v).length === 2);
             const r = sortedRows(v);
             compare(r[0].info.id, "a");
             compare(r[1].info.id, "b");
-            fuzzyCompare(r[0].y, T.hoverInset, 0.01);
+            // The rows run from the divider's top to its bottom, the inset between them.
+            fuzzyCompare(r[0].y, T.widgetPadding, 0.01);
+            fuzzyCompare(r[1].y + r[1].height, v.height - T.widgetPadding, 0.01);
             fuzzyCompare(r[0].y + r[0].height + T.hoverInset, r[1].y, 0.01);
-            fuzzyCompare(r[1].y + r[1].height, v.height - T.hoverInset, 0.01);
             fuzzyCompare(r[0].height, r[1].height, 0.01);
         }
 
@@ -210,6 +223,28 @@ Item {
             snap([session("a", "working", { "startedAt": 100 }), session("b", "working", { "startedAt": 90, "updatedAt": 300 }), session("c", "waiting", { "startedAt": 80, "updatedAt": 200, "waitingAction": "run", "waitingCommand": "rm" })], plan());
             tryVerify(() => itemB.waiting === false);
             compare(sortedRows(v).map(x => x.info.id).join(), "b,c");
+        }
+
+        function test_hovering_the_left_block_peeks_the_week() {
+            snap([session("a", "working")], { "fiveHour": { "pct": 32, "resetsAt": Math.floor(Date.now() / 1000) + 3600 }, "sevenDay": { "pct": 55, "resetsAt": Math.floor(Date.now() / 1000) + 3 * 86400 } });
+            const v = createTemporaryObject(view1, host);
+            tryVerify(() => texts(v).indexOf("32%") >= 0);
+            const label = withText(v, "This week 55");
+            verify(label !== null);
+            compare(label.opacity, 0);
+            mouseMove(v, 60, 50);
+            tryVerify(() => label.opacity === 1, 2000);
+            mouseMove(v, 300, 300);
+            tryVerify(() => label.opacity === 0, 2000);
+        }
+
+        function test_resting_shows_the_weekly_figure_beside_the_detail() {
+            const reset = Math.floor(Date.now() / 1000);
+            snap([session("a", "working")], { "fiveHour": { "pct": 32, "resetsAt": reset + 3600 }, "sevenDay": { "pct": 55, "resetsAt": reset + 3 * 86400 } });
+            snap([session("a", "done")]);
+            const v = createTemporaryObject(view1, host);
+            tryVerify(() => texts(v).indexOf("All caught up") >= 0);
+            verify(texts(v).indexOf("wk 55") >= 0 && texts(v).indexOf("5h 32") >= 0);
         }
     }
 }

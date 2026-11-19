@@ -49,6 +49,7 @@ const progressGlowBlur = 1;         // px
 
 // Semantic (the only non-neutral colour)
 const critical = "#ff453a";
+const warning = "#e0a63c";      // a row whose context is above 80% full (red above 90%)
 // Agent accents (D-45, D-57): colour only marks "needs you"; an unknown agent gets the neutral amber.
 const agentAccents = { "claude-code": "#d97757" };
 const agentAccentDefault = "#e0a63c";
@@ -82,6 +83,7 @@ const fontCaption = 10;
 const motionFast = 120;
 const motionSlider = 90;
 const easingStandard = 6;    // Easing.OutCubic; the Easing enum is not reachable from a library script
+const easingPulse = 19;       // Easing.InOutSine: a slow, even breath
 
 // Several theme icons used by the modules are full-colour and opaque, so they
 // cannot be tinted monochrome. Map them to symbolic/monochrome equivalents.
@@ -148,6 +150,7 @@ const editSearchPause = 500;       // ms of quiet before a place search starts
 const editChipW = 44;
 const editChipH = 28;
 const editSilhouetteGap = 2;
+const motionPulse = 1100;       // one way of a working row's dot breathing between white and grey
 const motionPage = 340;         // silhouette morph between pages
 const motionFade = 160;         // content cross-fade
 
@@ -194,5 +197,6 @@ const widgetLabelGlyph = 16;        // the moon beside a tile's label
 const widgetRing = 30;              // the usage ring's diameter
 const widgetRingStroke = 4;
 const widgetHairline = 2;           // a row's context-fill line
+const widgetUsageWidth = 44;        // the resting usage lines, right-aligned beside the moon
 const widgetRowLift = 1.03;         // a waiting row that slides up into a freed slot
 const widgetPeekDwell = 150;        // ms of hover before the detail line peeks

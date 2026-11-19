@@ -17,7 +17,7 @@ ClaudeBase {
     readonly property real slotWidth: view.boxWidth - view.slotX - T.hoverInset
     readonly property var infoById: Claude.byId(Claude.rows(view.facts.sessions, view.facts.recent))
     readonly property var wanted: view.agents ? view.agents.rowSlots.slots.filter(id => id !== null && id in view.infoById) : []
-    readonly property var layout: Claude.layout(view.wanted.map(id => view.infoById[id]), view.boxHeight, T.hoverInset, probe.implicitHeight, T.widgetHairline, T.deckSpacing)
+    readonly property var layout: Claude.layout(view.wanted.map(id => view.infoById[id]), view.boxHeight, T.widgetPadding, T.hoverInset, probe.implicitHeight, T.widgetHairline, T.deckSpacing)
     // False until the first rows exist: those appear at once, later arrivals fade in.
     property bool synced: false
 

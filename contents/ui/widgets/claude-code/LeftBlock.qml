@@ -141,6 +141,28 @@ Item {
             color: block.face.resting ? T.textSecondary : T.textPrimary
         }
 
+        // The resting usage, quiet, in the top right: the bottom line is the detail, which a hover swaps for longer text.
+        Column {
+            anchors.right: parent.right
+            anchors.top: parent.top
+            visible: block.face.side !== null && block.face.side.length > 0
+
+            Repeater {
+                model: block.face.side ?? []
+
+                delegate: Island.PlasmaLabel {
+                    required property var modelData
+
+                    width: T.widgetUsageWidth
+                    horizontalAlignment: Text.AlignRight
+                    text: block.s ? block.s.claudeUsageShort(modelData.window === "sevenDay", modelData.pct) : ""
+                    color: T.textSecondary
+                    font.pixelSize: T.fontCaption
+                    font.features: ({ "tnum": 1 })
+                }
+            }
+        }
+
         Island.PlasmaLabel {
             anchors.bottom: parent.bottom
             anchors.left: parent.left
