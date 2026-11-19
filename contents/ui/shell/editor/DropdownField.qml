@@ -76,7 +76,12 @@ Item {
 
                 width: ListView.view.width
                 height: T.editEntry
-                color: optHover.hovered ? T.rowHover : "transparent"
+                color: "transparent"
+
+                HoverHighlight {
+                    containerRadius: T.radiusInner
+                    shown: optHover.hovered
+                }
 
                 PlasmaLabel {
                     anchors.fill: parent

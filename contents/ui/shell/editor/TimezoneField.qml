@@ -143,7 +143,12 @@ Item {
             header: Rectangle {
                 width: ListView.view.width
                 height: T.editEntry
-                color: localHover.hovered ? T.rowHover : "transparent"
+                color: "transparent"
+
+                HoverHighlight {
+                    containerRadius: T.radiusInner
+                    shown: localHover.hovered
+                }
 
                 PlasmaLabel {
                     anchors.fill: parent
@@ -174,7 +179,12 @@ Item {
 
                 width: ListView.view.width
                 height: T.editEntry
-                color: rowHover.hovered ? T.rowHover : "transparent"
+                color: "transparent"
+
+                HoverHighlight {
+                    containerRadius: T.radiusInner
+                    shown: rowHover.hovered
+                }
 
                 PlasmaLabel {
                     anchors.fill: parent

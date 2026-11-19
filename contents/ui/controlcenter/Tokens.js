@@ -176,6 +176,7 @@ const liveBadge = 8;            // the accent dot on an agent's glyph while it w
 const liveBadgeInset = 3;
 const liveBadgeRow = 6;         // the same dot on a compact row's smaller glyph
 const liveTileHeight = 96;      // a job row opened in place (accordion) is as tall as a tile
+const hoverInset = 4;           // a row's hover highlight sits this far inside its rounded container (D-61)
 const hoverScale = 1.02;        // the media card's artwork grows this much on hover
 const fileManagerRaiseDelay = 450;  // ms to let the file manager show an item before its window is raised
 
@@ -189,4 +190,9 @@ const widgetGlyphSmall = 18;        // a day or hour column's glyph
 const widgetSunGlyph = 12;          // the sun glyph in the detail line
 const widgetSkeletonHeight = 8;
 const widgetDayColumn = 46;         // minimum width of a day or hour column
+const widgetLabelGlyph = 16;        // the moon beside a tile's label
+const widgetRing = 30;              // the usage ring's diameter
+const widgetRingStroke = 4;
+const widgetHairline = 2;           // a row's context-fill line
+const widgetRowLift = 1.03;         // a waiting row that slides up into a freed slot
 const widgetPeekDwell = 150;        // ms of hover before the detail line peeks

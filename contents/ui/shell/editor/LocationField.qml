@@ -126,7 +126,12 @@ Item {
 
                 width: results.width
                 height: T.editChipH + T.deckDotSize
-                color: hover.hovered ? T.rowHover : "transparent"
+                color: "transparent"
+
+                HoverHighlight {
+                    containerRadius: T.radiusInner
+                    shown: hover.hovered
+                }
 
                 PlasmaLabel {
                     anchors.fill: parent
