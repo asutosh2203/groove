@@ -261,3 +261,23 @@ minutes may cost slightly more on a lit screen. CPU is the average over the 5-mi
   closed.
 - **Found on the way:** an aggregator that outlives a plasmashell restart kept a proxy to the old Notifications owner and
   logged `notify: DBusException` for every later notification; it now creates the proxy per call.
+
+## After L1 (Claude Code widget and status-line helper)
+
+**Soak, 30 minutes** (`scripts/agent-soak.py 30`, raw `perf/results/l1-soak.csv`). One fake working session, with the installed
+status-line helper called once a second for it (a real status line renders far less often, so this is the worst case for the
+aggregator). Samples every 5 minutes; the first row has no CPU figure.
+
+| | plasmashell | aggregator |
+|---|---|---|
+| CPU | 0.13 to 0.25%, mean 0.16% | 0.02 to 0.03%, mean 0.03% |
+| RSS | 673 to 699 MB | 31.8 to 32.3 MB |
+
+- **Flat.** The aggregator's RSS moved 0.5 MB in 30 minutes and its log did not grow. plasmashell's RSS rose about 26 MB, the
+  same first-use step as in the W2.1 soak (QML loaded when a page is first shown), not a steady climb. Its CPU is in the
+  range of the W2.1 soak (0.07 to 0.20%) with an agent session working the whole time. I did not run a closed-deck
+  A/B for L1 (no timer or animation was added while the deck is closed: the widget's minute timer exists only while its page
+  shows, and the sticky slot state is recomputed only on a snapshot).
+- **The status-line helper** (`kove_statusline.py`, run by Claude Code on every render): 15.5 ms median, 16.4 ms p95, 17.3 ms
+  max over 100 runs, against 5.9 ms for a bare `python3 -S`. About the same with or without an aggregator listening.
+  It sends only when the numbers change, at most once per 2 s per session.

@@ -112,11 +112,19 @@ persistence. Still open there: the proposed contract details and context-aware p
   Follow-ups: accordion overlap and scroll-into-view fixes (D-53), working agents rank below media on the closed capsule (D-58),
   cover art cache (D-59).
 - Deliberately deferred: approve/reject buttons on the waiting tile (they need a second channel into Claude Code).
-- **Next on the agent track: a Claude widget** for the widget host (D-54). The aggregator is its data source, so it is a small job.
+- **L1 (built, awaiting review): the Claude Code widget (D-60).** Budget and outcomes, 1x1 and 2x1, fed by an opt-in
+  status-line helper that chains the user's original status line. Usage ring, spend mode for API keys, recent sessions in
+  memory, hover peek, row and tile clicks. Soak: docs/PERFORMANCE.md "After L1".
 - Future note only: other agents (Codex, Aider, Gemini CLI, ...) via small adapters. The island side is agent-agnostic; the
   aggregator would need an agent-neutral event next to Claude Code's, then one adapter script per tool.
 
 ## Backlog
+- **Contract v2: interactive 2×2 widgets (Tall page only).** Actions go through services (a widget never runs commands),
+  scrolling and text input are allowed inside a 2×2, and risky actions ask for confirmation. Not started; logged so it is not
+  forgotten (v1 widgets are plain clicks only).
+- **Map the gateway `spend_limit` onto the ring.** Behind a Claude gateway the status line carries
+  `rate_limits.spend_limit` with real `used_usd`, `limit_usd` and `period`. L1 treats that setup as spend mode; the ring could
+  show the real percentage and the detail "$12 of $50 · resets Mon" instead of the estimated cost.
 - **Settings form scrolling (D3 follow-up).** The editor's settings form does not scroll: its body is sized for the size control
   plus four fields (the World Clock), so a widget with more settings would overflow into the chips bar. Needs a scrolling
   right column that still lets the location and time zone result lists overlay it (they extend past their row, so a plain

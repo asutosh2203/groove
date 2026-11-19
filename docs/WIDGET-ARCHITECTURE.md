@@ -138,7 +138,7 @@ Built-in widgets first; third-party extensions only after this contract is stabl
 - Manifest: one `manifest.json` per widget in `contents/ui/widgets/<id>/`. Fields: `contract` (1), `id`, `name` and
   `description` (objects keyed by locale, `en` required), `icon` (theme symbolic name or a fallback chain, D-26), `spans`
   (subset of 1x1, 2x1, 4x1) with a `defaultSpan`, `category` (Info, Media, System, Dev), `version` (of the widget's
-  settings, see Persistence), `services` (what the host injects: `clock`, `weather`) and a `settings` schema.
+  settings, see Persistence), `services` (what the host injects: `clock`, `weather`, `agents`) and a `settings` schema.
 - Views: one per supported span, named `View<span>.qml` (for example `View2x1.qml`) next to the manifest; shared
   sub-components are allowed. A view lays out from its injected pixel box only, never from hardcoded cell sizes (a 1x1 is
   154 wide on Small, 158 on Wide and 104 tall on Tall).
@@ -168,6 +168,19 @@ Built-in widgets first; third-party extensions only after this contract is stabl
 - No visibility flag, for the same reason.
 - No permission model in v1: QML cannot enforce one. When third-party widgets arrive (D-25) enforcement must be real (a
   separate process or a restricted engine), never a manifest field alone.
+
+## Catalogue (built-in widgets)
+
+| id | Category | Spans | Services | Notes |
+|---|---|---|---|---|
+| `clock` | Info | 1x1 | clock | Time and date for a zone (D-55) |
+| `world-clock` | Info | 2x1 | clock | Three zones (D-55) |
+| `weather` | Info | 1x1, 2x1, 4x1 | weather | Left block, days, hours (D-55) |
+| `claude-code` | Dev | 1x1, 2x1 | agents | Plan usage or spend, attention, resting; the 2x1 lists live and recent sessions (D-60) |
+
+`agents` is the host's handle on `AgentService` (the island's own instance, always on and event-driven, so it needs no
+subscription). A view that acts on a part of itself, such as a row, emits `runAction(action)`; the host runs it like a
+`clickAction` and closes the deck. The `agent` action raises a session's window and does nothing when none matches.
 
 ## Persistence (decided)
 
