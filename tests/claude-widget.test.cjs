@@ -161,6 +161,26 @@ test('assign: one row waiting, a new waiter arrives: the older wait goes on top,
     assert.deepEqual(top.slots, ['b', 'c']);
 });
 
+test('assign: both visible, the bottom waits first and then the top: the older wait rises to the top', () => {
+    const start = { slots: ['a', 'b'], waitSince: {} };
+    const one = run(start, [sess('a'), wait('b', NOW - 4 * MIN)]);
+    assert.deepEqual(one.slots, ['a', 'b']); // a lone waiter stays below a working row
+    const both = run(one, [wait('a', NOW), wait('b', NOW - 4 * MIN)]);
+    assert.deepEqual(both.slots, ['b', 'a']);
+    assert.deepEqual(run(both, [wait('a', NOW), wait('b', NOW - 4 * MIN)]).slots, ['b', 'a']); // and it stays
+});
+
+test('assign: both visible, the top waits first and then the bottom: no swap', () => {
+    const one = run({ slots: ['a', 'b'], waitSince: {} }, [wait('a', NOW - 4 * MIN), sess('b')]);
+    assert.deepEqual(one.slots, ['a', 'b']);
+    assert.deepEqual(run(one, [wait('a', NOW - 4 * MIN), wait('b', NOW)]).slots, ['a', 'b']);
+});
+
+test('assign: one waiting and one working: nothing moves, whichever is on top', () => {
+    assert.deepEqual(run({ slots: ['a', 'b'], waitSince: {} }, [sess('a'), wait('b')]).slots, ['a', 'b']);
+    assert.deepEqual(run({ slots: ['a', 'b'], waitSince: {} }, [wait('a'), sess('b')]).slots, ['a', 'b']);
+});
+
 test('assign: both rows waiting, a third waiter gets no row until a slot stops waiting', () => {
     const two = { slots: ['a', 'b'], waitSince: { a: NOW - 8 * MIN, b: NOW - 4 * MIN } };
     const all = [wait('a', NOW - 8 * MIN), wait('b', NOW - 4 * MIN), wait('c', NOW)];

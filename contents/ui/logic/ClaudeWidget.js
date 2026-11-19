@@ -141,8 +141,8 @@ function byId(list) {
 // Which two sessions the 2x1 shows, and where (D-60). Sticky: state in, state out, so activity alone never re-shuffles.
 // prev: { slots: [id|null, id|null], waitSince: { id: ms } }. A row changes only when its session ends (the most recent
 // hidden live one takes the slot) or a hidden session starts waiting (it replaces a quiet row, a finished one first, else the
-// one quiet longest). Both rows waiting: a third waiter gets no row (the left block counts it). When a replacement leaves
-// both waiting, the longer wait goes on top. Rows never reorder otherwise.
+// one quiet longest). Both rows waiting: a third waiter gets no row (the left block counts it), and the longer wait is
+// always on top, whatever caused the order. A working row never moves, and a lone waiting row stays where it is.
 const SLOTS = 2;
 
 function assign(prev, sessions, recent) {
@@ -176,7 +176,6 @@ function assign(prev, sessions, recent) {
                 slots[i] = r.id;
         }
     }
-    let promoted = false;
     for (const w of hidden().filter(s => waiting(s.id)).sort((a, b) => waitSince[a.id] - waitSince[b.id])) {
         const quiet = [0, 1].filter(i => slots[i] !== null && !waiting(slots[i]));
         if (quiet.length === 0)
@@ -185,9 +184,8 @@ function assign(prev, sessions, recent) {
         const pool = finished.length > 0 ? finished : quiet;
         const at = pool.reduce((best, i) => liveBy[slots[i]]?.updatedAt < liveBy[slots[best]]?.updatedAt ? i : best, pool[0]);
         slots[at] = w.id;
-        promoted = true;
     }
-    if (promoted && slots[0] !== null && slots[1] !== null && waiting(slots[0]) && waiting(slots[1]) && waitSince[slots[0]] > waitSince[slots[1]])
+    if (slots[0] !== null && slots[1] !== null && waiting(slots[0]) && waiting(slots[1]) && waitSince[slots[0]] > waitSince[slots[1]])
         slots.reverse();
     return { "slots": slots, "waitSince": waitSince };
 }
