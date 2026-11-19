@@ -94,6 +94,20 @@ class T(unittest.TestCase):
                     "./sleep 5", "sleep 5m # wait", "sleep $(echo 5)", "", None):
             self.assertIsNone(parse_sleep(cmd), cmd)
 
+    def test_sleep_loops_and_a_trailing_echo(self):
+        ok = {"for i in $(seq 1 30); do sleep 1; done; echo done": 30, "for i in $(seq 1 30); do sleep 1; done": 30,
+              "for n in $(seq 10); do sleep 0.5; done && echo \"all done\"": 5, "for i in {1..20}; do sleep 2s; done": 40,
+              "for i in $(seq 5 9); do sleep 1m; done; echo ok": 300}
+        for cmd, total in ok.items():
+            self.assertEqual(parse_sleep(cmd), total, cmd)
+        for cmd in ("for i in $(seq 1 $N); do sleep 1; done", "for i in $(seq 1 30); do sleep $i; done",
+                    "for i in $(seq 1 30); do sleep 1; echo $i; done", "for i in $(seq 1 30); do sleep 1; done; rm -rf x",
+                    "for i in $(seq 1 30); do sleep 1; done; echo $(whoami)", "for i in $(seq 1 30); do sleep 1; done; echo `id`",
+                    "for i in $(seq 1 30); do sleep 1; done & echo hi", "for i in $(seq 30 1); do sleep 1; done",
+                    "for i in $(seq 1 999999999); do sleep 1; done", "for i in $(seq 1 3); do sleep 0; done",
+                    "for i in $(seq 1 30); do sleep 1; done | cat", "sleep 30; echo done; ls", "echo hi; sleep 5", "sleep 30 && echo done"):
+            self.assertIsNone(parse_sleep(cmd), cmd)
+
     def bash(self, h, tid, cmd, now, **kw):
         return h.handle(self.ev("PreToolUse", tool_name="Bash", tool_use_id=tid, tool_input={"command": cmd}, **kw), now)
 
@@ -132,6 +146,21 @@ class T(unittest.TestCase):
         self.bash(h, "t1", "sleep 30", 10)
         h.handle(self.ev("PermissionRequest", tool_name="Bash", tool_input={"command": "sleep 30"}), 11)
         self.assertEqual((self.snap(h)["toolStartedAt"], self.snap(h)["countdown"]), (0, None))
+
+    def test_idle_prompt_is_quiet(self):
+        h = Hub()
+        idle = self.ev("Notification", notification_type="idle_prompt", message="Claude is waiting for your input")
+        self.assertEqual(h.handle(idle, 1), [])
+        self.assertEqual(h.snapshot()["sessions"], [])  # a ping alone creates no session
+        self.bash(h, "t1", "ls", 10)
+        before = self.snap(h)
+        self.assertEqual(h.handle(idle, 20), [])
+        self.assertEqual(self.snap(h), before)  # nothing changes, not even the update time
+        h.handle(self.ev("PermissionRequest", tool_name="Bash", tool_input={"command": "ls"}), 30)
+        self.assertEqual(h.handle(idle, 40), [])
+        self.assertEqual(self.snap(h)["state"], "waiting")  # a real request is not answered by an idle ping
+        out = h.handle(self.ev("Notification", notification_type="elicitation_dialog", message="Pick one"), 50)
+        self.assertEqual((out[0]["op"], self.snap(h)["state"]), ("notify", "waiting"))
 
     def test_subagents_tracked_and_bounded(self):
         h = Hub()

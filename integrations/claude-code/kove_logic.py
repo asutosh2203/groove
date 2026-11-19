@@ -20,6 +20,12 @@ _TOOL_ACTION = {"Edit": "edit", "MultiEdit": "edit", "Write": "edit", "NotebookE
 _TEST_RE = re.compile(r"\b(pytest|unittest|jest|vitest|mocha|cargo test|go test|npm (run )?test|qmltestrunner|node --test|check-qml)\b")
 _SLEEP_RE = re.compile(r"sleep\s+(\d+(?:\.\d+)?|\.\d+)([smh])?", re.ASCII)
 _SLEEP_UNIT = {"": 1, "s": 1, "m": 60, "h": 3600}
+_NUM = r"(\d+(?:\.\d+)?|\.\d+)([smh])?"
+# A counted loop of one literal sleep: `for i in $(seq [A] B); do sleep N; done` or `{A..B}`. The loop variable is never read.
+_LOOP_RE = re.compile(r"for\s+\w+\s+in\s+(?:\$\(seq\s+(?:(\d+)\s+)?(\d+)\)|\{(\d+)\.\.(\d+)\})\s*;\s*do\s+sleep\s+" + _NUM + r"\s*;\s*done", re.ASCII)
+# A loop's trailing `; echo done` costs nothing, so it does not change the wait (a plain sleep takes no tail).
+_TAIL_RE = re.compile(r"(.*?)\s*(?:;|&&)\s*echo(?:\s+(?:\"[^\"$`\\]*\"|'[^']*'|[\w.,!:-]+))*", re.ASCII | re.DOTALL)
+MAX_LOOP = 100000
 MAX_TRACKED = 16  # running tools and subagents per session: a missed Post/Stop event cannot accumulate
 _SCOPE_RE = re.compile(r"^app-(.+?)(?:-\d+)?\.scope$")
 
@@ -101,11 +107,28 @@ def task_counts(tasks):
 
 
 def parse_sleep(command):
-    """Total seconds when the WHOLE trimmed command is `sleep <number>[s|m|h]`, else None. Anything else (chains, pipes,
-    variables, several arguments, background runs) is not a countdown: never guess."""
-    m = _SLEEP_RE.fullmatch(str(command or "").strip())
-    total = float(m.group(1)) * _SLEEP_UNIT[m.group(2) or ""] if m else 0
-    return round(total, 3) if total > 0 else None
+    """Total seconds when the WHOLE trimmed command is `sleep <number>[s|m|h]`, or a counted loop of one such sleep optionally
+    followed by `; echo <words>`, else None. Anything else (other chains, pipes, variables, several arguments, background
+    runs, loops whose count or sleep is not a literal) is not a countdown: never guess."""
+    text = str(command or "").strip()
+    m = _SLEEP_RE.fullmatch(text)
+    if m:
+        total = float(m.group(1)) * _SLEEP_UNIT[m.group(2) or ""]
+        return round(total, 3) if total > 0 else None
+    tail = _TAIL_RE.fullmatch(text)
+    if tail:
+        text = tail.group(1)
+    m = _LOOP_RE.fullmatch(text)
+    if not m:
+        return None
+    if m.group(4) is not None:
+        first, last = int(m.group(3)), int(m.group(4))
+    else:
+        first, last = (int(m.group(1)) if m.group(1) else 1), int(m.group(2))
+    count = last - first + 1
+    each = float(m.group(5)) * _SLEEP_UNIT[m.group(6) or ""]
+    total = count * each
+    return round(total, 3) if 0 < count <= MAX_LOOP and total > 0 else None
 
 
 def done_ping(elapsed, min_seconds):
@@ -182,7 +205,7 @@ class Session:
             self.running = {}  # the prompt's wait would inflate the clock, and the real start is not reported
             return [{"op": "notify", "urgent": True, "summary": self.project + " · Needs your OK",
                      "body": status_for_tool(tool, ti), "sid": self.sid}]
-        if kind == "Notification" and ev.get("notification_type") in ("idle_prompt", "elicitation_dialog"):
+        if kind == "Notification" and ev.get("notification_type") == "elicitation_dialog":
             self.state, self.waiting_cmd, self.waiting_action = "waiting", str(ev.get("message") or "")[:80], "other"
             return [{"op": "notify", "urgent": True, "summary": self.project + " · Needs your OK",
                      "body": str(ev.get("message") or "")[:120], "sid": self.sid}]
@@ -250,6 +273,8 @@ class Hub:
             return self._status(ev, now)
         if not sid or kind == "SessionStart":  # a session only exists once it does something
             return []
+        if kind == "Notification" and ev.get("notification_type") == "idle_prompt":
+            return []  # "waiting for your input" after a pause: not a request, and it must not create or answer one
         if kind == "SessionEnd":
             self.sessions.pop(sid, None)
             self.metrics.pop(sid, None)
