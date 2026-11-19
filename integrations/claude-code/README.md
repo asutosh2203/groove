@@ -30,6 +30,24 @@ Needs `python-dbus` and PyGObject (Arch `python-dbus python-gobject`, Debian/Ubu
 `~/.claude/settings.json` after a timestamped backup. A session that was already running picked the hooks up on a later
 tool call in testing; if yours does not, start a new session. Check that a prompt creates a tile.
 
+## The Claude Code widget and the status line (opt-in, D-60)
+The widget shows your plan's usage (or an estimated spend on an API key) and what your sessions got done. That needs the
+status-line payload, which Claude Code pipes to a `statusLine` command on every render; the hooks do not carry it.
+- **Enable:** `./install.sh --statusline`. It saves your current `statusLine` (it is restored as it was), writes a timestamped
+  `settings.json.bak-<date>`, replaces the command with `kove_statusline.py` and prints the before and after.
+  **Disable:** `./install.sh --statusline-remove` (restores your original, or removes the key when you had none).
+- **Chaining:** the helper runs your original status line every time, through the shell with the same environment, working
+  directory and stdin and no timeout, and passes its output and exit status through unchanged. With no original it prints
+  nothing, so your terminal looks exactly as before.
+- **What is collected:** the 5 h and 7 d usage percentages and reset times, context %, session cost, lines added and removed,
+  and the session id. Nothing else: no transcript path, folder, model, prompt or file content. It lives in the aggregator's
+  memory; finished sessions the widget remembers (at most 5) live in plasmashell's memory and are gone when it restarts.
+- **Pro/Max vs API key:** plan usage (`rate_limits`) exists only for Claude.ai subscribers, after the first response of a
+  session. Subscribers see the usage ring and never dollars. With an API key (or behind a gateway) there is no plan usage, so
+  the widget shows the estimated cost of the sessions seen since plasmashell started; Claude Code computes that estimate
+  client-side, so treat it as approximate.
+- **Cost:** about 15 ms per render, and a report is sent only when a value changed, at most once per 2 s per session.
+
 ## Privacy
 Command text, file names, the task list and Claude's message are held in memory to be displayed and never stored or logged.
 The logs (`${XDG_STATE_HOME:-~/.local/state}/kove/claude-code.log`) carry error types only. The aggregator also records each
@@ -52,7 +70,7 @@ use the same interface with no Kove change.
   seconds apart.
 
 ## Uninstall
-Remove the hook entries pointing at `kove_hook.py` from `~/.claude/settings.json` (or restore the `.bak` file), then
+Run `./install.sh --statusline-remove` if you enabled the status line. Remove the hook entries pointing at `kove_hook.py` from `~/.claude/settings.json` (or restore the `.bak` file), then
 `rm -r ~/.local/share/kove/claude-code`.
 
 ## Tests

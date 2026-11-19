@@ -5,6 +5,8 @@ import re
 IDLE_TIMEOUT = 600  # seconds of silence before a crashed session is dropped
 DONE_LINGER = 10  # a finished session stays in the snapshot this long, then Kove fades it
 PROTOCOL = 1
+MAX_METRICS = 64  # sessions whose status-line numbers are remembered, the oldest dropped first
+USAGE_WINDOWS = ("fiveHour", "sevenDay")
 AGENT_ID, AGENT_NAME = "claude-code", "Claude Code"
 
 _TOOL_STATUS = {
@@ -20,6 +22,10 @@ _SLEEP_RE = re.compile(r"sleep\s+(\d+(?:\.\d+)?|\.\d+)([smh])?", re.ASCII)
 _SLEEP_UNIT = {"": 1, "s": 1, "m": 60, "h": 3600}
 MAX_TRACKED = 16  # running tools and subagents per session: a missed Post/Stop event cannot accumulate
 _SCOPE_RE = re.compile(r"^app-(.+?)(?:-\d+)?\.scope$")
+
+
+def _number(v):
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and v == v and abs(v) != float("inf") else None
 
 
 def project_name(cwd, exists=os.path.exists):
@@ -216,13 +222,37 @@ class Hub:
 
     def __init__(self, done_min=30):
         self.sessions, self.done_min, self.empty_since = {}, done_min, None
+        self.metrics, self.usage = {}, {}  # sid -> status-line numbers; account-wide limit windows (D-60)
+
+    def _status(self, ev, now):
+        """A status-line report (D-60). A window is replaced only by a report that carries it and dropped only when its
+        reset passes: usage is account-wide, so a new session without limits yet must not blank it."""
+        sid = str(ev["session_id"])
+        for name, w in (ev.get("usage") if isinstance(ev.get("usage"), dict) else {}).items():
+            w = w if isinstance(w, dict) else {}
+            at, pct = _number(w.get("resetsAt")), _number(w.get("pct"))
+            if name in USAGE_WINDOWS and at is not None and pct is not None and at > now:
+                self.usage[name] = {"pct": max(0, min(100, round(pct))), "resetsAt": int(at)}
+        ctx = _number(ev.get("contextPct"))
+        m = {"contextPct": None if ctx is None else max(0, min(100, round(ctx))),
+             "costUsd": round(max(0, _number(ev.get("costUsd")) or 0), 2),
+             "linesAdded": int(max(0, _number(ev.get("linesAdded")) or 0)),
+             "linesRemoved": int(max(0, _number(ev.get("linesRemoved")) or 0))}
+        self.metrics.pop(sid, None)
+        self.metrics[sid] = m
+        while len(self.metrics) > MAX_METRICS:
+            del self.metrics[next(iter(self.metrics))]
+        return []
 
     def handle(self, ev, now):
         sid, kind = ev.get("session_id"), ev.get("hook_event_name")
+        if sid and kind == "StatusLine":  # never creates a session: the status line renders before any prompt
+            return self._status(ev, now)
         if not sid or kind == "SessionStart":  # a session only exists once it does something
             return []
         if kind == "SessionEnd":
             self.sessions.pop(sid, None)
+            self.metrics.pop(sid, None)
             return []
         s = self.sessions.get(sid)
         if s is None:
@@ -236,13 +266,17 @@ class Hub:
         gone = [k for k, s in self.sessions.items() if s.expired(now)]
         for k in gone:
             del self.sessions[k]
-        return bool(gone)
+        spent = [k for k, w in self.usage.items() if w["resetsAt"] <= now]
+        for k in spent:
+            del self.usage[k]
+        return bool(gone or spent)
 
     def deadline(self, now, idle_exit):
         """Absolute time of the next expiry or the idle exit, None when nothing is pending: the daemon sleeps until then."""
         if self.sessions:
             self.empty_since = None
             due = [d for d in (s.expires_at() for s in self.sessions.values()) if d is not None]
+            due += [w["resetsAt"] for w in self.usage.values()]
             return min(due) if due else None
         if self.empty_since is None:
             self.empty_since = now
@@ -256,7 +290,15 @@ class Hub:
         return 0 if self.empty_since is None else now - self.empty_since
 
     def snapshot(self):
-        return {"v": PROTOCOL, "sessions": [s.to_dict() for s in sorted(self.sessions.values(), key=lambda s: s.started)]}
+        """"usage" and the per-session numbers are optional additions to protocol 1: absent until a status line reports."""
+        out = {"v": PROTOCOL, "sessions": []}
+        for s in sorted(self.sessions.values(), key=lambda s: s.started):
+            d = s.to_dict()
+            d.update(self.metrics.get(s.sid, {}))
+            out["sessions"].append(d)
+        if self.usage:
+            out["usage"] = {k: dict(w) for k, w in self.usage.items()}
+        return out
 
 
 class Routes:

@@ -66,11 +66,11 @@ def main():
     svc = Agents(bus, OBJ_PATH)
 
     def publish():
-        snap = json.dumps(hub.snapshot())
-        key = json.dumps([{k: v for k, v in s.items() if k != "updatedAt"} for s in hub.snapshot()["sessions"]])
+        snap = hub.snapshot()
+        key = json.dumps([[{k: v for k, v in s.items() if k != "updatedAt"} for s in snap["sessions"]], snap.get("usage")])
         if key != last[0]:
             last[0] = key
-            svc.Changed(snap)
+            svc.Changed(json.dumps(snap))
 
     def apply(actions):
         for a in actions:
