@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Soak driver for the agent aggregator (D-58): a fake Claude Code session sends real hook events through the installed
-kove_hook.py for N minutes, and every 5 minutes the CPU (average over the window) and RSS of plasmashell and the aggregator
+"""Soak driver for the agent aggregator (D-58, D-60): a fake Claude Code session sends real hook events through the installed
+kove_hook.py for N minutes, plus status-line payloads through kove_statusline.py once a second (a realistic render rate while
+a session works; the helper itself dedupes and throttles, and the cost, lines, context and usage drift slowly), and every 5 minutes the CPU (average over the window) and RSS of plasmashell and the aggregator
 plus the aggregator log size are appended to a CSV. No real Claude, no media, no notifications (no permission prompts).
   scripts/agent-soak.py [minutes=60] [csv]"""
 import json, os, random, subprocess, sys, threading, time
@@ -8,6 +9,7 @@ import json, os, random, subprocess, sys, threading, time
 MIN = float(sys.argv[1]) if len(sys.argv) > 1 else 60
 CSV = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser("~/os_setup/perf/results/w21-soak.csv")
 HOOK = os.path.expanduser("~/.local/share/kove/claude-code/kove_hook.py")
+STATUSLINE = os.path.expanduser("~/.local/share/kove/claude-code/kove_statusline.py")
 LOG = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "kove", "claude-code.log")
 SID, CWD = "soak-fake", "/tmp/kove-soak"
 TICK = os.sysconf("SC_CLK_TCK")
@@ -63,6 +65,20 @@ def drive():
     send("SessionEnd")
 
 
+def render():
+    """One status-line render per second. Values change every few renders, as they do while a session works."""
+    k = 0
+    while time.time() < END:
+        k += 1
+        payload = {"session_id": SID, "cwd": CWD, "transcript_path": "/tmp/x.jsonl",
+                   "rate_limits": {"five_hour": {"used_percentage": 20 + k // 600 % 60, "resets_at": int(time.time()) + 3 * 3600},
+                                   "seven_day": {"used_percentage": 10 + k // 3000 % 80, "resets_at": int(time.time()) + 3 * 86400}},
+                   "context_window": {"used_percentage": k // 20 % 90},
+                   "cost": {"total_cost_usd": k * 0.0007, "total_lines_added": k // 15, "total_lines_removed": k // 60}}
+        subprocess.run([sys.executable, "-S", STATUSLINE], input=json.dumps(payload).encode(), timeout=10)
+        time.sleep(1)
+
+
 def pid_of(match):
     for p in os.listdir("/proc"):
         if p.isdigit():
@@ -107,5 +123,6 @@ def sample():
 
 if __name__ == "__main__":
     threading.Thread(target=sample, daemon=True).start()
+    threading.Thread(target=render, daemon=True).start()
     drive()
     time.sleep(310)  # one last sample after the session ends
