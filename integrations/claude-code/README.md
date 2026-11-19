@@ -42,6 +42,21 @@ status-line payload, which Claude Code pipes to a `statusLine` command on every 
 - **What is collected:** the 5 h and 7 d usage percentages and reset times, context %, session cost, lines added and removed,
   and the session id. Nothing else: no transcript path, folder, model, prompt or file content. It lives in the aggregator's
   memory; finished sessions the widget remembers (at most 5) live in plasmashell's memory and are gone when it restarts.
+- **Known limitation: usage comes only from terminal sessions.** If you use Claude Code only through the VS Code extension (or
+  any other non-terminal front end), the widget cannot show your plan usage; it shows what it last saw (with its age) or nothing.
+  This is a limit of what Claude Code exposes, not a Kove setting.
+- **Where usage comes from (for now):** Pro and Max usage needs a **terminal** `claude` session. The status line is a terminal
+  feature: the VS Code extension runs Claude Code headless and never calls it, hooks carry no `rate_limits`, the extension's
+  rate-limit events are not readable by us, and Claude Code keeps no local rate-limit file. Until it does, a VS Code-only setup
+  shows no usage; sessions running with none ever seen make the 1x1's hover say "Usage comes from terminal sessions". The
+  aggregator already accepts `rate_limits` from any hook payload (same parsing, numbers only), so VS Code sessions will report
+  with no change here if Claude Code ever adds it.
+- **Last known usage:** the widget keeps the 5 h and 7 d windows (percent, reset time and when they were reported, nothing
+  else) in the plasmoid's settings, so a restart still shows the last ring until the window resets. Usage not reported for
+  10 minutes is shown with its age ("updated 12 min ago") in place of the detail line.
+- **Why we don't read your token:** Claude's own usage page is fed by an undocumented OAuth endpoint. Using it would mean
+  reading your login token from disk and calling Anthropic's API on your behalf, which this project does not do: nothing here
+  touches credentials or makes network requests for Claude.
 - **Pro/Max vs API key:** plan usage (`rate_limits`) exists only for Claude.ai subscribers, after the first response of a
   session. Subscribers see the usage ring and never dollars. With an API key (or behind a gateway) there is no plan usage, so
   the widget shows the estimated cost of the sessions seen since plasmashell started; Claude Code computes that estimate

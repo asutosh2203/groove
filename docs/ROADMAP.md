@@ -125,6 +125,10 @@ persistence. Still open there: the proposed contract details and context-aware p
 - **Map the gateway `spend_limit` onto the ring.** Behind a Claude gateway the status line carries
   `rate_limits.spend_limit` with real `used_usd`, `limit_usd` and `period`. L1 treats that setup as spend mode; the ring could
   show the real percentage and the detail "$12 of $50 · resets Mon" instead of the estimated cost.
+- **Known limitation: usage outside terminal sessions.** Plan usage reaches the widget only through the terminal status line, so
+  VS Code-only (or other front-end) users see no ring; the widget keeps and ages the last value and says where usage comes from.
+  There is no supported source today (D-60 research); revisit when Claude Code exposes `rate_limits` to hooks or the extension
+  (the aggregator already accepts it from any hook payload). Do not read the OAuth token.
 - **Settings form scrolling (D3 follow-up).** The editor's settings form does not scroll: its body is sized for the size control
   plus four fields (the World Clock), so a widget with more settings would overflow into the chips bar. Needs a scrolling
   right column that still lets the location and time zone result lists overlay it (they extend past their row, so a plain
