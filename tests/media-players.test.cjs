@@ -18,11 +18,11 @@ vm.runInContext(read('MediaIdle.js'), idleCtx);
 const Idle = idleCtx;
 const S = { playing: 2, paused: 3, stopped: 1 }; // Mpris.PlaybackStatus: Stopped 1, Playing 2, Paused 3
 const j = (v) => JSON.parse(JSON.stringify(v));
-const player = (o) => ({ playbackStatus: S.playing, track: '', artist: '', album: '', artUrl: '', length: 0, identity: '', desktopEntry: '', canControl: false, canPlay: false, canPause: false, startedAt: 0, stoppedAt: 0, ...o });
+const player = (o) => ({ playbackStatus: S.playing, track: '', artist: '', album: '', artUrl: '', length: 0, identity: '', desktopEntry: '', canControl: false, canPlay: false, canPause: false, url: '', startedAt: 0, stoppedAt: 0, ...o });
 const idx = (candidates) => { const r = M.pick(candidates, S); return r.source === 'candidate' ? r.index : -1; };
 
 const spotify = (o) => player({ identity: 'Spotify', track: 'Song', artist: 'Band', album: 'LP', artUrl: 'x', length: 1e8, canControl: true, canPlay: true, ...o });
-const youtube = (o) => player({ identity: 'Mozilla Firefox', desktopEntry: 'firefox', track: 'Video', artist: 'Chan', length: 6e8, canControl: true, canPlay: true, ...o });
+const youtube = (o) => player({ identity: 'Mozilla Firefox', desktopEntry: 'firefox', track: 'Video', artist: 'Chan', length: 6e8, canControl: true, canPlay: true, url: 'https://www.youtube.com/watch?v=x', ...o });
 
 // --- who may be shown --------------------------------------------------------------------------------------------------
 
@@ -261,4 +261,39 @@ test('placeholder kind: video players, video file names and YouTube art are vide
     assert.equal(M.mediaKind(youtube({ artUrl: 'https://i.ytimg.com/vi/abc/hq.jpg' })), 'video');
     assert.equal(M.mediaKind(youtube({ artUrl: 'https://lh3.googleusercontent.com/x' })), 'music');
     assert.equal(M.mediaKind(player({ identity: 'Some player', artUrl: 'https://i.ytimg.com/vi/abc/hq.jpg' })), 'music');
+});
+
+// --- YouTube hover previews --------------------------------------------------------------------------------------------
+
+test('preview URLs: YouTube pages that are not a player page', () => {
+    for (const u of ['https://www.youtube.com/', 'https://www.youtube.com', 'https://youtube.com/feed/subscriptions', 'https://m.youtube.com/results?search_query=a', 'https://www.youtube.com/@chan'])
+        assert.equal(M.isPreviewUrl(u), true, u);
+});
+
+test('player URLs and other sites are not previews', () => {
+    for (const u of ['https://www.youtube.com/watch?v=abc', 'https://www.youtube.com/shorts/abc', 'https://www.youtube.com/live/abc', 'https://www.youtube.com/embed/abc', 'https://music.youtube.com/', 'https://open.spotify.com/', 'https://www.youtube.com.evil.example/', '', undefined])
+        assert.equal(M.isPreviewUrl(u), false, String(u));
+});
+
+test('a browser playing a preview is never shown, even when it is the only player', () => {
+    const preview = youtube({ url: 'https://www.youtube.com/' });
+    assert.equal(M.eligible(preview, S), false);
+    assert.equal(M.eligible({ ...preview, playbackStatus: S.paused }, S), false);
+    assert.equal(idx([preview]), -1);
+});
+
+test('a preview does not displace a real player, and the real video wins over it', () => {
+    const preview = youtube({ url: 'https://www.youtube.com/' });
+    assert.equal(idx([preview, spotify()]), 1);
+    assert.equal(idx([preview, youtube({ url: 'https://www.youtube.com/watch?v=a' })]), 1);
+});
+
+test('a browser whose URL is still being read waits, one with no URL at all is shown', () => {
+    assert.equal(M.eligible(youtube({ url: undefined }), S), false);
+    assert.equal(M.eligible(youtube({ url: '' }), S), true);
+    assert.equal(M.eligible(spotify({ url: undefined }), S), true);
+});
+
+test('a non-browser is never a preview', () => {
+    assert.equal(M.isPreview(spotify({ url: 'https://www.youtube.com/' })), false);
 });
