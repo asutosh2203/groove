@@ -589,7 +589,7 @@ PlasmoidItem {
                 artwork: mediaService.artUrl
                 progressVisible: mediaService.hasPlayer && mediaService.length > 0
                 progressTo: Math.max(1, mediaService.hasPlayer ? mediaService.length : 1)
-                progressValue: mediaService.hasPlayer ? mediaService.player.position : 0
+                progressValue: mediaService.hasPlayer ? mediaService.position : 0
                 progressAccent: T.fillSoft
                 mediaControlsVisible: mediaService.hasPlayer
                 autoCloseMs: root.ongoingPopupDurationMs

@@ -33,7 +33,7 @@ Item {
             kind: musicPage.app.media.kind
             cornerRadius: (musicPage.app ? musicPage.app.popupRadius : 26) - contentRow.inset
             fallbackMode: "media"
-            progress: musicPage.hasPlayer ? musicPage.app.media.player.position / Math.max(1, musicPage.app.media.length) : 0
+            progress: musicPage.hasPlayer ? musicPage.app.media.position / Math.max(1, musicPage.app.media.length) : 0
             playing: musicPage.playing
             scale: musicPage.raiseHover ? T.hoverScale : 1
 
@@ -120,7 +120,7 @@ Item {
                 opacity: musicPage.hasLength ? 1 : 0
                 from: 0
                 to: Math.max(1, musicPage.hasPlayer ? musicPage.app.media.length : 1)
-                value: musicPage.hasPlayer ? musicPage.app.media.player.position : 0
+                value: musicPage.hasPlayer ? musicPage.app.media.position : 0
                 accent: "#b4b6bf"
                 trackColor: "#25252b"
             }
@@ -132,7 +132,7 @@ Item {
 
                 PlasmaLabel {
                     Layout.preferredWidth: 30
-                    text: musicPage.hasLength ? MediaPlayers.formatTime(musicPage.app.media.player.position) : ""
+                    text: musicPage.hasLength ? MediaPlayers.formatTime(musicPage.app.media.position) : ""
                     color: "#9a9ca6"
                     font.pixelSize: 10
                     font.features: { "tnum": 1 }

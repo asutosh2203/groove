@@ -5,6 +5,7 @@ import org.kde.plasma.private.mpris as Mpris
 import "../logic/MediaIdle.js" as MediaIdle
 import "../logic/MediaLength.js" as MediaLength
 import "../logic/MediaPlayers.js" as MediaPlayers
+import "../logic/MediaPosition.js" as MediaPosition
 import "../logic/Utils.js" as Utils
 
 // The media backend: which MPRIS player the island shows, its held track length, the 30 s idle grace (D-35) and the
@@ -55,6 +56,9 @@ Item {
     // The track length in microseconds, held across metadata updates that omit it (MediaLength.js).
     property real length: 0
     property var heldLength: null
+    // The position to show in microseconds: the player's own, or our estimate when a browser stops reporting it (MediaPosition.js).
+    property real position: 0
+    property var heldPosition: null
     // A player that exists but hasn't played for 30 s hands the island back to the idle face; anything that starts
     // playing takes it back at once (D-35).
     property bool graceExpired: false
@@ -107,6 +111,24 @@ Item {
         length = heldLength.length;
     }
 
+    function refreshPosition() {
+        const current = player;
+        if (!current) {
+            heldPosition = null;
+            position = 0;
+            return;
+        }
+        heldPosition = MediaPosition.step(heldPosition, {
+            "key": MediaPlayers.lengthKey(current),
+            "playing": current.playbackStatus === status.playing,
+            "reported": Utils.finiteNumber(current.position, 0),
+            "rate": Utils.finiteNumber(current.rate, 1),
+            "browser": MediaPlayers.isBrowserish(current),
+            "length": length
+        }, Date.now());
+        position = heldPosition.pos;
+    }
+
     function idleEvent(event) {
         const r = MediaIdle.reduce({ "expired": graceExpired }, event);
         graceExpired = r.expired;
@@ -147,7 +169,10 @@ Item {
 
     }
 
-    onRevisionChanged: refreshLength()
+    onRevisionChanged: {
+        refreshLength();
+        refreshPosition();
+    }
     // The island now shows a different player (or the first one): let the activity know.
     onPlayerChanged: {
         if (hasPlayer)
@@ -160,6 +185,7 @@ Item {
     onPositionPollingChanged: {
         if (positionPolling && player && player.updatePosition)
             player.updatePosition();
+        refreshPosition();
 
     }
     Component.onCompleted: syncIdle()
@@ -180,6 +206,7 @@ Item {
         onTriggered: {
             if (service.player && service.player.updatePosition)
                 service.player.updatePosition();
+            service.refreshPosition();
 
         }
     }
