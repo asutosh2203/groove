@@ -10,6 +10,8 @@ Item {
     property var app: null
     readonly property bool hasPlayer: app && app.media.hasPlayer
     readonly property bool hasLength: hasPlayer && app.media.length > 0
+    // Some browsers never publish a length; the elapsed time still reads without a bar.
+    readonly property bool hasPosition: hasPlayer && app.media.position > 0
     readonly property bool playing: hasPlayer && app.media.isPlaying
     // The artwork and the title block raise the player; the buttons and the bar keep their own behaviour.
     readonly property bool raiseHover: artRaise.hovered || titleRaise.hovered || artistRaise.hovered
@@ -132,7 +134,7 @@ Item {
 
                 PlasmaLabel {
                     Layout.preferredWidth: 30
-                    text: musicPage.hasLength ? MediaPlayers.formatTime(musicPage.app.media.position) : ""
+                    text: musicPage.hasLength || musicPage.hasPosition ? MediaPlayers.formatTime(musicPage.app.media.position) : ""
                     color: "#9a9ca6"
                     font.pixelSize: 10
                     font.features: { "tnum": 1 }
