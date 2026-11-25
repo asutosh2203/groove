@@ -8,6 +8,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import "services"
 import "logic/KdeConnectState.js" as KdeConnectState
+import "logic/MediaPosition.js" as MediaPosition
 import "logic/Utils.js" as Utils
 import "controlcenter/Tokens.js" as T
 import "logic/ActivityResolver.js" as ActivityResolver
@@ -40,7 +41,7 @@ PlasmoidItem {
     // True while the pointer is over a clickable notice popup (drives the whole-island highlight and the open glyph).
     // The playback position is only drawn by the compact media pill, the expanded media popup and the Control
     // Center's media card, so it is only polled while one of them can be seen.
-    readonly property bool mediaPositionVisible: mediaService.hasPlayer && mediaService.isPlaying && !panelController.fullscreenCovering && (popupMode === "deck" ? dialogVisible : islandOpen ? popupMode === "activity" && popupActivityMode() === "media" : !panelHidden && activityMode() === "media")
+    readonly property bool mediaPositionVisible: mediaService.hasPlayer && mediaService.isPlaying && !panelController.fullscreenCovering && MediaPosition.readoutVisible({ "deckMode": popupMode === "deck", "dialogVisible": dialogVisible, "islandOpen": islandOpen, "activityPopup": popupMode === "activity", "popupActivityIsMedia": popupActivityMode() === "media", "panelHidden": panelHidden, "compactIsMedia": activityMode() === "media" })
     property bool noticeHovered: false
     // True while the pointer is over an activity popup (notice, media, job...), clickable or not. Together with the
     // dialog holding keyboard focus it freezes the popup's timers, which finish with the time left once the pointer

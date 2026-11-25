@@ -14,3 +14,14 @@ function step(held, input, nowMs) {
         pos = Math.min(pos, input.length);
     return { "key": input.key, "pos": pos, "at": nowMs, "playing": input.playing, "rate": input.rate > 0 ? input.rate : 1 };
 }
+
+// Whether a position readout can be seen. popupMode stays "deck" after the deck closes, so a closed deck must fall
+// through to the compact pill check instead of reading as "not visible".
+// s: { deckMode, dialogVisible, islandOpen, activityPopup, popupActivityIsMedia, panelHidden, compactIsMedia }.
+function readoutVisible(s) {
+    if (s.deckMode && s.dialogVisible)
+        return true;
+    if (s.islandOpen)
+        return !s.deckMode && s.activityPopup && s.popupActivityIsMedia;
+    return !s.panelHidden && s.compactIsMedia;
+}

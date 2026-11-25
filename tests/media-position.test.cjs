@@ -54,3 +54,17 @@ test('a missing rate counts as 1', () => {
     const h = step(null, { reported: 10e6, rate: 0 }, 0);
     assert.equal(step(h, { reported: 0, rate: 0 }, 2000).pos, 12e6);
 });
+
+const vis = (o) => ctx.readoutVisible(Object.assign({ deckMode: true, dialogVisible: false, islandOpen: false, activityPopup: false, popupActivityIsMedia: false, panelHidden: false, compactIsMedia: true }, o));
+
+test('a closed deck falls through to the compact media pill', () => {
+    assert.equal(vis({}), true);
+    assert.equal(vis({ compactIsMedia: false }), false);
+    assert.equal(vis({ panelHidden: true }), false);
+});
+
+test('an open deck and a media activity popup show the readout', () => {
+    assert.equal(vis({ dialogVisible: true, islandOpen: true, compactIsMedia: false }), true);
+    assert.equal(vis({ deckMode: false, activityPopup: true, islandOpen: true, popupActivityIsMedia: true, compactIsMedia: false }), true);
+    assert.equal(vis({ deckMode: false, activityPopup: true, islandOpen: true, popupActivityIsMedia: false }), false);
+});
