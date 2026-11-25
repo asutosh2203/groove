@@ -14,7 +14,7 @@ test('each schema type maps to its control; enums switch to a dropdown past four
     assert.equal(F.controlFor(field('enum', { options: ['a', 'b', 'c', 'd', 'e'] })), 'dropdown');
     assert.equal(F.controlFor(field('string')), 'text');
     assert.equal(F.controlFor(field('number', { min: 0, max: 10, step: 1 })), 'stepper');
-    assert.equal(F.controlFor(field('number', { min: 0, max: 100, step: 1 })), 'slider');
+    assert.equal(F.controlFor(field('number', { min: 0, max: 100, step: 1 })), 'stepper');
     assert.equal(F.controlFor(field('location')), 'location');
     assert.equal(F.controlFor(field('timezone')), 'timezone');
     assert.equal(F.controlFor(field('app')), 'app');
@@ -53,4 +53,13 @@ test('every real manifest builds a form without throwing', () => {
         const f = F.build(reg.byId[id], { span: reg.byId[id].defaultSpan, settings: {} }, () => true, 'en');
         assert.equal(f.fields.length, reg.byId[id].settings.length);
     }
+});
+
+test('a number shows its unit, or its zero label at 0', () => {
+    const m = manifest(field('number', { min: 0, max: 60, step: 5, default: 15, unit: { en: 'min' }, zeroLabel: { en: 'None', de: 'Keine' } }));
+    const f = j(F.build(m, { span: '1x1', settings: {} }, () => true, 'de_DE')).fields[0];
+    assert.equal(F.valueText(f, 15), '15 min');
+    assert.equal(F.valueText(f, 0), 'Keine');
+    assert.equal(F.valueText({ unit: '', zero: '' }, 0), '0');
+    assert.equal(F.valueText({ unit: 'min', zero: '' }, 0), '0 min');
 });

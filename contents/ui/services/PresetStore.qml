@@ -20,12 +20,24 @@ Item {
     readonly property var presets: store.result.presets
     // The locations the presets' Weather placements use, for WeatherHub; "island" is not listed.
     readonly property var weatherLocations: store.registry.byId.weather ? store.presets.reduce((all, preset) => all.concat(preset.placements), []).filter(placement => placement.widget === "weather").map(placement => Registry.resolveSettings(store.registry.byId.weather, placement.settings, placement.settingsVersion).location).filter(location => location !== "island") : []
+    // The pids of every placement, for the timer hub: a timer whose placement is gone is dropped.
+    property var placementPids: []
+
+    function syncPids() {
+        store.placementPids = Presets.keepPids(store.activeText, store.result, store.placementPids);
+    }
 
     function report() {
         store.result.log.forEach(line => console.warn("groove:", line));
         store.registry.skipped.forEach(skipped => console.warn("groove: widget", skipped.id, "skipped:", skipped.errors.join("; ")));
     }
 
-    onResultChanged: store.report()
-    Component.onCompleted: store.report()
+    onResultChanged: {
+        store.report();
+        store.syncPids();
+    }
+    Component.onCompleted: {
+        store.report();
+        store.syncPids();
+    }
 }

@@ -10,6 +10,8 @@ Item {
 
     // Injected by the host.
     property string span: "1x1"
+    // The placement's stable id (Presets.js pid), for a widget whose state outlives its view (the Pomodoro timer).
+    property string pid: ""
     property var settings: ({})
     property var services: ({})
     property var tokens: null

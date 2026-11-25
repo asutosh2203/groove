@@ -1,17 +1,16 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import "../.."
 import "../../controlcenter/Tokens.js" as T
 import "../../logic/FormModel.js" as FormModel
 import "../../logic/PageFit.js" as PageFit
-import "../../logic/Presets.js" as Presets
 import "../" as Shell
 
-// A widget's settings, opened in place (D-56): a live preview on the left, the fields generated from its manifest on the
-// right (P11), the size control first. Widgets ship no settings screens.
+// A widget's settings, opened in place (D-56): the live preview and the fields generated from its manifest (P11), laid out
+// by FormLayout (preview left for narrow widgets, on top at real size for wide ones), the size control first. Widgets
+// ship no settings screens.
 Item {
     id: form
 
@@ -22,8 +21,7 @@ Item {
     readonly property var placement: form.ed.placement
     readonly property var manifest: form.placement ? form.ed.registry.byId[form.placement.widget] || null : null
     readonly property var model: form.manifest ? FormModel.build(form.manifest, form.placement, span => form.fitsSpan(span), Qt.locale().name) : null
-    // Wide pages have room for a bigger preview.
-    readonly property real previewWidth: form.ed.pageType === "wide" ? 2 * T.deckCellW - 2 * T.deckPadding : T.editSidebar + 2 * T.editInset
+    readonly property var plan: form.app.formPlan
 
     function fitsSpan(span) {
         const spans = form.ed.preset.placements.map(p => p.span);
@@ -31,160 +29,202 @@ Item {
         return PageFit.fits(form.ed.pageType, spans);
     }
 
-    // The widget at this span's real size on this page, scaled down to the preview column when it is wider.
-    readonly property var box: {
-        const type = form.ed.pageType;
-        const cell = ({ "small": [2, 1], "wide": [4, 1], "tall": [2, 2] })[type] || [2, 1];
-        const boxes = Presets.boxes(type, cell[0] * T.deckCellW - 2 * T.deckPadding, cell[1] * T.deckCellH - 2 * T.deckPadding, T.gap, Presets.pack(type, form.placement ? [form.placement.span] : []));
-        return boxes.length > 0 ? boxes[0] : { "w": T.deckCellW, "h": T.deckCellH };
-    }
-    readonly property real previewScale: Math.min(1, form.previewWidth / form.box.w)
+    // The widget at its real size, centred on a full-width stage.
+    Rectangle {
+        id: stage
 
-    Item {
-        id: preview
-
-        width: form.previewWidth
-        height: form.box.h * form.previewScale
+        width: form.width
+        height: form.plan ? form.plan.stageH : 0
+        radius: T.radiusInner
+        color: T.card
+        border.width: 1
+        border.color: T.border
 
         Shell.WidgetSlot {
-            width: form.box.w
-            height: form.box.h
+            x: form.plan ? (stage.width - form.plan.box.w) / 2 : 0
+            y: form.plan ? (stage.height - form.plan.box.h) / 2 : 0
+            width: form.plan ? form.plan.box.w : 0
+            height: form.plan ? form.plan.box.h : 0
             app: form.app
             placement: form.placement
-            transformOrigin: Item.TopLeft
-            scale: form.previewScale
-        }
-
-        PlasmaLabel {
-            anchors.top: parent.bottom
-            anchors.topMargin: T.gap
-            text: form.app.strings.editPreview
-            color: T.textSecondary
-            font.pixelSize: T.fontCaption
         }
     }
 
-    ColumnLayout {
-        anchors.left: preview.right
-        anchors.leftMargin: T.editGap
-        anchors.right: parent.right
-        anchors.top: parent.top
-        spacing: 0
-        visible: form.model !== null
+    // The size control, then the fields in two columns.
+    Column {
+        id: fields
 
-        // Size first: the spans that cannot fit this page stay visible, greyed.
+        readonly property real colGap: 2 * T.editInset
+
+        y: stage.height + T.editGap
+        width: form.width
+        spacing: 0
+        visible: form.model !== null && form.plan !== null
+
         FormRow {
+            width: fields.width
             label: form.app.strings.editSize
+
+            Loader {
+                sourceComponent: form.model && form.model.size.options.length > 1 ? sizeSegmented : sizeOnly
+            }
+
+            Component {
+                id: sizeOnly
+
+                PlasmaLabel {
+                    text: form.app.strings.spanOnly(form.model.size.current)
+                    color: T.textSecondary
+                    font.pixelSize: T.fontHeader
+                }
+            }
+
+            Component {
+                id: sizeSegmented
 
             Segmented {
                 options: form.model ? form.model.size.options.map(o => ({ "value": o.value, "label": form.app.strings.spanName(o.value), "enabled": o.enabled })) : []
                 value: form.model ? form.model.size.current : ""
                 onPicked: value => form.ed.setSpan(value)
             }
+            }
         }
 
-        Repeater {
-            model: form.model ? form.model.fields.length : 0
+        Row {
+            spacing: fields.colGap
 
-            delegate: FormRow {
-                id: fieldRow
+            Repeater {
+                model: form.plan ? form.plan.cols : []
 
-                required property int index
-                readonly property var field: form.model.fields[fieldRow.index]
+                delegate: Column {
+                    id: fieldColumn
 
-                label: fieldRow.field.label
+                    required property var modelData
 
-                Loader {
-                    id: control
+                    width: form.plan ? (fields.width - (form.plan.cols.length - 1) * fields.colGap) / form.plan.cols.length : 0
 
-                    sourceComponent: ({ "segmented": segmentedControl, "location": locationControl, "switch": switchControl, "text": textControl, "stepper": numberControl, "slider": numberControl, "dropdown": dropdownControl, "timezone": timezoneControl })[fieldRow.field.control] || null
-                }
+                    Repeater {
+                        model: fieldColumn.modelData
 
-                Component {
-                    id: segmentedControl
+                        delegate: FormRow {
+                            id: fieldRow
 
-                    Segmented {
-                        options: fieldRow.field.options
-                        value: String(fieldRow.field.value)
-                        onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
-                    }
-                }
+                            required property int modelData
+                            readonly property var field: form.model.fields[fieldRow.modelData]
 
-                Component {
-                    id: dropdownControl
+                            width: fieldColumn.width
+                            // An open dropdown or search must draw over the other column too.
+                            onZChanged: fieldColumn.z = fieldRow.z
+                            kind: fieldRow.field.control
+                            label: fieldRow.field.control === "note" ? "" : fieldRow.field.label
 
-                    DropdownField {
-                        options: fieldRow.field.options
-                        value: String(fieldRow.field.value)
-                        onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
-                        onOpenChanged: fieldRow.z = open ? 1 : 0
-                    }
-                }
+                            Loader {
+                                id: control
 
-                Component {
-                    id: switchControl
+                                sourceComponent: ({ "segmented": segmentedControl, "location": locationControl, "switch": switchControl, "text": textControl, "stepper": numberControl, "dropdown": dropdownControl, "timezone": timezoneControl, "note": noteControl })[fieldRow.field.control] || null
+                            }
 
-                    SwitchControl {
-                        checked: fieldRow.field.value === true
-                        onToggled: checked => form.ed.setSetting(fieldRow.field.key, checked)
-                    }
-                }
+                            // A computed read-only line (D-64): it spans the whole row, so the row's own label is empty.
+                            Component {
+                                id: noteControl
 
-                Component {
-                    id: textControl
+                                PlasmaLabel {
+                                    width: fieldRow.width
+                                    text: form.app.strings.widgetNote(fieldRow.field.note)
+                                    color: T.textSecondary
+                                    font.pixelSize: T.fontCaption
+                                    elide: Text.ElideRight
+                                }
+                            }
 
-                    TextEntry {
-                        width: T.editSidebar + T.editInset * 2
-                        app: form.app
-                        focusRoot: form.focusRoot
-                        value: String(fieldRow.field.value)
-                        onCommitted: text => form.ed.setSetting(fieldRow.field.key, text)
-                    }
-                }
+                            Component {
+                                id: segmentedControl
 
-                Component {
-                    id: numberControl
+                                Segmented {
+                                    options: fieldRow.field.options
+                                    value: String(fieldRow.field.value)
+                                    onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
+                                }
+                            }
 
-                    NumberEntry {
-                        slider: fieldRow.field.control === "slider"
-                        value: Number(fieldRow.field.value)
-                        min: fieldRow.field.min
-                        max: fieldRow.field.max
-                        step: fieldRow.field.step
-                        onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
-                    }
-                }
+                            Component {
+                                id: dropdownControl
 
-                Component {
-                    id: locationControl
+                                DropdownField {
+                                    options: fieldRow.field.options
+                                    value: String(fieldRow.field.value)
+                                    onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
+                                    onOpenChanged: fieldRow.z = open ? 1 : 0
+                                }
+                            }
 
-                    LocationField {
-                        width: T.editSidebar + T.editInset * 2
-                        app: form.app
-                        focusRoot: form.focusRoot
-                        value: fieldRow.field.value
-                        onPicked: location => form.ed.setSetting(fieldRow.field.key, location)
-                        onEditingChanged: fieldRow.z = editing ? 1 : 0
-                    }
-                }
+                            Component {
+                                id: switchControl
 
-                Component {
-                    id: timezoneControl
+                                SwitchControl {
+                                    checked: fieldRow.field.value === true
+                                    onToggled: checked => form.ed.setSetting(fieldRow.field.key, checked)
+                                }
+                            }
 
-                    TimezoneField {
-                        width: T.editSidebar + T.editInset * 2
-                        app: form.app
-                        focusRoot: form.focusRoot
-                        value: String(fieldRow.field.value)
-                        onPicked: zone => form.ed.setSetting(fieldRow.field.key, zone)
-                        onEditingChanged: fieldRow.z = editing ? 1 : 0
+                            Component {
+                                id: textControl
+
+                                TextEntry {
+                                    width: T.editFieldW
+                                    app: form.app
+                                    focusRoot: form.focusRoot
+                                    value: String(fieldRow.field.value)
+                                    onCommitted: text => form.ed.setSetting(fieldRow.field.key, text)
+                                }
+                            }
+
+                            Component {
+                                id: numberControl
+
+                                NumberEntry {
+                                    value: Number(fieldRow.field.value)
+                                    text: FormModel.valueText(fieldRow.field, fieldRow.field.value)
+                                    min: fieldRow.field.min
+                                    max: fieldRow.field.max
+                                    step: fieldRow.field.step
+                                    onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
+                                }
+                            }
+
+                            Component {
+                                id: locationControl
+
+                                LocationField {
+                                    width: T.editFieldW
+                                    app: form.app
+                                    focusRoot: form.focusRoot
+                                    value: fieldRow.field.value
+                                    onPicked: location => form.ed.setSetting(fieldRow.field.key, location)
+                                    onEditingChanged: fieldRow.z = editing ? 1 : 0
+                                }
+                            }
+
+                            Component {
+                                id: timezoneControl
+
+                                TimezoneField {
+                                    width: T.editFieldW
+                                    app: form.app
+                                    focusRoot: form.focusRoot
+                                    value: String(fieldRow.field.value)
+                                    onPicked: zone => form.ed.setSetting(fieldRow.field.key, zone)
+                                    onEditingChanged: fieldRow.z = editing ? 1 : 0
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    // Under the preview, so the fields keep the whole right column.
+    // Bottom left, under the fields.
     Rectangle {
         anchors.left: parent.left
         anchors.bottom: parent.bottom
@@ -234,15 +274,17 @@ Item {
         id: row
 
         property string label
+        property string kind
         default property alias control: holder.data
 
-        Layout.fillWidth: true
-        Layout.preferredHeight: T.editRow
+        height: row.kind === "note" ? T.editNote : T.editRow
 
         PlasmaLabel {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
+            width: Math.max(0, row.width - holder.width - T.gap)
             text: row.label
+            elide: Text.ElideRight
             color: T.textPrimary
             font.pixelSize: T.fontHeader
         }

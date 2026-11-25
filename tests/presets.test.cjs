@@ -81,7 +81,7 @@ test('cycle membership defaults to in', () => {
 
 test('a bad blob gives no presets and a reason', () => {
     assert.deepEqual(j(ctx.evaluate('  ', registry)), { presets: [], hidden: [], log: [] });
-    for (const text of ['nope', '[]', '{"format":2,"presets":[]}', '{"format":1}', '{"presets":[]}', '{"format":0,"presets":[]}']) {
+    for (const text of ['nope', '[]', '{"format":3,"presets":[]}', '{"format":1}', '{"presets":[]}', '{"format":0,"presets":[]}']) {
         const r = j(ctx.evaluate(text, registry));
         assert.deepEqual(r.presets, [], text);
         assert.equal(r.log.length, 1, text);
@@ -97,4 +97,32 @@ test('the deck\'s own page ids are reserved', () => {
     const r = j(ctx.evaluate(blob(p('small', ['1x1'], { id: 'live' }), p('small', ['1x1'], { id: 'control' })), registry));
     assert.equal(r.presets.length, 0);
     assert.equal(r.hidden.length, 2);
+});
+
+test('format 1 migrates to 2: every placement gets a unique pid, in order, and the rest is kept', () => {
+    const r = j(ctx.migrate({ format: 1, presets: [{ id: 'a', placements: [{ widget: 'clock' }, { widget: 'clock' }] }, { id: 'b', placements: [{ widget: 'weather' }] }] }));
+    assert.equal(r.ok, true);
+    assert.equal(r.blob.format, 2);
+    assert.deepEqual(r.blob.presets.map(x => x.placements.map(q => q.pid)), [['p1', 'p2'], ['p3']]);
+    assert.equal(r.blob.presets[0].placements[0].widget, 'clock');
+});
+
+test('evaluate passes a pid through and replaces a missing or repeated one', () => {
+    const text = JSON.stringify({ format: 2, presets: [
+        { id: 'a', page: 'small', placements: [{ pid: 'x', widget: 'clock', span: '1x1' }, { pid: 'x', widget: 'clock', span: '1x1' }] },
+        { id: 'b', page: 'small', placements: [{ widget: 'clock', span: '1x1' }] }] });
+    const pids = j(ctx.evaluate(text, registry)).presets.map(x => x.placements.map(q => q.pid));
+    assert.equal(pids[0][0], 'x');
+    assert.equal(new Set(pids.flat()).size, 3);
+});
+
+test('keepPids: an unreadable blob keeps the previous pids, a readable one (even with no presets) replaces them', () => {
+    const readable = { presets: [{ placements: [{ pid: 'p1' }, { pid: 'p2' }] }] };
+    const ok = '{"format":2,"presets":[]}';
+    assert.deepEqual(j(ctx.keepPids(ok, readable, [])), ['p1', 'p2']);
+    assert.deepEqual(j(ctx.keepPids('not json', { presets: [] }, ['p1'])), ['p1']);
+    assert.deepEqual(j(ctx.keepPids('{"format":9,"presets":[]}', { presets: [] }, ['p1'])), ['p1']);
+    assert.deepEqual(j(ctx.keepPids('{"presets":[]}', { presets: [] }, ['p1'])), ['p1']);
+    assert.deepEqual(j(ctx.keepPids('   ', { presets: [] }, ['p1'])), []);
+    assert.deepEqual(j(ctx.keepPids(ok, { presets: [] }, ['p1'])), []);
 });

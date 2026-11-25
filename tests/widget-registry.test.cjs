@@ -28,6 +28,21 @@ test('a good manifest validates and the icon becomes a chain', () => {
     assert.deepEqual(r.manifest.icon, ['x-symbolic']);
 });
 
+test('a number may carry a unit and a zero label; other fields may not', () => {
+    const num = (extra) => (m) => { m.settings[3] = Object.assign({ key: 'n', type: 'number', label: { en: 'N' }, default: 5, min: 0, max: 10, step: 1 }, extra); };
+    assert.equal(bad(num({ unit: { en: 'min' }, zeroLabel: { en: 'None' } })).ok, true);
+    assert.equal(bad(num({ unit: 'min' })).ok, false);
+    assert.equal(bad(num({ zeroLabel: { de: 'Keine' } })).ok, false);
+    assert.equal(bad(m => { m.settings[3] = { key: 'n', type: 'number', label: { en: 'N' }, default: 5, min: 1, max: 10, step: 1, zeroLabel: { en: 'None' } }; }).ok, false);
+    assert.equal(bad(m => { m.settings[1].unit = { en: 'min' }; }).ok, false);
+});
+
+test('the form is pre-sized for at most eight fields', () => {
+    const many = (n) => (m) => { m.settings = Array.from({ length: n }, (_, i) => ({ key: 'k' + i, type: 'bool', label: { en: 'K' }, default: true })); };
+    assert.equal(bad(many(8)).ok, true);
+    assert.equal(bad(many(9)).ok, false);
+});
+
 test('each broken field is reported', () => {
     assert.equal(bad(m => { m.contract = 2; }).ok, false);
     assert.equal(bad(m => { m.id = 'Bad Id'; }).ok, false);

@@ -6,8 +6,10 @@
 const CONTRACT = 1;
 const SPANS = ["1x1", "2x1", "4x1"];
 const CATEGORIES = ["Info", "Media", "System", "Dev"];
-const SERVICES = ["clock", "weather", "agents"];
-const TYPES = ["bool", "enum", "string", "number", "location", "timezone", "app"];
+const SERVICES = ["clock", "weather", "agents", "timer"];
+const TYPES = ["bool", "enum", "string", "number", "location", "timezone", "app", "note"];
+// The edit window is pre-sized for this many fields (D-56): the form never scrolls.
+const MAX_SETTINGS = 8;
 const ID = /^[a-z][a-z0-9-]{0,40}$/;
 const KEY = /^[a-zA-Z][a-zA-Z0-9]{0,30}$/;
 const ZONE = /^[A-Za-z0-9_+\-\/]{1,64}$/;
@@ -40,10 +42,17 @@ function fieldError(f) {
         return at + "unknown type";
     if (!isLocalised(f.label))
         return at + "needs a label with an en text";
+    // A note is read-only text the widget computes from its other settings (WidgetNotes.js): no value, no default.
+    if (f.type === "note")
+        return f.default === undefined ? "" : at + "a note has no default";
     if (f.type === "enum" && !(Array.isArray(f.options) && f.options.length > 0 && f.options.every(isText) && f.options.indexOf(f.default) >= 0))
         return at + "needs options and a default that is one of them";
     if (f.type === "enum" && f.labels !== undefined && !(isObject(f.labels) && Object.keys(f.labels).every(k => f.options.indexOf(k) >= 0 && isLocalised(f.labels[k]))))
         return at + "labels must be keyed by an option, each with an en text";
+    if (f.unit !== undefined && !(f.type === "number" && isLocalised(f.unit)))
+        return at + "unit is a localised text on a number";
+    if (f.zeroLabel !== undefined && !(f.type === "number" && f.min <= 0 && f.max >= 0 && isLocalised(f.zeroLabel)))
+        return at + "zeroLabel is a localised text on a number that can be 0";
     if (f.type === "number" && !(typeof f.min === "number" && typeof f.max === "number" && typeof f.step === "number" && f.min <= f.max && f.step > 0 && typeof f.default === "number" && f.default >= f.min && f.default <= f.max))
         return at + "needs min, max, step and a default within range";
     if (f.type === "bool" && typeof f.default !== "boolean")
@@ -86,6 +95,8 @@ function validate(raw) {
     const keys = {};
     if (!Array.isArray(raw.settings))
         errors.push("settings must be a list");
+    else if (raw.settings.length > MAX_SETTINGS)
+        errors.push("settings: at most " + MAX_SETTINGS + " fields");
     else {
         for (const f of raw.settings) {
             const e = fieldError(f);
@@ -132,13 +143,17 @@ function text(localised, localeName) {
     return localised[name] || localised[name.split(/[_-]/)[0]] || localised.en || "";
 }
 
+function isStored(f) {
+    return f.type !== "note";
+}
+
 function defaultFor(f) {
     return f.default;
 }
 
 function defaults(manifest) {
     const out = {};
-    for (const f of manifest.settings)
+    for (const f of manifest.settings.filter(isStored))
         out[f.key] = defaultFor(f);
     return out;
 }
@@ -182,7 +197,7 @@ function migrate(manifest, stored, fromVersion) {
 function resolveSettings(manifest, stored, fromVersion) {
     const migrated = migrate(manifest, stored, fromVersion);
     const out = {};
-    for (const f of manifest.settings)
+    for (const f of manifest.settings.filter(isStored))
         out[f.key] = coerce(f, migrated[f.key]);
     return out;
 }

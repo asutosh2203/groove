@@ -59,12 +59,19 @@ function header(jobs) {
     };
 }
 
-// input: { hasMedia, jobs, agents }. mediaSlot: media is the top card. trayArea: where the items go ("bottom" slot under
+// A timer (D-64) is { pid, status } with the waiting ones first. Order of the items: what needs you (an agent waiting for
+// your OK, a timer waiting for play), then the running timers, then the other agents, then the file jobs.
+// input: { hasMedia, jobs, agents, timers }. mediaSlot: media is the top card. trayArea: where the items go ("bottom" slot under
 // media, the whole "page", or "top" for a lone item on the Small page). The list header summarises the file jobs only.
 function layout(input) {
     const jobs = order(input.jobs);
     const agents = input.agents || [];
-    const items = agents.map(a => ({ "id": "agent:" + a.id, "kind": "agent", "sid": a.id })).concat(jobs.map(j => ({ "id": j.id, "kind": "job", "row": j.row, "job": j })));
+    const timers = input.timers || [];
+    const agentItem = a => ({ "id": "agent:" + a.id, "kind": "agent", "sid": a.id });
+    const timerItem = t => ({ "id": "timer:" + t.pid, "kind": "timer", "sid": t.pid });
+    const items = agents.filter(a => a.state === "waiting").map(agentItem)
+        .concat(timers.filter(t => t.status === "ended").map(timerItem), timers.filter(t => t.status !== "ended").map(timerItem))
+        .concat(agents.filter(a => a.state !== "waiting").map(agentItem), jobs.map(j => ({ "id": j.id, "kind": "job", "row": j.row, "job": j })));
     const count = (input.hasMedia ? 1 : 0) + items.length;
     const mode = trayMode(input.hasMedia, items.length);
     return {
@@ -74,6 +81,7 @@ function layout(input) {
         "mode": mode,
         "jobs": jobs,
         "agents": agents,
+        "timers": timers,
         "items": items,
         "trayArea": mode === "none" ? "none" : input.hasMedia ? "bottom" : "page",
         "header": mode === "list" && jobs.length > 0 ? header(jobs) : null

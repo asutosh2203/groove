@@ -28,6 +28,8 @@ Item {
     property bool holdLifetime: false
     // The activity popup is still up, so letting the presentation end should close it too.
     property bool popupTimerRunning: false
+    // The Pomodoro timers (D-64), for the phase-end alert: its pop-in gets a Start button and a click opens the deck.
+    property var timers: null
 
     // A newer notification is now the one being presented.
     signal noticeShown()
@@ -38,6 +40,8 @@ Item {
     signal dismissed(bool closePopup, bool wasShowing)
     // A click opened the notification's target; any popup should close.
     signal opened()
+    // A click on a timer alert: the deck should open on the timer.
+    signal timerAlertOpened()
 
     readonly property alias model: notifications
     // Bumped on any model change so bindings that read rows re-evaluate.
@@ -216,7 +220,25 @@ Item {
     }
 
     function clickable(row) {
-        return openTarget(row).kind !== "none";
+        return isTimerAlert(row) || openTarget(row).kind !== "none";
+    }
+
+    function isTimerAlert(row) {
+        return timers !== null && timers.isAlert(rowValue(row, NotificationManager.Notifications.IdRole, null));
+    }
+
+    // The alert's Start button: starts the next phase and clears the alert.
+    function startTimerAlert(row) {
+        const id = rowValue(row, NotificationManager.Notifications.IdRole, null);
+        if (timers === null || !timers.isAlert(id))
+            return ;
+        timers.startFromAlert(id);
+        notifications.close(notifications.index(row, 0));
+    }
+
+    // Plasma has already held this notification back (Do Not Disturb, D-64): no pop-in, except a Critical one.
+    function popInAllowed(row) {
+        return Notif.popInAllowed(urgencyKind(row), rowValue(row, NotificationManager.Notifications.WasAddedDuringInhibitionRole, false) === true);
     }
 
     // Click handlers pass a row index; resolve it to the notification id right away.
@@ -229,6 +251,13 @@ Item {
         const row = noticeRowFor(id);
         if (row < 0)
             return false;
+
+        if (isTimerAlert(row)) {
+            notifications.close(notifications.index(row, 0));
+            timerAlertOpened();
+            opened();
+            return true;
+        }
 
         const target = openTarget(row);
         if (target.kind === "none")
@@ -334,7 +363,7 @@ Item {
                 const type = service.rowValue(row, NotificationManager.Notifications.TypeRole, NotificationManager.Notifications.NoType);
                 if (type === NotificationManager.Notifications.JobType)
                     hasInsertedJob = true;
-                else if (type === NotificationManager.Notifications.NotificationType && freshNoticeRow < 0 && service.isFresh(row) && Notif.kindShowsActivity(service.urgencyKind(row)))
+                else if (type === NotificationManager.Notifications.NotificationType && freshNoticeRow < 0 && service.isFresh(row) && Notif.kindShowsActivity(service.urgencyKind(row)) && service.popInAllowed(row))
                     freshNoticeRow = row;
             }
             if (hasInsertedJob)

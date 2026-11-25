@@ -17,5 +17,5 @@ test('every built-in manifest is valid', () => {
     vm.runInContext(fs.readFileSync(path.join(ui, 'widgets/Manifests.js'), 'utf8').replace(/^\.pragma library\s*/, ''), ctx);
     const reg = JSON.parse(JSON.stringify(ctx.build(vm.runInContext('list', ctx))));
     assert.deepEqual(reg.skipped, []);
-    assert.deepEqual(reg.ids.sort(), ['claude-code', 'clock', 'weather', 'world-clock']);
+    assert.deepEqual(reg.ids.sort(), ['claude-code', 'clock', 'pomodoro', 'weather', 'world-clock']);
 });

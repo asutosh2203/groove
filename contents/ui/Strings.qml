@@ -78,6 +78,10 @@ QtObject {
         return span === "4x1" ? i18n("Wide") : span === "2x1" ? i18n("Medium") : i18n("Small");
     }
 
+    function spanOnly(span) {
+        return i18n("%1 only", spanName(span));
+    }
+
     // Why a change or a save was refused.
     function editHint(reason) {
         switch (reason) {
@@ -390,6 +394,95 @@ QtObject {
     readonly property string now: i18n("Now")
     readonly property string sunrise: i18n("Sunrise")
     readonly property string sunset: i18n("Sunset")
+
+    // Pomodoro (D-64). Kinds come from PomodoroEngine: focus, break, long; plain means a single-phase timer.
+    function pomodoroPhase(kind, plain) {
+        return plain ? i18n("Timer") : kind === "break" ? i18n("Break") : kind === "long" ? i18n("Long break") : i18n("Focus");
+    }
+    readonly property string pomodoroReady: i18n("Pomodoro")
+    readonly property string pomodoroTimerReady: i18n("Timer")
+    readonly property string pomodoroPlay: i18n("Start")
+    readonly property string pomodoroPause: i18n("Pause")
+    readonly property string pomodoroSkip: i18n("Skip")
+    readonly property string pomodoroReset: i18n("Reset")
+
+    function pomodoroRound(round, rounds) {
+        return i18n("Round %1 of %2", round, rounds);
+    }
+
+    function pomodoroPlainOf(minutes) {
+        return i18n("of %1 min", minutes);
+    }
+
+    function pomodoroReadyDetail(rounds, focus, brk) {
+        return rounds > 1 ? i18n("%1 rounds · %2 / %3", rounds, focus, brk) : i18n("%1 min", focus);
+    }
+
+    function pomodoroNextIs(kind) {
+        return i18n("%1's next", pomodoroPhase(kind, false));
+    }
+
+    readonly property string pomodoroDoneCycle: i18n("Done")
+
+    function pomodoroNext(phase) {
+        return phase ? i18n("Next: %1 %2 min", pomodoroPhase(phase.kind, false), Math.round(phase.ms / 60000)) : i18n("Cycle ends");
+    }
+
+    function pomodoroNextLong(phase, longAfter) {
+        const base = phase ? i18n("%1 %2 min next", pomodoroPhase(phase.kind, false), Math.round(phase.ms / 60000)) : i18n("Cycle ends");
+        return longAfter > 0 && phase && phase.kind !== "long" ? i18n("%1 · long after %2", base, longAfter) : base;
+    }
+
+    function pomodoroLongAfter(n) {
+        return i18n("Long break after %1", n);
+    }
+
+    readonly property string pomodoroNoLong: i18n("No long break")
+
+    function pomodoroDone(n) {
+        return i18np("%1 done", "%1 done", n);
+    }
+
+    function pomodoroNextRound(kind, round, rounds) {
+        return i18n("%1 %2 of %3 next", pomodoroPhase(kind, false), round, rounds);
+    }
+
+    function pomodoroDuration(minutes) {
+        return minutes >= 60 ? (minutes % 60 === 0 ? i18n("%1 h", Math.floor(minutes / 60)) : i18n("%1 h %2 m", Math.floor(minutes / 60), minutes % 60)) : i18n("%1 min", minutes);
+    }
+
+    function pomodoroCycle(minutes) {
+        return i18n("Cycle · %1", pomodoroDuration(minutes));
+    }
+
+    function pomodoroLongAt(time) {
+        return i18n("Long break at %1", time);
+    }
+
+    // A computed settings line (WidgetNotes.describe).
+    function widgetNote(note) {
+        if (!note)
+            return "";
+        return note.plain ? i18n("A plain timer · %1 min", note.roundMinutes) : i18n("Each round %1 min · full cycle %2", note.roundMinutes, pomodoroDuration(note.cycleMinutes));
+    }
+
+    // The closed capsule: "Focus · 24 min" (never seconds, D-64), or what a timer waiting for play says.
+    function pomodoroCapsule(c, plain) {
+        return c.kind === "ended" ? i18n("Start next") : i18n("%1 · %2 min", pomodoroPhase(c.kind, plain), c.minutes);
+    }
+
+    // The phase-end notification (PomodoroEngine.alert).
+    function pomodoroAlertTitle(a) {
+        switch (a.kind) {
+        case "focusDone":
+            return i18n("Focus done · %1 %2 min", pomodoroPhase(a.nextKind, false).toLowerCase(), a.nextMinutes);
+        case "breakOver":
+            return i18n("Break over · round %1", a.round);
+        case "timerDone":
+            return i18n("Timer done");
+        }
+        return i18n("Cycle complete");
+    }
 
     // unit and n come from WidgetState.age.
     function updatedAgo(unit, n) {

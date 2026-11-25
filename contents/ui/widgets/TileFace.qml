@@ -17,6 +17,8 @@ Item {
     // Room the hero leaves on the left for something drawn beside it (the usage ring), and its opacity when resting.
     property real heroInset: 0
     property real heroOpacity: 1
+    // Lifts the hero (and what sits beside it) to make room for an extra line on a taller box.
+    property real heroShift: 0
     // Room the label leaves on the right for something drawn over it (the weather glyph).
     property real labelInset: 0
     property alias detailItem: detailLabel
@@ -41,6 +43,7 @@ Item {
         anchors.left: parent.left
         anchors.leftMargin: face.heroInset
         anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: -face.heroShift
         width: face.width - face.heroInset - (suffixLabel.visible ? suffixLabel.implicitWidth + T.deckSpacing : 0)
         opacity: face.heroOpacity
         text: face.hero

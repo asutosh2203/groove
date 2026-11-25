@@ -123,6 +123,14 @@ Rectangle {
 
     Binding {
         target: loader.item
+        property: "pid"
+        value: String(slot.placement.pid ?? "")
+        when: loader.item !== null
+        restoreMode: Binding.RestoreNone
+    }
+
+    Binding {
+        target: loader.item
         property: "settings"
         value: slot.settings
         when: loader.item !== null
@@ -132,7 +140,7 @@ Rectangle {
     Binding {
         target: loader.item
         property: "services"
-        value: ({ "clock": slot.declared.indexOf("clock") >= 0 ? slot.app.clock : null, "weather": slot.weather, "agents": slot.declared.indexOf("agents") >= 0 ? slot.app.agents : null })
+        value: ({ "clock": slot.declared.indexOf("clock") >= 0 ? slot.app.clock : null, "weather": slot.weather, "agents": slot.declared.indexOf("agents") >= 0 ? slot.app.agents : null, "timer": slot.declared.indexOf("timer") >= 0 ? slot.app.timers : null })
         when: loader.item !== null
         restoreMode: Binding.RestoreNone
     }

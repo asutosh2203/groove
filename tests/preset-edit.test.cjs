@@ -74,7 +74,7 @@ test('adding a widget: at a cell, at the first free spot, refused when nothing f
     let d = draftOf(preset('a', 'small', ['clock', '1x1']));
     const r = E.addPlacement(d, 'a', 'clock', 1, reg);
     assert.equal(r.ok, true);
-    assert.deepEqual(j(r.draft.presets[0].placements[1]), { widget: 'clock', span: '1x1', settings: {}, settingsVersion: 1 });
+    assert.deepEqual(j(r.draft.presets[0].placements[1]), { pid: 'p2', widget: 'clock', span: '1x1', settings: {}, settingsVersion: 1 });
     assert.equal(E.addPlacement(r.draft, 'a', 'clock', null, reg).reason, 'nofit');
     assert.equal(E.addPlacement(d, 'a', 'nope', null, reg).reason, 'unknown');
     d = draftOf(preset('t', 'tall', ['clock', '1x1']));
@@ -96,7 +96,7 @@ test('a setting is stored only when the field would accept it, and stamps the wi
     const d = draftOf(preset('a', 'small', ['weather', '1x1']));
     const ok = E.setSetting(d, 'a', 0, 'detail', 'sun', reg);
     assert.equal(ok.ok, true);
-    assert.deepEqual(j(ok.draft.presets[0].placements[0]), { widget: 'weather', span: '1x1', settings: { detail: 'sun' }, settingsVersion: 1 });
+    assert.deepEqual(j(ok.draft.presets[0].placements[0]), { pid: 'p1', widget: 'weather', span: '1x1', settings: { detail: 'sun' }, settingsVersion: 1 });
     assert.equal(E.setSetting(d, 'a', 0, 'detail', 'moon', reg).reason, 'invalid');
     assert.equal(E.setSetting(d, 'a', 0, 'nokey', 1, reg).reason, 'invalid');
     const city = { name: 'Oslo', lat: 59.9, lon: 10.75 };
@@ -140,4 +140,20 @@ test('the draft weather locations include a place picked but not yet saved', () 
     d = E.setSetting(d, 'a', 0, 'location', oslo, reg).draft;
     assert.deepEqual(j(E.weatherLocations(d, reg)), [oslo]);
     assert.deepEqual(j(E.weatherLocations(d, { byId: {} })), []);
+});
+
+test('pids: unique on load (a repeat gets a fresh one), kept by reorder and settings, fresh for an added placement', () => {
+    const text = JSON.stringify({ format: 2, presets: [{ id: 'a', page: 'small', placements: [
+        { pid: 'k', widget: 'clock', span: '1x1', settings: {} }, { pid: 'k', widget: 'clock', span: '1x1', settings: {} }] }] });
+    const d = j(E.load(text).draft);
+    const [first, second] = d.presets[0].placements.map(p => p.pid);
+    assert.equal(first, 'k');
+    assert.notEqual(second, 'k');
+    const moved = j(E.movePlacement(d, 'a', 0, 1).draft);
+    assert.deepEqual(moved.presets[0].placements.map(p => p.pid), [second, 'k']);
+    const set = j(E.setSetting(d, 'a', 0, 'label', 'x', reg).draft);
+    assert.equal(set.presets[0].placements[0].pid, 'k');
+    const small = j(E.removePlacement(d, 'a', 1).draft);
+    const added = j(E.addPlacement(small, 'a', 'clock', null, reg).draft);
+    assert.equal(new Set(added.presets[0].placements.map(p => p.pid)).size, 2);
 });
