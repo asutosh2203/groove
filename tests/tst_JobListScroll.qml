@@ -62,6 +62,8 @@ TestCase {
     }
 
     JobList {
+        timers: ListModel {
+        }
         id: list
 
         parent: tc

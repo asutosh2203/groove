@@ -37,6 +37,7 @@ Item {
     onCreatedMsChanged: nowMs = Date.now()
 
     // Clickable (D-31) is decided and handled for the whole island in main.qml; the glyph follows its hover state.
+    readonly property bool timerAlert: hasNotification && app.notifications.isTimerAlert(notificationRow)
     readonly property bool clickable: hasNotification && app.notifications.clickable(notificationRow)
 
     Timer {
@@ -158,6 +159,34 @@ Item {
                     font.pixelSize: 10
                     elide: Text.ElideRight
                     maximumLineCount: 1
+                }
+
+                // The phase-end alert's own Start button (D-64); a native popup has none, so it is drawn here. The click is its own.
+                Rectangle {
+                    visible: notificationPage.timerAlert
+                    Layout.preferredWidth: startLabel.implicitWidth + 2 * T.gap
+                    Layout.preferredHeight: T.widgetButton
+                    radius: height / 2
+                    color: startArea.containsMouse ? T.rowHover : T.chip
+
+                    PlasmaLabel {
+                        id: startLabel
+
+                        anchors.centerIn: parent
+                        text: notificationPage.app ? notificationPage.app.strings.pomodoroPlay : ""
+                        color: "#ffffff"
+                        font.pixelSize: T.fontBody
+                        font.weight: Font.DemiBold
+                    }
+
+                    MouseArea {
+                        id: startArea
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: notificationPage.app.notifications.startTimerAlert(notificationPage.notificationRow)
+                    }
                 }
 
                 // Same slot rule as the Control Center rows: the age at rest, the open glyph on hover, no layout shift.

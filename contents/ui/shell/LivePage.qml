@@ -32,6 +32,10 @@ Item {
     }
 
     ListModel {
+        id: timersModel
+    }
+
+    ListModel {
         id: jobsModel
     }
 
@@ -63,6 +67,7 @@ Item {
         const items = page.layout.items;
         page.sync(itemsModel, items);
         page.sync(agentsModel, items.filter(it => it.kind === "agent"));
+        page.sync(timersModel, items.filter(it => it.kind === "timer"));
         page.sync(jobsModel, items.filter(it => it.kind === "job"));
     }
 
@@ -153,7 +158,7 @@ Item {
 
             width: ListView.view.width
             height: page.layout.mediaSlot ? page.trayHeight : page.slotHeight
-            sourceComponent: cell.kind === "agent" ? agentTile : jobTile
+            sourceComponent: cell.kind === "agent" ? agentTile : cell.kind === "timer" ? timerTile : jobTile
 
             Component {
                 id: jobTile
@@ -161,6 +166,15 @@ Item {
                 JobTile {
                     app: page.app
                     row: cell.row
+                }
+            }
+
+            Component {
+                id: timerTile
+
+                TimerTile {
+                    app: page.app
+                    pid: cell.sid
                 }
             }
 
@@ -194,6 +208,7 @@ Item {
             app: page.app
             model: jobsModel
             agents: agentsModel
+            timers: timersModel
             header: page.layout.header ?? ({ "kind": "mixed", "count": 0, "percent": -1, "remaining": -1, "rowGlyphs": true })
         }
     }

@@ -182,3 +182,15 @@ test('agents: list height counts the agent rows, and the header only when file j
     // unchanged for jobs only: 20 + 20 + 3*40 + 3*8 = 184
     assert.equal(h(lay(false, [job('j1', 1), job('j2', 2), job('j3', 3)])), 184);
 });
+
+test('timers (D-64): what needs you first, then running timers, then other agents, then jobs', () => {
+    const l = JSON.parse(JSON.stringify(ctx.layout({
+        hasMedia: false,
+        agents: [{ id: 'w', state: 'waiting' }, { id: 'x', state: 'working' }],
+        timers: [{ pid: 'e', status: 'ended' }, { pid: 'r', status: 'running' }],
+        jobs: [{ id: 'j', row: 0, created: 1, percent: 1, processed: 0, total: 0, remaining: 1, kind: 'copy' }]
+    })));
+    assert.deepEqual(l.items.map(i => i.id), ['agent:w', 'timer:e', 'timer:r', 'agent:x', 'j']);
+    assert.equal(l.count, 5);
+    assert.equal(l.mode, 'list');
+});

@@ -48,7 +48,7 @@ PlasmoidItem {
     property bool popupHovered: false
     readonly property bool holdPopupTimers: dialogVisible && islandOpen && popupMode === "activity" && (popupHovered || dialogActive && !resumeDeck || replyShelfService.holding)
     readonly property bool holdNoticeLifetime: holdPopupTimers && activityPopupMode === "notice"
-    readonly property bool hasActivity: systemControls.announcementActive || jobActivityEnabled && jobService.hasJobs || agentService.active || mediaActivityEnabled && mediaService.shown || notificationService.activityActive
+    readonly property bool hasActivity: systemControls.announcementActive || jobActivityEnabled && jobService.hasJobs || agentService.active || timerService.active || mediaActivityEnabled && mediaService.shown || notificationService.activityActive
     // Fixed allocation: the panel never resizes for visual transitions. The
     // visible shape is drawn inside whatever slot the panel actually gives us.
     // The visible body is islandBodyWidth in both shapes; the notch's concave ears flare shoulder px outside it, so its
@@ -434,9 +434,10 @@ PlasmoidItem {
 
     // The Live page's inputs (D-52). Only the cheap count is always live; the job details are built while the deck shows.
     readonly property bool liveMedia: mediaActivityEnabled && mediaService.shown
-    readonly property int liveCount: (liveMedia ? 1 : 0) + agentService.sessions.length + (jobActivityEnabled ? jobService.activeCount : 0)
+    readonly property int liveCount: (liveMedia ? 1 : 0) + agentService.sessions.length + timerService.liveTimers.length + (jobActivityEnabled ? jobService.activeCount : 0)
     readonly property alias deck: deckState
     readonly property alias agents: agentService
+    readonly property alias timers: timerService
     // Where the open settings form puts its pieces; null outside the form (D-56).
     readonly property var formPlan: {
         const m = presetEditor.active && presetEditor.view === "preset" && presetEditor.pane === "form" && presetEditor.placement ? presetEditor.registry.byId[presetEditor.placement.widget] : null;
@@ -493,6 +494,7 @@ PlasmoidItem {
         liveMedia: root.liveMedia
         liveMediaKind: mediaService.kind
         liveAgents: agentService.sessions
+        liveTimers: timerService.liveTimers
         liveJobs: root.jobActivityEnabled && root.dialogVisible && root.popupMode === "deck" ? jobService.runningRows() : []
         presets: presetStore.presets
         editing: presetEditor.active
@@ -512,8 +514,6 @@ PlasmoidItem {
             "controlH": T.controlHeight,
             "controlEditW": T.controlEditWidth,
             "controlEditH": T.controlEditHeight,
-            "editInset": T.editInset,
-            "editBar": T.editBar,
             "gap": T.gap,
             "editRow": T.editRow,
             "editNote": T.editNote,
@@ -521,6 +521,8 @@ PlasmoidItem {
             "editStagePad": T.editStagePad,
             "editFormMinW": T.editFormMinW,
             "editChipH": T.editChipH,
+            "editInset": T.editInset,
+            "editBar": T.editBar,
             "editChips": T.editChips,
             "editGap": T.editGap,
             "editSidebar": T.editSidebar,
@@ -565,6 +567,13 @@ PlasmoidItem {
                 visualComponent: agentVisualComponent
                 compactComponent: agentCompactComponent
                 expandedComponent: agentExpandedComponent
+            },
+            Activities.ActivityProvider {
+                key: "timer"
+                active: timerService.active
+                priority: ActivityResolver.timerPriority(timerService.capsule?.tier ?? "")
+                visualComponent: timerVisualComponent
+                compactComponent: timerCompactComponent
             },
             Activities.ActivityProvider {
                 key: "job"
@@ -646,6 +655,8 @@ PlasmoidItem {
         fallbackAppName: translations.notificationFallback
         holdLifetime: root.holdNoticeLifetime
         popupTimerRunning: activityPopupTimer.running
+        timers: timerService
+        onTimerAlertOpened: root.showDeck("click")
         onNoticeShown: root.bump("notice")
         onJobArrived: root.bump("job")
         onDismissed: (closePopup, wasShowing) => {
@@ -708,6 +719,17 @@ PlasmoidItem {
 
         cfg: root.settings
         deckVisible: root.dialogVisible && root.popupMode === "deck"
+    }
+
+    TimerService {
+        id: timerService
+
+        dnd: PlasmaDnd {
+        }
+        notifier: KoveNotifier {
+        }
+        strings: translations
+        livePids: presetStore.placementPids
     }
 
     JobService {
@@ -936,6 +958,22 @@ PlasmoidItem {
         id: mediaVisualComponent
 
         MediaVisual {
+            app: root
+        }
+    }
+
+    Component {
+        id: timerVisualComponent
+
+        TimerVisual {
+            app: root
+        }
+    }
+
+    Component {
+        id: timerCompactComponent
+
+        Activities.TimerCompact {
             app: root
         }
     }

@@ -16,6 +16,8 @@ Item {
     required property var model
     // The agent sessions (D-57), their compact rows above the file jobs; empty when there are none.
     required property var agents
+    // The Pomodoro timers (D-64), compact rows above the agents.
+    required property var timers
     required property var header
 
     // Once the open animation has finished, scrolls just enough to show the opened row fully, clear of the bottom fade (its
@@ -78,6 +80,20 @@ Item {
             header: ColumnLayout {
                 width: ListView.view.width
                 spacing: T.liveGap
+
+                Repeater {
+                    model: list.timers
+
+                    delegate: TimerRow {
+                        id: timerRow
+
+                        required property string sid
+
+                        Layout.fillWidth: true
+                        app: list.app
+                        pid: timerRow.sid
+                    }
+                }
 
                 Repeater {
                     model: list.agents
