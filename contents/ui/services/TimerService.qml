@@ -58,6 +58,7 @@ Item {
         if (!entry)
             hub.timers[pid] = { "cfg": cfg, "next": cfg, "state": Engine.initial(0) };
         else {
+            // Engine.config builds its keys in a fixed order, so the JSON text compares by value.
             if (JSON.stringify(entry.next) === JSON.stringify(cfg))
                 return;
             entry.next = cfg;

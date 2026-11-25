@@ -190,12 +190,20 @@ function serialize(presets) {
     return JSON.stringify({ "format": FORMAT, "presets": presets });
 }
 
-// The placement pids a timer hub keeps. An unreadable blob (or one whose presets are all hidden) gives no presets, which
-// must not kill running timers: the previous list stays until a readable blob arrives.
+// The placement pids a timer hub keeps. A blob that cannot be read must not kill running timers, so the previous list stays
+// until a readable one arrives; a readable blob with no presets (the user removed them all) gives an empty list.
 function keepPids(text, result, previous) {
-    if (String(text).trim().length > 0 && result.presets.length === 0)
+    if (String(text).trim().length > 0 && !readable(text))
         return previous;
     return result.presets.reduce((all, preset) => all.concat(preset.placements.map(p => p.pid)), []);
+}
+
+function readable(text) {
+    const parsed = parse(text);
+    if (!parsed.ok)
+        return false;
+    const m = migrate(parsed.value);
+    return m.ok && Array.isArray(m.blob.presets);
 }
 
 function limit() {

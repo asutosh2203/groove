@@ -116,10 +116,13 @@ test('evaluate passes a pid through and replaces a missing or repeated one', () 
     assert.equal(new Set(pids.flat()).size, 3);
 });
 
-test('keepPids: an unreadable or fully hidden blob keeps the previous pids, a readable one replaces them', () => {
+test('keepPids: an unreadable blob keeps the previous pids, a readable one (even with no presets) replaces them', () => {
     const readable = { presets: [{ placements: [{ pid: 'p1' }, { pid: 'p2' }] }] };
-    assert.deepEqual(j(ctx.keepPids('{"x":1}', readable, [])), ['p1', 'p2']);
+    const ok = '{"format":2,"presets":[]}';
+    assert.deepEqual(j(ctx.keepPids(ok, readable, [])), ['p1', 'p2']);
     assert.deepEqual(j(ctx.keepPids('not json', { presets: [] }, ['p1'])), ['p1']);
+    assert.deepEqual(j(ctx.keepPids('{"format":9,"presets":[]}', { presets: [] }, ['p1'])), ['p1']);
+    assert.deepEqual(j(ctx.keepPids('{"presets":[]}', { presets: [] }, ['p1'])), ['p1']);
     assert.deepEqual(j(ctx.keepPids('   ', { presets: [] }, ['p1'])), []);
-    assert.deepEqual(j(ctx.keepPids('{"presets":[]}', { presets: [{ placements: [] }] }, ['p1'])), []);
+    assert.deepEqual(j(ctx.keepPids(ok, { presets: [] }, ['p1'])), []);
 });
