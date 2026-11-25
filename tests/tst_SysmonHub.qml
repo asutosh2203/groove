@@ -89,5 +89,19 @@ Item {
             testRoot.subs = [{ "pid": "a", "kinds": ["ram"], "alerts": false }];
             compare(Object.keys(hub.rings).length, 0);
         }
+
+        function test_a_dead_sensor_keeps_no_hot_state_from_its_last_value() {
+            testRoot.subs = [{ "pid": "a", "kinds": ["gpuTemp"], "alerts": true }];
+            hub.latest = { "gpu/gpu0/temperature": 95 };
+            hub.healths = { "gpu/gpu0/temperature": "ready" };
+            hub.evaluate(Date.now());
+            compare(hub.alertStates.gpuTemp.hot, true);
+            hub.healths = { "gpu/gpu0/temperature": "removed" };
+            hub.evaluate(Date.now() + 1000);
+            compare(hub.alertStates.gpuTemp, undefined);
+            hub.healths = { "gpu/gpu0/temperature": "unresponsive" };
+            hub.evaluate(Date.now() + 2000);
+            compare(hub.alertStates.gpuTemp, undefined);
+        }
     }
 }

@@ -126,6 +126,9 @@ Item {
     function evaluate(now) {
         const states = {};
         for (const kind of Sysmon.wantedKinds(hub.subscriptions)) {
+            // A sensor that is gone or silent keeps its last value in `latest`; that stale value must not count toward an alert.
+            if (Sysmon.kindState(kind, hub.available, hub.healths, hub.latest).state !== "ready")
+                continue;
             const r = Sysmon.reading(kind, hub.latest);
             const thr = Sysmon.thresholdFor(kind, hub.cfg.hot);
             if (r === null || thr === null)
