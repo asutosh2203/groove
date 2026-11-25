@@ -31,10 +31,15 @@ Item {
     QtObject {
         id: fakeNotifier
 
+        property var held: null
+
         function post(summary, body, icon, onId) {
             testRoot.log.push("post");
             testRoot.posted.push(summary);
-            onId(77);
+            if (held !== null)
+                held = onId;
+            else
+                onId(77);
         }
     }
 
@@ -68,6 +73,7 @@ Item {
             fakeDnd.untilMs = null;
             testRoot.log = [];
             testRoot.posted = [];
+            fakeNotifier.held = null;
         }
 
         function test_nothing_ticks_until_a_timer_runs_and_a_view_holds_seconds() {
@@ -138,6 +144,34 @@ Item {
             verify(hub.info("a").remainingMs <= 30 * 60000);
             hub.reset("a");
             compare(hub.info("a").remainingMs, 45 * 60000);
+        }
+
+        function test_a_late_alert_id_is_dropped_once_the_timer_moved_on() {
+            fakeNotifier.held = true;
+            hub.ensure("a", testRoot.settings);
+            hub.toggle("a");
+            hub.timers["a"].state.endsAt = Date.now() - 1;
+            hub.finishDue();
+            hub.play("a");
+            fakeNotifier.held(88);
+            compare(hub.isAlert(88), false);
+        }
+
+        function test_an_unchanged_setting_does_not_stir_the_bindings() {
+            hub.ensure("a", testRoot.settings);
+            const before = hub.revision;
+            hub.ensure("a", Object.assign({}, testRoot.settings));
+            compare(hub.revision, before);
+        }
+
+        function test_the_dnd_switch_applies_to_a_running_focus() {
+            hub.ensure("a", testRoot.settings);
+            hub.toggle("a");
+            compare(testRoot.log.join(), "set");
+            hub.ensure("a", Object.assign({}, testRoot.settings, { "dnd": false }));
+            compare(testRoot.log.join(), "set,clear");
+            hub.ensure("a", testRoot.settings);
+            compare(testRoot.log.join(), "set,clear,set");
         }
 
         function test_a_removed_placement_drops_its_timer_and_its_dnd() {

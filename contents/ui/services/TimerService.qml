@@ -50,18 +50,27 @@ Item {
     }
 
     // Called by a view or tile for its placement. A ready timer follows the settings at once; one in progress keeps its
-    // own until it is reset, so editing a number cannot move a running deadline.
+    // own until it is reset, so editing a number cannot move a running deadline. The Do Not Disturb switch applies at once.
     function ensure(pid, settings) {
         const cfg = Engine.config(settings);
         const entry = hub.timers[pid];
+        let dndChanged = false;
         if (!entry)
             hub.timers[pid] = { "cfg": cfg, "next": cfg, "state": Engine.initial(0) };
         else {
+            if (JSON.stringify(entry.next) === JSON.stringify(cfg))
+                return;
             entry.next = cfg;
             if (entry.state.status === "ready")
                 entry.cfg = cfg;
+            else if (entry.cfg.dnd !== cfg.dnd) {
+                entry.cfg = Object.assign({}, entry.cfg, { "dnd": cfg.dnd });
+                dndChanged = true;
+            }
         }
         hub.revision++;
+        if (dndChanged)
+            hub.reconcile(null);
     }
 
     function info(pid) {
@@ -168,6 +177,9 @@ Item {
 
     function postAlert(pid, description) {
         hub.notifier.post(hub.strings.pomodoroAlertTitle(description), "", "chronometer", id => {
+            // The id arrives late: a timer that moved on since must not own this notification's Start button.
+            if (hub.timers[pid]?.state.status !== "ended")
+                return;
             hub.alertIds[pid] = id;
             hub.revision++;
         });
