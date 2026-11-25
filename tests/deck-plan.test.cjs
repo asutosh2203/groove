@@ -132,6 +132,15 @@ test('the editor body is the page at real size in an outline, beside the catalog
     assert.deepEqual(j(ctx.editSize('preset', 'nope', egeom)), j(ctx.editSize('preset', 'small', egeom)));
 });
 
+test('an open settings form sizes the island to its rows, within the window', () => {
+    const form = { width: 684, contentH: 344 };
+    assert.deepEqual(j(ctx.editSize('preset', 'wide', egeom, form)), { w: 684, h: 28 + 34 + 10 + 344 + 10 + 44 });
+    assert.equal(j(ctx.editSize('preset', 'small', egeom, { width: 0, contentH: 292 })).w, 28 + 332 + 10 + 150);
+    const win = j(ctx.editWindow(egeom));
+    const s = ctx.editSize('preset', 'wide', egeom, { width: 684, contentH: 128 + 10 + 44 + 4 * 44 + 10 + 28 });
+    assert.ok(s.h * 1.04 <= win.h);
+});
+
 test('the edit window holds the biggest editor, zoomed, and no editor outgrows it', () => {
     const win = j(ctx.editWindow(egeom));
     assert.deepEqual(win, { w: Math.ceil(860 * 1.04), h: Math.ceil(624 * 1.04) });

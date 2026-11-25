@@ -171,3 +171,11 @@ test('no code compares an urgency number with <, <=, > or >= (D-38): kinds are m
     walk(root);
     assert.deepEqual(offenders, []);
 });
+
+test('pop-ins respect Do Not Disturb: only Critical gets through a held-back notification (D-64)', () => {
+    const N = ctx;
+    assert.equal(N.popInAllowed('normal', true), false);
+    assert.equal(N.popInAllowed('low', true), false);
+    assert.equal(N.popInAllowed('critical', true), true);
+    assert.equal(N.popInAllowed('normal', false), true);
+});

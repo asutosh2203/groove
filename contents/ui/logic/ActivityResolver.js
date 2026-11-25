@@ -5,17 +5,23 @@
 // autoCloseMs); the controller hands in its live providers, a test hands in plain objects. Everything here is a pure
 // function of those, so pre-emption can be tested without a shell.
 
-// Priorities (D-38), highest first: a Critical notification, a keyboard layout announcement, a Normal notification, a
-// job, media, then idle. A Low notification is not an activity at all (it shows no popup and pre-empts nothing; it only
+// Priorities (D-38, D-64), highest first: a Critical notification, a keyboard layout announcement, a Normal notification, a
+// job, a running focus, media, a break, then idle. A Low notification is not an activity at all (it shows no popup and pre-empts nothing; it only
 // lands in the Control Center list). Media is the floor above idle, so a message pre-empts the music and the music
 // returns when the message ends (D-13). The urgency kind comes from Notifications.urgencyKind, which maps KDE's enum
 // (Low 1, Normal 2, Critical 4) explicitly; nothing here compares urgency numbers.
-const priority = { "idle": 0, "agentWorking": 50, "media": 100, "job": 200, "noticeNormal": 300, "keyboard": 350, "noticeCritical": 400 };
+const priority = { "idle": 0, "agentWorking": 50, "timerBreak": 80, "media": 100, "timerFocus": 150, "job": 200, "noticeNormal": 300, "keyboard": 350, "noticeCritical": 400 };
 
 // D-58: a session that needs you ranks as a job; one that merely works (a countdown included) ranks below media, so a
 // long run never hides the cover for hours.
 function agentPriority(state) {
     return state === "waiting" ? priority.job : state === "working" ? priority.agentWorking : priority.idle;
+}
+
+// D-64: a running focus ranks above media (not above a job, which may need you); a running break or a timer waiting for
+// play ranks below media. tier comes from PomodoroEngine.capsule.
+function timerPriority(tier) {
+    return tier === "focus" ? priority.timerFocus : tier === "break" ? priority.timerBreak : priority.idle;
 }
 
 // The priority of a presented notification of this urgency kind ("critical" or "normal"; anything else is not an

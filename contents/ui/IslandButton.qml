@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls as QQC2
+import "controlcenter/Tokens.js" as T
 
 Item {
     id: control
@@ -10,6 +11,8 @@ Item {
     property bool compact: false
     property bool flat: false
     property real glyphSize: 0
+    // Colour fade in ms on hover and press; 0 (the default) changes instantly.
+    property int fadeMs: 0
     // Optional styling hooks. Defaults reproduce the original appearance, so
     // existing users of this component are unchanged.
     property color focusColor: "#8e8eff"
@@ -49,6 +52,15 @@ Item {
         color: control.flat ? (mouse.pressed ? control.flatPressedColor : mouse.containsMouse ? control.flatHoverColor : "transparent") : mouse.pressed ? control.pressedColor : mouse.containsMouse || control.emphasized ? control.hoverColor : control.restColor
         border.color: control.showFocusRing ? control.focusColor : control.outlineColor
         border.width: control.flat && !control.showFocusRing ? 0 : 1
+
+        Behavior on color {
+            enabled: control.fadeMs > 0
+
+            ColorAnimation {
+                duration: control.fadeMs
+                easing.type: T.easingStandard
+            }
+        }
     }
 
     Canvas {

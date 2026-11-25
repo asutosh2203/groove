@@ -109,4 +109,16 @@ Item {
 
     }
 
+    // A timer waiting for play leaves this dot while something else holds the capsule (D-64); the timer's own face has its own.
+    Rectangle {
+        visible: (island.app.timers.capsule?.dot ?? false) && island.app.activityMode() !== "timer"
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.topMargin: T.liveBadgeInset
+        anchors.rightMargin: island.app.shapeEars / 2 + T.liveBadgeInset
+        width: T.liveBadge - 2
+        height: width
+        radius: width / 2
+        color: T.textPrimary
+    }
 }

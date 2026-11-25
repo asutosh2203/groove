@@ -2,7 +2,7 @@
 .import "Utils.js" as Utils
 
 // Which MPRIS player the island shows (D-39), and how its times read. A "player-like" is anything with the fields below:
-// playbackStatus, track, artist, album, artUrl, length, identity, desktopEntry, canControl, canPlay, canPause, and the
+// playbackStatus, track, artist, album, artUrl, url, length, identity, desktopEntry, canControl, canPlay, canPause, and the
 // times startedAt / stoppedAt that the service records. `status` is { playing, paused, stopped }: the
 // numeric values of Mpris.PlaybackStatus, handed in so this file needs no Plasma import.
 
@@ -25,10 +25,30 @@ function isBrowserish(player) {
     return name.indexOf("vivaldi") !== -1 || name.indexOf("chromium") !== -1 || name.indexOf("chrome") !== -1 || name.indexOf("firefox") !== -1 || name.indexOf("browser") !== -1;
 }
 
-// Whether a player may be shown at all. Stopped players never are, and a player that is not playing needs some metadata
-// to be worth showing (an idle player with nothing to say is not).
+const urlRecheckMs = 1500;
+
+// YouTube plays a muted preview when the pointer rests on a thumbnail, and the browser publishes it like real media. Its
+// page URL is the browsing page, never a player page. Only youtube.com: music.youtube.com plays from its home page.
+function isPreviewUrl(url) {
+    const m = /^https?:\/\/([^/?#]+)(\/[^?#]*)?/i.exec(text(url));
+    if (!m || !/^(www\.|m\.)?youtube\.com$/i.test(m[1]))
+        return false;
+    return !/^\/(watch$|shorts\/|live\/|embed\/)/.test(m[2] || "/");
+}
+
+function isPreview(player) {
+    return isBrowserish(player) && isPreviewUrl(player.url);
+}
+
+// A browser's URL is read asynchronously (undefined until answered); showing it before then would flash a preview.
+function isUrlPending(player) {
+    return isBrowserish(player) && player.url === undefined;
+}
+
+// Whether a player may be shown at all. Stopped players never are, a hover preview never is, and a player that is not
+// playing needs some metadata to be worth showing (an idle player with nothing to say is not).
 function eligible(player, status) {
-    if (!player)
+    if (!player || isPreview(player) || isUrlPending(player))
         return false;
     if (player.playbackStatus === status.stopped)
         return false;

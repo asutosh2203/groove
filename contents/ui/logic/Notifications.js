@@ -197,3 +197,9 @@ function urgencyKind(raw, levels) {
 function kindShowsActivity(kind) {
     return kind === "normal" || kind === "critical";
 }
+
+// Kove's pop-ins respect Do Not Disturb (D-64): while Plasma holds notifications back only a Critical one gets through.
+// addedDuringInhibition is the model's WasAddedDuringInhibition for the row, so Plasma's per-app overrides still apply.
+function popInAllowed(kind, addedDuringInhibition) {
+    return kind === "critical" || !addedDuringInhibition;
+}

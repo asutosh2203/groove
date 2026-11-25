@@ -2,9 +2,11 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import org.kde.plasma.private.mpris as Mpris
+import org.kde.plasma.workspace.dbus as DBus
 import "../logic/MediaIdle.js" as MediaIdle
 import "../logic/MediaLength.js" as MediaLength
 import "../logic/MediaPlayers.js" as MediaPlayers
+import "../logic/MediaPosition.js" as MediaPosition
 import "../logic/Utils.js" as Utils
 
 // The media backend: which MPRIS player the island shows, its held track length, the 30 s idle grace (D-35) and the
@@ -30,6 +32,13 @@ Item {
     // When each player last started and stopped playing, by player key (MediaPlayers.noteStatus). Mutated in place and
     // read through `revision`, so a change bumps the revision rather than notifying on its own.
     property var activity: ({})
+    // The page URL of each browser player, by player key. Plasma's player model does not expose xesam:url, so it is read
+    // over D-Bus; it tells a YouTube hover preview from a video (MediaPlayers.isPreview). `urlSigs` remembers what each
+    // player showed when it was last asked, so only a change re-asks.
+    property var urls: ({})
+    property var urlSigs: ({})
+    // A browser is playing a preview URL: the page may still be catching up with the title, so ask again until it stops.
+    property bool previewPlaying: false
     // The player entries, untyped on purpose: qmllint types objectAt() as a bare QObject and cannot see the delegate's members.
     readonly property var entries: instantiator
     readonly property var player: {
@@ -55,6 +64,9 @@ Item {
     // The track length in microseconds, held across metadata updates that omit it (MediaLength.js).
     property real length: 0
     property var heldLength: null
+    // The position to show in microseconds: the player's own, or our estimate when a browser stops reporting it (MediaPosition.js).
+    property real position: 0
+    property var heldPosition: null
     // A player that exists but hasn't played for 30 s hands the island back to the idle face; anything that starts
     // playing takes it back at once (D-35).
     property bool graceExpired: false
@@ -88,6 +100,7 @@ Item {
                 "artist": entry.artist,
                 "album": entry.album,
                 "artUrl": entry.artUrl,
+                "url": urls[entry.key],
                 "length": entry.length,
                 "identity": entry.identity,
                 "desktopEntry": entry.desktopEntry,
@@ -102,9 +115,68 @@ Item {
         return pick.source === "candidate" ? containers[pick.index] : null;
     }
 
+    function setUrl(key, url) {
+        if (urls[key] === url)
+            return;
+        urls[key] = url;
+        revision++;
+    }
+
+    function readUrl(key, reply) {
+        const field = reply && reply.value ? reply.value["xesam:url"] : null;
+        setUrl(key, field ? String(field.value || "") : "");
+    }
+
+    function queryUrl(key) {
+        DBus.SessionBus.asyncCall({
+            "service": "org.mpris.MediaPlayer2." + key,
+            "path": "/org/mpris/MediaPlayer2",
+            "iface": "org.freedesktop.DBus.Properties",
+            "member": "Get",
+            "arguments": [new DBus.string("org.mpris.MediaPlayer2.Player"), new DBus.string("Metadata")]
+        }, reply => readUrl(key, reply), () => {
+            if (urls[key] === undefined)
+                setUrl(key, "");
+        });
+    }
+
+    function refreshUrls(force) {
+        let preview = false;
+        for (let i = 0; entries && i < entries.count; ++i) {
+            const e = entries.objectAt(i);
+            if (!e || !e.playerContainer || !e.playerContainer.objectName || e.playbackStatus === status.stopped || !MediaPlayers.isBrowserish(e))
+                continue;
+            const sig = e.track + "|" + e.artist + "|" + e.playbackStatus + "|" + e.length;
+            if (force || urlSigs[e.key] !== sig) {
+                urlSigs[e.key] = sig;
+                queryUrl(e.key);
+            }
+            preview = preview || (e.playbackStatus === status.playing && MediaPlayers.isPreviewUrl(urls[e.key]));
+        }
+        previewPlaying = preview;
+    }
+
     function refreshLength() {
         heldLength = MediaLength.hold(heldLength, MediaPlayers.lengthKey(player), player ? Utils.finiteNumber(player.length, 0) : 0);
         length = heldLength.length;
+    }
+
+    function refreshPosition() {
+        const current = player;
+        if (!current) {
+            heldPosition = null;
+            position = 0;
+            return;
+        }
+        heldPosition = MediaPosition.step(heldPosition, {
+            "key": MediaPlayers.lengthKey(current),
+            "playing": current.playbackStatus === status.playing,
+            "reported": Utils.finiteNumber(current.position, 0),
+            "rate": Utils.finiteNumber(current.rate, 1),
+            "browser": MediaPlayers.isBrowserish(current),
+            "length": length
+        }, Date.now());
+        position = heldPosition.pos;
     }
 
     function idleEvent(event) {
@@ -147,7 +219,11 @@ Item {
 
     }
 
-    onRevisionChanged: refreshLength()
+    onRevisionChanged: {
+        refreshUrls(false);
+        refreshLength();
+        refreshPosition();
+    }
     // The island now shows a different player (or the first one): let the activity know.
     onPlayerChanged: {
         if (hasPlayer)
@@ -160,6 +236,7 @@ Item {
     onPositionPollingChanged: {
         if (positionPolling && player && player.updatePosition)
             player.updatePosition();
+        refreshPosition();
 
     }
     Component.onCompleted: syncIdle()
@@ -172,6 +249,15 @@ Item {
     }
 
     Timer {
+        id: previewTimer
+
+        interval: MediaPlayers.urlRecheckMs
+        running: service.previewPlaying
+        repeat: true
+        onTriggered: service.refreshUrls(true)
+    }
+
+    Timer {
         id: positionTimer
 
         interval: 1000
@@ -180,6 +266,7 @@ Item {
         onTriggered: {
             if (service.player && service.player.updatePosition)
                 service.player.updatePosition();
+            service.refreshPosition();
 
         }
     }

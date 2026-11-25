@@ -122,7 +122,7 @@ Rectangle {
                 visible: !activitySummary.compact && ((!activitySummary.mediaOnly && app.jobs.hasJobs) || (app.media.hasPlayer && app.media.length > 0))
                 from: 0
                 to: !activitySummary.mediaOnly && app.jobs.hasJobs ? 100 : Math.max(1, app.media.player ? app.media.length : 1)
-                value: !activitySummary.mediaOnly && app.jobs.hasJobs ? Math.max(0, notificationsSource.jobsPercentage) : app.media.player ? app.media.player.position : 0
+                value: !activitySummary.mediaOnly && app.jobs.hasJobs ? Math.max(0, notificationsSource.jobsPercentage) : app.media.position
                 accent: T.fillSoft
                 trackColor: T.track
             }
@@ -137,7 +137,7 @@ Rectangle {
 
                 PlasmaLabel {
                     Layout.preferredWidth: 36
-                    text: app.media.hasPlayer && app.media.length > 0 ? MediaPlayers.formatTime(app.media.player.position) : ""
+                    text: app.media.hasPlayer && app.media.length > 0 ? MediaPlayers.formatTime(app.media.position) : ""
                     color: T.textCaption
                     font.pixelSize: T.fontCaption
                     font.features: { "tnum": 1 }
@@ -357,7 +357,7 @@ Rectangle {
                 spacing: 8
 
                 PlasmaLabel {
-                    text: app.media.hasPlayer && app.media.length > 0 ? MediaPlayers.formatTime(app.media.player.position) : ""
+                    text: app.media.hasPlayer && app.media.length > 0 ? MediaPlayers.formatTime(app.media.position) : ""
                     color: T.textCaption
                     font.pixelSize: T.fontCaption
                     font.features: { "tnum": 1 }
@@ -370,7 +370,7 @@ Rectangle {
                     opacity: app.media.hasPlayer && app.media.length > 0 ? 1 : 0
                     from: 0
                     to: Math.max(1, app.media.player ? app.media.length : 1)
-                    value: app.media.player ? app.media.player.position : 0
+                    value: app.media.position
                     accent: T.fillSoft
                     trackColor: T.track
                 }

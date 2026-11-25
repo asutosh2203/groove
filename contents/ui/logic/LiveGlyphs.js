@@ -15,6 +15,7 @@ const chains = {
     "upload": ["document-send-symbolic", "upload-symbolic", "go-up-symbolic", generic],
     "delete": ["edit-delete-symbolic", "user-trash-symbolic", generic],
     "generic": ["edit-copy-symbolic", generic],
+    "timer": ["chronometer-symbolic", "clock-symbolic", "appointment-soon-symbolic"],
     "agent": ["kove:prompt"],  // Kove's own glyph (ui/icons); the themes have none
     "agentWaiting": ["kove:prompt-calm"],  // the accent badge replaces the thought dot
     "agentRun": ["utilities-terminal-symbolic", "kove:prompt-calm"],
@@ -28,11 +29,13 @@ function chain(kind) {
     return chains[kind] || chains.transfer;
 }
 
-// What the Live item shows: media wins (a film glyph for video), then an agent (D-57), else the one kind all jobs share,
+// What the Live item shows: media wins (a film glyph for video), then a timer (D-64), then an agent (D-57), else the one kind all jobs share,
 // else "transfer". A generic kind is not a noun, so it reads as mixed, like the list header.
-function liveKind(hasMedia, mediaKind, jobKinds, hasAgent) {
+function liveKind(hasMedia, mediaKind, jobKinds, hasAgent, hasTimer) {
     if (hasMedia)
         return mediaKind === "video" ? "video" : "music";
+    if (hasTimer)
+        return "timer";
     if (hasAgent)
         return "agent";
     const kinds = new Set(jobKinds);

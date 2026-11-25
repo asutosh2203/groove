@@ -198,3 +198,12 @@ test('a working agent never hides the cover, a waiting one does, and a lone work
     assert.equal(shown([agent('waiting'), media, idle]), 'agent');
     assert.equal(shown([agent('working'), idle]), 'agent');
 });
+
+test('timer priority (D-64): a running focus beats media but not a job; a break and a waiting timer sit below media', () => {
+    const prio = JSON.parse(JSON.stringify(vm.runInContext('priority', ctx)));
+    assert.ok(ctx.timerPriority('focus') > prio.media);
+    assert.ok(ctx.timerPriority('focus') < prio.job);
+    assert.ok(ctx.timerPriority('break') < prio.media);
+    assert.ok(ctx.timerPriority('break') > prio.agentWorking);
+    assert.equal(ctx.timerPriority(''), 0);
+});

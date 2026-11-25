@@ -36,7 +36,7 @@ Item {
                 visible: musicCompact.hasPlayer && musicCompact.app.media.length > 0
                 from: 0
                 to: Math.max(1, musicCompact.hasPlayer ? musicCompact.app.media.length : 1)
-                value: musicCompact.hasPlayer ? musicCompact.app.media.player.position : 0
+                value: musicCompact.hasPlayer ? musicCompact.app.media.position : 0
                 accent: "#b4b6bf"
                 trackColor: "#25252b"
             }

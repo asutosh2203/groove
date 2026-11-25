@@ -47,3 +47,10 @@ test('an agent beats jobs but not media (D-57); its glyph is Kove\'s own', () =>
     assert.equal(ctx.liveKind(false, 'music', ['copy'], false), 'copy');
     assert.deepEqual(j(ctx.chain('agent')), ['kove:prompt']);
 });
+
+test('a timer ranks below media and above an agent and the jobs (D-64)', () => {
+    assert.equal(ctx.liveKind(true, 'music', [], true, true), 'music');
+    assert.equal(ctx.liveKind(false, '', ['copy'], true, true), 'timer');
+    assert.equal(ctx.liveKind(false, '', [], true, false), 'agent');
+    assert.equal(ctx.chain('timer')[0], 'chronometer-symbolic');
+});

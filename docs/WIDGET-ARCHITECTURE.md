@@ -96,9 +96,9 @@ Control Center tile editor is merged in as the gear chip.
   placement the page cannot take is listed first in the sidebar as "Doesn't fit" so it can be fixed.
 - Catalogue sidebar: icon, localised name and spans per widget; widgets that fit nowhere are greyed with "won't fit".
   Click adds to the chosen cell or the first free spot, a drag drops it on the grid.
-- Settings form (generated from the manifest schema): live preview left, fields right, size control first with the spans
-  that cannot fit greyed, "Remove widget" under the preview. Field types: bool (switch), enum (segmented up to four
-  options, else dropdown; options may carry localised `labels`), string, number (stepper or slider), location (Open-Meteo
+- Settings form (generated from the manifest schema): the widget centred at real size on a full-width stage, the size row
+  (plain text for a single-size widget), the fields in two columns, "Remove widget" bottom left. The island fits the form; a manifest may declare at most eight fields. Field types: note (a read-only line the widget computes from its other settings, `WidgetNotes.js`; no value, no default), bool (switch), enum (segmented up to four
+  options, else dropdown; options may carry localised `labels`), string, number (always a stepper; optional localised `unit` shown in the value, e.g. "25 min", and `zeroLabel`, e.g. "None", shown instead of 0), location (Open-Meteo
   search) and timezone (Plasma's zone data, plain id fallback). `app` is reserved, not built.
 - Bottom: one chip per preset with a silhouette of its layout. Hover shows an eye (cycle membership) and a "−" (delete,
   staged until Done); drag to reorder; the gear chip opens the tile editor; "+ New" adds a blank Small preset and is
@@ -141,7 +141,7 @@ Built-in widgets first; third-party extensions only after this contract is stabl
 - Manifest: one `manifest.json` per widget in `contents/ui/widgets/<id>/`. Fields: `contract` (1), `id`, `name` and
   `description` (objects keyed by locale, `en` required), `icon` (theme symbolic name or a fallback chain, D-26), `spans`
   (subset of 1x1, 2x1, 4x1) with a `defaultSpan`, `category` (Info, Media, System, Dev), `version` (of the widget's
-  settings, see Persistence), `services` (what the host injects: `clock`, `weather`, `agents`) and a `settings` schema.
+  settings, see Persistence), `services` (what the host injects: `clock`, `weather`, `agents`, `timer`) and a `settings` schema.
 - Views: one per supported span, named `View<span>.qml` (for example `View2x1.qml`) next to the manifest; shared
   sub-components are allowed. A view lays out from its injected pixel box only, never from hardcoded cell sizes (a 1x1 is
   154 wide on Small, 158 on Wide and 104 tall on Tall).
@@ -179,7 +179,12 @@ Built-in widgets first; third-party extensions only after this contract is stabl
 | `clock` | Info | 1x1 | clock | Time and date for a zone (D-55) |
 | `world-clock` | Info | 2x1 | clock | Three zones (D-55) |
 | `weather` | Info | 1x1, 2x1, 4x1 | weather | Left block, days, hours (D-55) |
+| `pomodoro` | Info | 1x1, 2x1, 4x1 | timer | Focus and break timer, round dots, optional Do Not Disturb during focus (D-64) |
 | `claude-code` | Dev | 1x1, 2x1 | agents | Plan usage or spend, attention, resting; the 2x1 lists live and recent sessions (D-60) |
+
+`timer` is the host's handle on `TimerService`: one timer per placement, looked up by the placement's `pid` (the view's `pid`
+property), in memory only. A placement's `pid` is a stable id assigned by the presets (format 2); reordering or editing keeps it
+and a duplicate gets a fresh one.
 
 `agents` is the host's handle on `AgentService` (the island's own instance, always on and event-driven, so it needs no
 subscription). A view that acts on a part of itself, such as a row, emits `runAction(action)`; the host runs it like a
@@ -188,7 +193,7 @@ subscription). A view that acts on a part of itself, such as a row, emits `runAc
 ## Persistence (decided)
 
 - Presets are stored per island instance in the plasmoid config as one versioned JSON blob (names, order, cycle
-  membership, placements with span and settings).
+  membership, placements with pid, span and settings).
 - Format changes ship tested pure-JS migrations. Each widget's settings carry their own version, migrated the same way.
 - A placement whose widget no longer exists keeps its data and shows a "Widget unavailable" slot; the preset is never
   dropped and nothing crashes.

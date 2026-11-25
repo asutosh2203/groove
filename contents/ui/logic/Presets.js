@@ -1,16 +1,43 @@
 .pragma library
 
 // Presets (D-54): the stored blob, its validation and migrations, and the page grid. Pure functions of plain data.
-// The blob is { format, presets: [{ id, name, inCycle, page, placements: [{ widget, span, settingsVersion, settings }] }] }.
+// The blob is { format, presets: [{ id, name, inCycle, page, placements: [{ pid, widget, span, settingsVersion, settings }] }] }.
 // Validation decides what is shown; it never rewrites what is stored, so the preset editor (D3) can still show and fix it.
 
-const FORMAT = 1;
+const FORMAT = 2;
 const MAX_PRESETS = 3;
 const pages = { "small": { "cols": 2, "rows": 1 }, "wide": { "cols": 4, "rows": 1 }, "tall": { "cols": 2, "rows": 2 } };
 const spanCols = { "1x1": 1, "2x1": 2, "4x1": 4 };
 
-// Per format: step(blob) lifts a blob from that format to the next. None yet; the loop in migrate() is the framework.
-const migrations = {};
+// A placement's pid is its stable identity (the Pomodoro timer is keyed by it): reordering or editing keeps it.
+// The first unused "p<n>" when `wanted` is missing or already taken.
+function uniquePid(used, wanted) {
+    if (typeof wanted === "string" && wanted.length > 0 && !used[wanted])
+        return wanted;
+    for (let n = 1; ; ++n) {
+        if (!used["p" + n])
+            return "p" + n;
+    }
+}
+
+// Per format: step(blob) lifts a blob from that format to the next.
+const migrations = {
+    1: blob => {
+        const used = {};
+        const presets = Array.isArray(blob.presets) ? blob.presets.map(preset => {
+            if (!isObject(preset) || !Array.isArray(preset.placements))
+                return preset;
+            return Object.assign({}, preset, { "placements": preset.placements.map(p => {
+                if (!isObject(p))
+                    return p;
+                const pid = uniquePid(used, undefined);
+                used[pid] = true;
+                return Object.assign({}, p, { "pid": pid });
+            }) });
+        }) : blob.presets;
+        return Object.assign({}, blob, { "format": 2, "presets": presets });
+    }
+};
 
 function isObject(v) {
     return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -117,6 +144,7 @@ function evaluate(text, registry) {
         return none("presets: the list is missing");
     const out = { "presets": [], "hidden": [], "log": [] };
     const seen = {};
+    const pids = {};
     for (const preset of m.blob.presets) {
         const id = isObject(preset) ? String(preset.id) : "?";
         let why = problem(preset, registry);
@@ -131,12 +159,18 @@ function evaluate(text, registry) {
         }
         seen[id] = true;
         const packed = pack(preset.page, preset.placements.map(p => p.span));
+        const placementPids = preset.placements.map(p => {
+            const pid = uniquePid(pids, p.pid);
+            pids[pid] = true;
+            return pid;
+        });
         out.presets.push({
                              "id": id,
                              "name": typeof preset.name === "string" ? preset.name : id,
                              "type": preset.page,
                              "inCycle": preset.inCycle !== false,
                              "placements": preset.placements.map((p, i) => ({
+                                                                         "pid": placementPids[i],
                                                                          "widget": p.widget,
                                                                          "span": p.span,
                                                                          "settings": isObject(p.settings) ? p.settings : {},
@@ -154,6 +188,22 @@ function evaluate(text, registry) {
 // checks first, so an invalid blob is never written.
 function serialize(presets) {
     return JSON.stringify({ "format": FORMAT, "presets": presets });
+}
+
+// The placement pids a timer hub keeps. A blob that cannot be read must not kill running timers, so the previous list stays
+// until a readable one arrives; a readable blob with no presets (the user removed them all) gives an empty list.
+function keepPids(text, result, previous) {
+    if (String(text).trim().length > 0 && !readable(text))
+        return previous;
+    return result.presets.reduce((all, preset) => all.concat(preset.placements.map(p => p.pid)), []);
+}
+
+function readable(text) {
+    const parsed = parse(text);
+    if (!parsed.ok)
+        return false;
+    const m = migrate(parsed.value);
+    return m.ok && Array.isArray(m.blob.presets);
 }
 
 function limit() {
