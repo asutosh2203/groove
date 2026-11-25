@@ -4,13 +4,13 @@
 // The System Monitor's decisions (D-65): which sensors a slot reads, the in-memory history and its gaps, the hot level with
 // hysteresis, the alert state machine, formatting and the sparkline geometry. Pure; the hub (SysmonHub.qml) executes.
 // `cfg` carries the Tokens: windowMs, gapFactor, coolBy, hot { load, cpuTemp, gpuTemp }, sustainMs { load, ram, temp },
-// cooldownMs, readyMs, rateFloor. hot: { load, ramGB, cpuTemp, gpuTemp }.
+// cooldownMs, readyMs, rateFloor.
 
 // main: what the hero needs (all must exist). extra: companion-line sensors (optional). hot: threshold key; sustain: alert key.
 const KINDS = {
     "cpu": { "main": ["cpu/all/usage"], "extra": ["cpu/all/maximumTemperature"], "hot": "load", "sustain": "load" },
     "gpu": { "main": ["gpu/gpu0/usage"], "extra": ["gpu/gpu0/temperature", "gpu/gpu0/name"], "hot": "load", "sustain": "load" },
-    "ram": { "main": ["memory/physical/used", "memory/physical/total"], "extra": ["memory/swap/used"], "hot": "ram", "sustain": "ram" },
+    "ram": { "main": ["memory/physical/used", "memory/physical/total"], "extra": ["memory/swap/used"], "hot": "load", "sustain": "ram" },
     "cpuTemp": { "main": ["cpu/all/maximumTemperature"], "extra": ["cpu/all/usage"], "hot": "cpuTemp", "sustain": "temp" },
     "gpuTemp": { "main": ["gpu/gpu0/temperature"], "extra": ["gpu/gpu0/usage"], "hot": "gpuTemp", "sustain": "temp" },
     "network": { "main": ["network/all/download", "network/all/upload"], "extra": [], "hot": null, "sustain": null },
@@ -150,15 +150,9 @@ function sustainFor(kind, sustainMs) {
     return KINDS[kind] && KINDS[kind].sustain !== null ? sustainMs[KINDS[kind].sustain] : null;
 }
 
-// The hot level on the 0-100 axis. RAM's is an absolute amount (hot.ramGB), so it is that amount's share of this machine's total;
-// null until the total is known.
-function thresholdFor(kind, hot, latest) {
-    if (!KINDS[kind] || KINDS[kind].hot === null)
-        return null;
-    if (kind !== "ram")
-        return hot[KINDS[kind].hot];
-    const total = latest ? num(latest[mainIds(kind)[1]]) : null;
-    return total > 0 ? Math.min(100, hot.ramGB * GB / total * 100) : null;
+// The hot level on the 0-100 axis (RAM's is a share of its binary total), or null for a rate.
+function thresholdFor(kind, hot) {
+    return KINDS[kind] && KINDS[kind].hot !== null ? hot[KINDS[kind].hot] : null;
 }
 
 // ---- Formatting ----------------------------------------------------------------------------------------------------
@@ -201,12 +195,12 @@ function display(kind, latest) {
     return { "hero": KINDS[kind].hot === "load" ? fmtPct(r.value) : fmtTemp(r.value), "suffix": "" };
 }
 
-// The value an alert quotes: a percentage for loads, GB for memory, degrees for temperatures.
+// The value an alert quotes: a percentage for loads and memory, degrees for temperatures.
 function alertValue(kind, latest) {
     const r = reading(kind, latest);
     if (r === null || !KINDS[kind] || KINDS[kind].hot === null)
         return "";
-    return kind === "ram" ? fmtGB(r.value) + " GB" : KINDS[kind].hot === "load" ? fmtPct(r.pct) : fmtTemp(r.value);
+    return KINDS[kind].hot === "load" ? fmtPct(r.pct) : fmtTemp(r.value);
 }
 
 // The extra line a tall box adds, chosen here: { key, value } or { key: "gpu", name, value }; null when its sensor is missing.

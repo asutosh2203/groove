@@ -28,7 +28,7 @@ Item {
             "gapFactor": T.sysmonGapFactor,
             "gapMs": T.sysmonGapFactor * T.sysmonHiddenTick,
             "coolBy": T.sysmonCoolBy,
-            "hot": { "load": T.sysmonHotLoad, "ramGB": T.sysmonHotRamGB, "cpuTemp": T.sysmonHotCpuTemp, "gpuTemp": T.sysmonHotGpuTemp },
+            "hot": { "load": T.sysmonHotLoad, "cpuTemp": T.sysmonHotCpuTemp, "gpuTemp": T.sysmonHotGpuTemp },
             "sustainMs": { "load": T.sysmonAlertSustainLoadSec * 1000, "ram": T.sysmonAlertSustainRamSec * 1000, "temp": T.sysmonAlertSustainTempSec * 1000 },
             "cooldownMs": T.sysmonAlertCooldownSec * 1000,
             "readyMs": T.sysmonReadySec * 1000,
@@ -127,7 +127,7 @@ Item {
         const states = {};
         for (const kind of Sysmon.wantedKinds(hub.subscriptions)) {
             const r = Sysmon.reading(kind, hub.latest);
-            const thr = Sysmon.thresholdFor(kind, hub.cfg.hot, hub.latest);
+            const thr = Sysmon.thresholdFor(kind, hub.cfg.hot);
             if (r === null || thr === null)
                 continue;
             const step = Sysmon.alertStep(hub.alertStates[kind] ?? Sysmon.initialAlert(), r.pct, thr, hub.alertKinds.indexOf(kind) >= 0, now, hub.cfg, Sysmon.sustainFor(kind, hub.cfg.sustainMs));

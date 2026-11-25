@@ -8,7 +8,7 @@ const reg = R.build(require('./manifests-source.cjs'));
 
 const cfg = {
     windowMs: 120000, gapFactor: 3, gapMs: 15000, coolBy: 5, readyMs: 10000, rateFloor: 102400, cooldownMs: 600000,
-    hot: { load: 90, ramGB: 8, cpuTemp: 90, gpuTemp: 85 }, sustainMs: { load: 60000, ram: 30000, temp: 30000 }
+    hot: { load: 90, cpuTemp: 90, gpuTemp: 85 }, sustainMs: { load: 60000, ram: 30000, temp: 30000 }
 };
 const GB = 1073741824;
 
@@ -142,12 +142,10 @@ test('the companion line is chosen by kind', () => {
     assert.equal(S.companion('cpu', { 'cpu/all/usage': 5 }, texts), null);
 });
 
-test('RAM is hot from 8 GB in use, whatever the total; alerts quote GB, % or degrees', () => {
-    const total = 14.6 * GB;
-    assert.equal(Math.round(S.thresholdFor('ram', cfg.hot, { 'memory/physical/total': total })), 55);
-    assert.equal(S.hotNext(false, S.reading('ram', { 'memory/physical/used': 7.9 * GB, 'memory/physical/total': total }).pct, S.thresholdFor('ram', cfg.hot, { 'memory/physical/total': total }), 5), false);
-    assert.equal(S.hotNext(false, S.reading('ram', { 'memory/physical/used': 8.1 * GB, 'memory/physical/total': total }).pct, S.thresholdFor('ram', cfg.hot, { 'memory/physical/total': total }), 5), true);
-    assert.equal(S.alertValue('ram', { 'memory/physical/used': 8.4 * GB, 'memory/physical/total': total }), '8.4 GB');
+test('RAM is hot as a share of the binary total; alerts quote % or degrees', () => {
+    const l = { 'memory/physical/used': 13 * GB, 'memory/physical/total': 14.6 * GB };
+    assert.equal(Math.round(S.reading('ram', l).pct), 89);
+    assert.equal(S.alertValue('ram', { 'memory/physical/used': 14 * GB, 'memory/physical/total': 14.6 * GB }), '96%');
     assert.equal(S.alertValue('gpuTemp', { 'gpu/gpu0/temperature': 87 }), '87°C');
     assert.equal(S.alertValue('network', { 'network/all/download': 1, 'network/all/upload': 1 }), '');
 });
@@ -168,9 +166,7 @@ test('hysteresis: hot at the threshold, still hot at the edge, cool only below t
 
 test('thresholds per kind; none for network and disk', () => {
     assert.equal(S.thresholdFor('cpu', cfg.hot), 90);
-    assert.equal(S.thresholdFor('ram', cfg.hot, { 'memory/physical/total': 16 * GB }), 50);
-    assert.equal(S.thresholdFor('ram', cfg.hot, { 'memory/physical/total': 4 * GB }), 100);
-    assert.equal(S.thresholdFor('ram', cfg.hot, {}), null);
+    assert.equal(S.thresholdFor('ram', cfg.hot), 90);
     assert.equal(S.thresholdFor('cpuTemp', cfg.hot), 90);
     assert.equal(S.thresholdFor('gpuTemp', cfg.hot), 85);
     assert.equal(S.thresholdFor('network', cfg.hot), null);
@@ -187,7 +183,7 @@ function run(samples, kind, armed) {
     let st = S.initialAlert();
     const fires = [];
     for (const [t, v] of samples) {
-        const r = j(S.alertStep(st, v, S.thresholdFor(kind, cfg.hot, { 'memory/physical/total': 10 * GB }), armed !== false, t, cfg, sustain));
+        const r = j(S.alertStep(st, v, S.thresholdFor(kind, cfg.hot), armed !== false, t, cfg, sustain));
         st = r.state;
         if (r.fire) fires.push([t, r.fire.value, r.fire.seconds]);
     }
