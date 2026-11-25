@@ -6,10 +6,12 @@
 const CONTRACT = 1;
 const SPANS = ["1x1", "2x1", "4x1"];
 const CATEGORIES = ["Info", "Media", "System", "Dev"];
-const SERVICES = ["clock", "weather", "agents", "timer"];
+const SERVICES = ["clock", "weather", "agents", "timer", "sysmon"];
 const TYPES = ["bool", "enum", "string", "number", "location", "timezone", "app", "note"];
 // The edit window is pre-sized for this many fields (D-56): the form never scrolls.
 const MAX_SETTINGS = 8;
+// An enum opens a picker page that never scrolls (D-64): two columns of at most six rows.
+const MAX_ENUM_OPTIONS = 12;
 const ID = /^[a-z][a-z0-9-]{0,40}$/;
 const KEY = /^[a-zA-Z][a-zA-Z0-9]{0,30}$/;
 const ZONE = /^[A-Za-z0-9_+\-\/]{1,64}$/;
@@ -42,11 +44,16 @@ function fieldError(f) {
         return at + "unknown type";
     if (!isLocalised(f.label))
         return at + "needs a label with an en text";
+    // Optional: the form shows the field only for these spans (D-65).
+    if (f.spans !== undefined && !(Array.isArray(f.spans) && f.spans.length > 0 && f.spans.every(s => SPANS.indexOf(s) >= 0)))
+        return at + "spans must be a non-empty subset of " + SPANS.join(", ");
     // A note is read-only text the widget computes from its other settings (WidgetNotes.js): no value, no default.
     if (f.type === "note")
         return f.default === undefined ? "" : at + "a note has no default";
     if (f.type === "enum" && !(Array.isArray(f.options) && f.options.length > 0 && f.options.every(isText) && f.options.indexOf(f.default) >= 0))
         return at + "needs options and a default that is one of them";
+    if (f.type === "enum" && Array.isArray(f.options) && f.options.length > MAX_ENUM_OPTIONS)
+        return at + "an enum has at most " + MAX_ENUM_OPTIONS + " options";
     if (f.type === "enum" && f.labels !== undefined && !(isObject(f.labels) && Object.keys(f.labels).every(k => f.options.indexOf(k) >= 0 && isLocalised(f.labels[k]))))
         return at + "labels must be keyed by an option, each with an en text";
     if (f.unit !== undefined && !(f.type === "number" && isLocalised(f.unit)))
@@ -102,6 +109,8 @@ function validate(raw) {
             const e = fieldError(f);
             if (e.length > 0)
                 errors.push(e);
+            else if (Array.isArray(raw.spans) && f.spans !== undefined && !f.spans.every(s => raw.spans.indexOf(s) >= 0))
+                errors.push("settings." + f.key + ": spans must be among the widget's spans");
             else if (keys[f.key])
                 errors.push("settings." + f.key + ": duplicate key");
             else

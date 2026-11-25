@@ -14,6 +14,7 @@ import "controlcenter/Tokens.js" as T
 import "logic/ActivityResolver.js" as ActivityResolver
 import "logic/DeckPlan.js" as DeckPlan
 import "logic/FormLayout.js" as FormLayout
+import "logic/FormModel.js" as FormModel
 import "logic/ClockFormat.js" as ClockFormat
 import "logic/WeatherForecast.js" as WeatherForecast
 import "activities" as Activities
@@ -439,10 +440,11 @@ PlasmoidItem {
     readonly property alias deck: deckState
     readonly property alias agents: agentService
     readonly property alias timers: timerService
+    readonly property alias sysmon: sysmonHub
     // Where the open settings form puts its pieces; null outside the form (D-56).
     readonly property var formPlan: {
         const m = presetEditor.active && presetEditor.view === "preset" && presetEditor.pane === "form" && presetEditor.placement ? presetEditor.registry.byId[presetEditor.placement.widget] : null;
-        return m ? FormLayout.plan(m.settings.map(f => f.type), presetEditor.placement.span, presetEditor.pageType, deckState.geom) : null;
+        return m ? FormLayout.plan(FormModel.visibleFields(m, presetEditor.placement.span).map(f => f.type), presetEditor.placement.span, presetEditor.pageType, deckState.geom, FormModel.pickerCount(m)) : null;
     }
 
     // The widget registry and the presets (D-54); the host reaches them as app.widgets, and the clock service as app.clock.
@@ -517,6 +519,7 @@ PlasmoidItem {
             "controlEditH": T.controlEditHeight,
             "gap": T.gap,
             "editRow": T.editRow,
+            "editEntry": T.editEntry,
             "editNote": T.editNote,
             "editStageH": T.editStageH,
             "editStagePad": T.editStagePad,
@@ -731,6 +734,17 @@ PlasmoidItem {
         }
         strings: translations
         livePids: presetStore.placementPids
+    }
+
+    // The draft's widgets while the editor is open, else the saved presets' (D-65).
+    SysmonHub {
+        id: sysmonHub
+
+        subscriptions: presetEditor.active ? presetEditor.sysmonSubs : presetStore.sysmonSubs
+        inspecting: presetEditor.active
+        notifier: KoveNotifier {
+        }
+        strings: translations
     }
 
     JobService {

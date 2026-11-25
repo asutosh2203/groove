@@ -97,9 +97,13 @@ Control Center tile editor is merged in as the gear chip.
 - Catalogue sidebar: icon, localised name and spans per widget; widgets that fit nowhere are greyed with "won't fit".
   Click adds to the chosen cell or the first free spot, a drag drops it on the grid.
 - Settings form (generated from the manifest schema): the widget centred at real size on a full-width stage, the size row
-  (plain text for a single-size widget), the fields in two columns, "Remove widget" bottom left. The island fits the form; a manifest may declare at most eight fields. Field types: note (a read-only line the widget computes from its other settings, `WidgetNotes.js`; no value, no default), bool (switch), enum (segmented up to four
-  options, else dropdown; options may carry localised `labels`), string, number (always a stepper; optional localised `unit` shown in the value, e.g. "25 min", and `zeroLabel`, e.g. "None", shown instead of 0), location (Open-Meteo
+  (plain text for a single-size widget), the fields in two columns, "Remove widget" bottom left. The island fits the form; a manifest may declare at most eight fields. Field types: note (a read-only line the widget computes from its other settings, `WidgetNotes.js`; no value, no default), bool (switch), enum (opens a picker page, see below; at most 12 options, which
+  may carry localised `labels`), string, number (always a stepper; optional localised `unit` shown in the value, e.g. "25 min", and `zeroLabel`, e.g. "None", shown instead of 0), location (Open-Meteo
   search) and timezone (Plasma's zone data, plain id fallback). `app` is reserved, not built.
+  **Enum picker page (D-64):** every enum's row shows the current value and a "›"; it opens a page (the form slides out, a two-column grid of
+  option chips slides in, top bar "‹ <field>" with ✕ ✓ hidden) instead of a dropdown. Options `WidgetOptions.js` marks unavailable are dimmed
+  with "Not found" and cannot be picked or focused; a pick is stored and slides back, "‹" or Esc slides back unchanged. The island reserves room
+  for the longest enum (`FormLayout.plan`'s `pickerCount`), and a manifest enum has at most 12 options.
 - Bottom: one chip per preset with a silhouette of its layout. Hover shows an eye (cycle membership) and a "−" (delete,
   staged until Done); drag to reorder; the gear chip opens the tile editor; "+ New" adds a blank Small preset and is
   disabled at three ("3 of 3 presets").
@@ -141,7 +145,7 @@ Built-in widgets first; third-party extensions only after this contract is stabl
 - Manifest: one `manifest.json` per widget in `contents/ui/widgets/<id>/`. Fields: `contract` (1), `id`, `name` and
   `description` (objects keyed by locale, `en` required), `icon` (theme symbolic name or a fallback chain, D-26), `spans`
   (subset of 1x1, 2x1, 4x1) with a `defaultSpan`, `category` (Info, Media, System, Dev), `version` (of the widget's
-  settings, see Persistence), `services` (what the host injects: `clock`, `weather`, `agents`, `timer`) and a `settings` schema.
+  settings, see Persistence), `services` (what the host injects: `clock`, `weather`, `agents`, `timer`, `sysmon`) and a `settings` schema.
 - Views: one per supported span, named `View<span>.qml` (for example `View2x1.qml`) next to the manifest; shared
   sub-components are allowed. A view lays out from its injected pixel box only, never from hardcoded cell sizes (a 1x1 is
   154 wide on Small, 158 on Wide and 104 tall on Tall).
@@ -180,11 +184,26 @@ Built-in widgets first; third-party extensions only after this contract is stabl
 | `world-clock` | Info | 2x1 | clock | Three zones (D-55) |
 | `weather` | Info | 1x1, 2x1, 4x1 | weather | Left block, days, hours (D-55) |
 | `pomodoro` | Info | 1x1, 2x1, 4x1 | timer | Focus and break timer, round dots, optional Do Not Disturb during focus (D-64) |
+| `system-monitor` | Info | 1x1, 2x1, 4x1 | sysmon | Live CPU, GPU, RAM, temperature, network and disk stats with a two-minute sparkline, optional hot alerts (D-65) |
 | `claude-code` | Dev | 1x1, 2x1 | agents | Plan usage or spend, attention, resting; the 2x1 lists live and recent sessions (D-60) |
 
 `timer` is the host's handle on `TimerService`: one timer per placement, looked up by the placement's `pid` (the view's `pid`
 property), in memory only. A placement's `pid` is a stable id assigned by the presets (format 2); reordering or editing keeps it
 and a duplicate gets a fresh one.
+
+`sysmon` is the host's handle on `SysmonHub` (D-65): it samples the sensors the placed widgets show (from the presets, not the views), keeps the
+last two minutes in memory and posts the hot alerts. A view asks it for `face(kind)` and `plot(kind, w, h)` and holds `holdView()` while it
+exists, which is what moves the hub from its 5 s to its 1 s cadence.
+
+Two additions to contract v1 (D-65), both optional and backward compatible:
+- **Field `spans`.** A settings field may carry `"spans": ["2x1", "4x1"]` (a non-empty subset of the widget's own spans). The form shows
+  the field only for a placement of one of those spans (`FormModel.visibleFields`, which `FormLayout` also uses, so the form is sized
+  for what it shows). The stored value is kept while the field is hidden. The System Monitor uses it so slot 2 appears from 2x1 and
+  slots 3 and 4 on 4x1 only.
+- **Option availability.** `logic/WidgetOptions.js`, a function keyed by manifest id in the pattern of `WidgetNotes.js`, tells the form
+  which options of an enum field exist on this machine; `FormModel.build` adds `enabled` to each option from it (`env` carries what the
+  machine offers, here the daemon's sensor ids). A disabled option stays in the picker, greyed (`Segmented` and `DropdownField` both
+  honour `enabled`), never replaced by a placeholder. A placement that still names one shows the widget's error state.
 
 `agents` is the host's handle on `AgentService` (the island's own instance, always on and event-driven, so it needs no
 subscription). A view that acts on a part of itself, such as a row, emits `runAction(action)`; the host runs it like a

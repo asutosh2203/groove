@@ -14,6 +14,8 @@ RowLayout {
     readonly property var ed: bar.app.editor
     readonly property var strings: bar.app.strings
     readonly property bool inForm: bar.ed.view === "preset" && bar.ed.pane === "form"
+    // The picker page of an enum field: "‹ <field>" in place of "‹ <widget>", and no ✕ ✓ until it closes (D-64).
+    readonly property bool inPicker: bar.inForm && bar.ed.pickerKey.length > 0
     readonly property string note: bar.ed.hint.length > 0 ? bar.strings.editHint(bar.ed.hint) : bar.ed.locked ? bar.strings.editDevPresets : bar.ed.restoredNote ? bar.strings.editRestored : ""
 
     spacing: T.gap
@@ -55,14 +57,14 @@ RowLayout {
                 }
 
                 TapHandler {
-                    onTapped: bar.ed.backToGrid()
+                    onTapped: bar.inPicker ? bar.ed.closePicker() : bar.ed.backToGrid()
                 }
             }
 
             PlasmaLabel {
                 height: T.editChipH
                 verticalAlignment: Text.AlignVCenter
-                text: bar.ed.placement ? bar.ed.widgetName(bar.ed.placement.widget) : ""
+                text: bar.inPicker ? bar.ed.pickerLabel : bar.ed.placement ? bar.ed.widgetName(bar.ed.placement.widget) : ""
                 color: T.textPrimary
                 font.pixelSize: T.fontHeader
                 font.weight: Font.DemiBold
@@ -101,6 +103,7 @@ RowLayout {
     }
 
     IslandButton {
+        visible: !bar.inPicker
         iconName: "dialog-cancel"
         compact: true
         restColor: T.raised
@@ -114,6 +117,7 @@ RowLayout {
     }
 
     IslandButton {
+        visible: !bar.inPicker
         iconName: "dialog-ok-apply"
         compact: true
         restColor: T.raised

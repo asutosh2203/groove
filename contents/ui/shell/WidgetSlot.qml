@@ -140,7 +140,7 @@ Rectangle {
     Binding {
         target: loader.item
         property: "services"
-        value: ({ "clock": slot.declared.indexOf("clock") >= 0 ? slot.app.clock : null, "weather": slot.weather, "agents": slot.declared.indexOf("agents") >= 0 ? slot.app.agents : null, "timer": slot.declared.indexOf("timer") >= 0 ? slot.app.timers : null })
+        value: ({ "clock": slot.declared.indexOf("clock") >= 0 ? slot.app.clock : null, "weather": slot.weather, "agents": slot.declared.indexOf("agents") >= 0 ? slot.app.agents : null, "timer": slot.declared.indexOf("timer") >= 0 ? slot.app.timers : null, "sysmon": slot.declared.indexOf("sysmon") >= 0 ? slot.app.sysmon : null })
         when: loader.item !== null
         restoreMode: Binding.RestoreNone
     }

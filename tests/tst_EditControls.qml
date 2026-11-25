@@ -2,7 +2,7 @@ import QtQuick
 import QtTest
 import "../contents/ui/shell/editor" as Editor
 
-// D-56: the generated form's controls report what the user picks: segmented, switch, number stepper, dropdown.
+// D-56: the generated form's controls report what the user picks: segmented (the size control), switch, number stepper.
 Item {
     id: testRoot
 
@@ -42,23 +42,12 @@ Item {
         onPicked: v => testRoot.got.push(v)
     }
 
-    Editor.DropdownField {
-        id: drop
-
-        x: 10
-        y: 160
-        options: [{ "value": "x", "label": "X" }, { "value": "y", "label": "Y" }]
-        value: "x"
-        onPicked: v => testRoot.got.push(v)
-    }
-
     TestCase {
         name: "EditControls"
         when: windowShown
 
         function init() {
             testRoot.got = [];
-            drop.open = false;
         }
 
         function test_segmented_picks_enabled_options_only() {
@@ -92,14 +81,6 @@ Item {
             compare(testRoot.got.length, n);
             num.value = 9;
             num.max = 10;
-        }
-
-        function test_dropdown_opens_and_picks() {
-            mouseClick(drop, 10, 10);
-            verify(drop.open);
-            mouseClick(drop, 10, 30 + 40 + 20);
-            compare(testRoot.got, ["y"]);
-            verify(!drop.open);
         }
     }
 }

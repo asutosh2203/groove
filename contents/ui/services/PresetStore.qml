@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import "../logic/Presets.js" as Presets
+import "../logic/Sysmon.js" as Sysmon
 import "../logic/WidgetRegistry.js" as Registry
 import "../widgets/Manifests.js" as Manifests
 
@@ -20,6 +21,8 @@ Item {
     readonly property var presets: store.result.presets
     // The locations the presets' Weather placements use, for WeatherHub; "island" is not listed.
     readonly property var weatherLocations: store.registry.byId.weather ? store.presets.reduce((all, preset) => all.concat(preset.placements), []).filter(placement => placement.widget === "weather").map(placement => Registry.resolveSettings(store.registry.byId.weather, placement.settings, placement.settingsVersion).location).filter(location => location !== "island") : []
+    // The System Monitor placements, for the sensor hub: what each shows and whether it alerts.
+    readonly property var sysmonSubs: Sysmon.subscriptions(store.presets, store.registry)
     // The pids of every placement, for the timer hub: a timer whose placement is gone is dropped.
     property var placementPids: []
 

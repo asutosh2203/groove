@@ -199,5 +199,63 @@ Item {
             compare(editor.hint, "nofit");
             verify(!editor.dirty);
         }
+
+        function enumBlob() {
+            return JSON.stringify({ "format": 1, "presets": [
+                { "id": "w", "name": "", "page": "small", "placements": [{ "widget": "weather", "span": "1x1", "settings": {} }, { "widget": "clock", "span": "1x1", "settings": {} }] }] });
+        }
+
+        // D-64: an enum field opens a picker page; a pick is stored and slides back, Esc or ‹ changes nothing.
+        function test_a_weather_enum_picks_through_the_picker_and_slides_back() {
+            testRoot.stored = enumBlob();
+            editor.begin("preset");
+            editor.openForm(0);
+            editor.openPicker("units");
+            compare(editor.pickerKey, "units");
+            compare(editor.pickerLabel, "Units");
+            editor.pick("fahrenheit");
+            compare(editor.pickerKey, "");
+            compare(editor.pane, "form");
+            compare(editor.placement.settings.units, "fahrenheit");
+            verify(editor.dirty);
+        }
+
+        function test_a_clock_enum_works_the_same_way() {
+            testRoot.stored = enumBlob();
+            editor.begin("preset");
+            editor.openForm(1);
+            editor.openPicker("timeFormat");
+            verify(editor.pickerField !== null);
+            editor.pick("24h");
+            compare(editor.placement.settings.timeFormat, "24h");
+            compare(editor.pickerKey, "");
+        }
+
+        function test_back_and_esc_leave_the_picker_without_a_change() {
+            testRoot.stored = enumBlob();
+            editor.begin("preset");
+            editor.openForm(0);
+            editor.openPicker("detail");
+            editor.stepBack();
+            compare(editor.pickerKey, "");
+            compare(editor.pane, "form", "Esc closes the picker first, not the form");
+            verify(!editor.dirty);
+            editor.openPicker("detail");
+            editor.closePicker();
+            verify(!editor.dirty);
+            editor.stepBack();
+            compare(editor.pane, "grid");
+        }
+
+        function test_leaving_the_form_forgets_an_open_picker() {
+            testRoot.stored = enumBlob();
+            editor.begin("preset");
+            editor.openForm(0);
+            editor.openPicker("units");
+            editor.backToGrid();
+            compare(editor.pickerKey, "");
+            editor.openForm(0);
+            compare(editor.pickerKey, "");
+        }
     }
 }
