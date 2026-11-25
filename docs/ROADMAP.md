@@ -56,6 +56,13 @@ CC6 (notification list density/scrolling) was dropped.
     form for widgets with more than four settings. A catalogue search. Keyboard reordering. An `app` field type when a
     widget needs it.
 
+- **L2: Pomodoro widget (done on `feat/pomodoro`, checked live).** D-64: the `timer` service (deadline-based, one timer per
+  placement, keyed by a new stable `pid`; presets format 2 with a tested migration), 1x1, 2x1 and 4x1 views, a Live tile and row,
+  a closed-capsule rank (focus above media, break below), a phase-end pop-in with its own Start button, Do Not Disturb during
+  focus through Plasma, and Kove's own pop-ins now respect DND. The editor's settings form was reworked at the same time
+  (stage layout, steppers, zero labels, the `note` field type; D-56). Timers are in memory only: persistence across a
+  plasmashell restart is later work (see Backlog).
+
 ## B1: bug batch (done)
 Found while moving code in Q2; behaviour was kept during the moves, then fixed one commit per item.
 1. **Light/Dark tile applied stock Breeze and wiped custom setups.** *Done as D-40* (`b0ad920`): the tile is now "Theme
@@ -132,10 +139,8 @@ persistence. Still open there: the proposed contract details and context-aware p
   VS Code-only (or other front-end) users see no ring; the widget keeps and ages the last value and says where usage comes from.
   There is no supported source today (D-60 research); revisit when Claude Code exposes `rate_limits` to hooks or the extension
   (the aggregator already accepts it from any hook payload). Do not read the OAuth token.
-- **Settings form scrolling (D3 follow-up).** The editor's settings form does not scroll: its body is sized for the size control
-  plus four fields (the World Clock), so a widget with more settings would overflow into the chips bar. Needs a scrolling
-  right column that still lets the location and time zone result lists overlay it (they extend past their row, so a plain
-  clipped `Flickable` would cut them off).
+- **Settings form scrolling: not needed (D-56).** The form fits its rows and the registry caps a manifest at eight fields, so
+  it never scrolls. Revisit only if a widget needs more.
 - **Align the idle face's weather icons with the widgets.** The panel's idle face still draws the bundled, colour, animated
   Meteocons; the Weather widgets draw monochrome white glyphs (theme `weather-*-symbolic` first, D-55). Decide whether the idle
   face should use the same glyphs (and drop its animation) so the two agree.
@@ -144,7 +149,7 @@ persistence. Still open there: the proposed contract details and context-aware p
   to the translation catalogue and back, before the first public release.
 - Glow 60 fps cap ready on `perf/glow-60fps`; needs a real-pointer before/after measurement.
 - Reply shelf: multi-line input (v1 is a single line); host the notification's other actions (Mark as read, Mute) in the shelf.
-- **Native popup coexistence:** detect whether Plasma's own notification popups are active; never change it automatically (D-05). Show a one-time dismissible hint and a permanent note in settings with an "Open notification settings" button; document in the README. Investigate the officially supported way to disable Plasma popups without stopping the notification server. Also verify the island respects Do Not Disturb (no popups while DND is on); if it does not, that is a bug.
+- **Native popup coexistence:** detect whether Plasma's own notification popups are active; never change it automatically (D-05). Show a one-time dismissible hint and a permanent note in settings with an "Open notification settings" button; document in the README. Investigate the officially supported way to disable Plasma popups without stopping the notification server. The island respects Do Not Disturb since D-64 (no pop-ins while DND is on, critical still pops).
 - **Enhancement (low priority, revisit before a public release): icon fallback chains for the Control Center tiles (D-26).** Tiles tint glyphs as flat masks, so a theme that lacks a `-symbolic` name (or draws it in colour) shows a blob or nothing. Give each tile an ordered list of names (symbolic, then an alternative symbolic, then a plain icon drawn unmasked) and test with Breeze and Adwaita. Today only the Theme settings tile has a fallback, and `Tokens.js` `symbolic()` maps names to Breeze-style symbolics.
 - The old "Theme" tile is retired from the editor palette (it opened the same page as "Theme settings"); the id stays known so saved layouts keep it.
 - Known upstream issue, not fixed here: Firefox's MPRIS support is still maturing. After a seek on YouTube it drops `mpris:length` from its metadata update (we hold the last length for the same track and player, `MediaLength.js`) and then reports `Position` 0 until a pause or play, so the progress time sticks at 0:00. Related Firefox bugs: 1949425 (signals on position state changes), 1950461 (position advancing while paused), 1896774 (`mpris:length` only recently exposed). Seen on Firefox ESR, so the fixes may not have shipped there yet. A position workaround would guess wrong on a real restart from 0, so it is deliberately not done; revisit if Firefox keeps it
@@ -170,3 +175,20 @@ persistence. Still open there: the proposed contract details and context-aware p
 - File shelf, system HUD, Bluetooth/USB events
 - Release housekeeping: add maintainer to `metadata.json` authors (keep upstream credit), point
   Website/BugReportUrl at `groove`, README upstream/inspiration credits, own plugin ID/name
+
+### Ideas, not committed
+- A generic Live Activity D-Bus API for any script or app (generalising the agents protocol).
+- A zsh hook that shows long-running shell commands (over 30 s) as live tiles with done pings.
+- A GitHub Actions CI watcher tile.
+- A Spectacle screenshot thumbnail in the island (drag, copy, annotate).
+- Earbuds connecting, with battery (BlueZ).
+- A charger plugged-in moment.
+- KDE Connect incoming calls with mute-ringer.
+- An Open-Meteo short-term rain alert.
+- A next-meeting tile.
+- Mic, camera and screen-share privacy dots (PipeWire).
+- A global shortcut to open the deck, plus keyboard navigation.
+- Preset export and import (later "preset packs").
+- Multi-monitor islands.
+- A first-run tour.
+- Pomodoro: keep timers across a plasmashell restart (persist deadlines).
