@@ -78,6 +78,10 @@ QtObject {
         return span === "4x1" ? i18n("Wide") : span === "2x1" ? i18n("Medium") : i18n("Small");
     }
 
+    function spanOnly(span) {
+        return i18n("%1 only", spanName(span));
+    }
+
     // Why a change or a save was refused.
     function editHint(reason) {
         switch (reason) {

@@ -12,6 +12,7 @@ import "logic/Utils.js" as Utils
 import "controlcenter/Tokens.js" as T
 import "logic/ActivityResolver.js" as ActivityResolver
 import "logic/DeckPlan.js" as DeckPlan
+import "logic/FormLayout.js" as FormLayout
 import "logic/ClockFormat.js" as ClockFormat
 import "logic/WeatherForecast.js" as WeatherForecast
 import "activities" as Activities
@@ -436,6 +437,11 @@ PlasmoidItem {
     readonly property int liveCount: (liveMedia ? 1 : 0) + agentService.sessions.length + (jobActivityEnabled ? jobService.activeCount : 0)
     readonly property alias deck: deckState
     readonly property alias agents: agentService
+    // Where the open settings form puts its pieces; null outside the form (D-56).
+    readonly property var formPlan: {
+        const m = presetEditor.active && presetEditor.view === "preset" && presetEditor.pane === "form" && presetEditor.placement ? presetEditor.registry.byId[presetEditor.placement.widget] : null;
+        return m ? FormLayout.plan(m.settings.map(f => f.type), presetEditor.placement.span, presetEditor.pageType, deckState.geom) : null;
+    }
 
     // The widget registry and the presets (D-54); the host reaches them as app.widgets, and the clock service as app.clock.
     readonly property alias widgets: presetStore
@@ -490,7 +496,7 @@ PlasmoidItem {
         liveJobs: root.jobActivityEnabled && root.dialogVisible && root.popupMode === "deck" ? jobService.runningRows() : []
         presets: presetStore.presets
         editing: presetEditor.active
-        editSize: presetEditor.active ? DeckPlan.editSize(presetEditor.view, presetEditor.pageType, deckState.geom) : null
+        editSize: presetEditor.active ? DeckPlan.editSize(presetEditor.view, presetEditor.pageType, deckState.geom, root.formPlan) : null
         geom: ({
             "cellW": T.deckCellW,
             "cellH": T.deckCellH,
@@ -508,6 +514,13 @@ PlasmoidItem {
             "controlEditH": T.controlEditHeight,
             "editInset": T.editInset,
             "editBar": T.editBar,
+            "gap": T.gap,
+            "editRow": T.editRow,
+            "editNote": T.editNote,
+            "editStageH": T.editStageH,
+            "editStagePad": T.editStagePad,
+            "editFormMinW": T.editFormMinW,
+            "editChipH": T.editChipH,
             "editChips": T.editChips,
             "editGap": T.editGap,
             "editSidebar": T.editSidebar,

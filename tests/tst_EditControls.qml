@@ -2,7 +2,7 @@ import QtQuick
 import QtTest
 import "../contents/ui/shell/editor" as Editor
 
-// D-56: the generated form's controls report what the user picks: segmented, switch, number stepper and slider, dropdown.
+// D-56: the generated form's controls report what the user picks: segmented, switch, number stepper, dropdown.
 Item {
     id: testRoot
 
@@ -38,6 +38,7 @@ Item {
         min: 0
         max: 10
         step: 2
+        text: value + " min"
         onPicked: v => testRoot.got.push(v)
     }
 
@@ -77,6 +78,20 @@ Item {
             compare(testRoot.got, [10]);
             mouseClick(num, 5, num.height / 2);
             compare(testRoot.got, [10, 7]);
+        }
+
+        function test_holding_a_button_repeats_until_released() {
+            num.value = 0;
+            num.max = 100;
+            mousePress(num, num.width - 5, num.height / 2);
+            wait(1000);
+            mouseRelease(num, num.width - 5, num.height / 2);
+            verify(testRoot.got.length > 3);
+            const n = testRoot.got.length;
+            wait(400);
+            compare(testRoot.got.length, n);
+            num.value = 9;
+            num.max = 10;
         }
 
         function test_dropdown_opens_and_picks() {

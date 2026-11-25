@@ -132,9 +132,14 @@ function insets(isControl, padding) {
 // The preset editor (D-56). A page type's body at real size sits in a dashed outline beside the catalogue; the Control
 // Center tile editor keeps its own size. Chrome: a top bar above, the chips bar below.
 // geom adds: editInset, editBar, editChips, editGap, editSidebar, editSidebarMinH, editHint, editOutlinePad, editZoom.
-function editSize(view, type, geom) {
+// form (FormLayout.plan) is given while a widget's settings form is open: the island fits its rows, inside the window.
+function editSize(view, type, geom, form) {
     if (view === "gear")
         return { "w": geom.controlEditW, "h": geom.controlEditH + geom.editGap + geom.editChips };
+    if (form) {
+        const base = editSize(view, type, geom, null);
+        return { "w": form.width > 0 ? form.width : base.w, "h": 2 * geom.editInset + geom.editBar + geom.editGap + form.contentH + geom.editGap + geom.editChips };
+    }
     const c = cells[type] || cells.small;
     const left = c.w * geom.cellW - 2 * geom.padding + 2 * geom.editOutlinePad;
     const middle = Math.max(c.h * geom.cellH - 2 * geom.padding + 2 * geom.editOutlinePad + geom.editHint, geom.editSidebarMinH);
