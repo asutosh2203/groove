@@ -54,3 +54,48 @@ test('a missing rate counts as 1', () => {
     const h = step(null, { reported: 10e6, rate: 0 }, 0);
     assert.equal(step(h, { reported: 0, rate: 0 }, 2000).pos, 12e6);
 });
+
+const vis = (o) => ctx.readoutVisible(Object.assign({ deckMode: true, dialogVisible: false, islandOpen: false, activityPopup: false, popupActivityIsMedia: false, panelHidden: false, compactIsMedia: true }, o));
+
+test('a closed deck falls through to the compact media pill', () => {
+    assert.equal(vis({}), true);
+    assert.equal(vis({ compactIsMedia: false }), false);
+    assert.equal(vis({ panelHidden: true }), false);
+});
+
+test('an open deck and a media activity popup show the readout', () => {
+    assert.equal(vis({ dialogVisible: true, islandOpen: true, compactIsMedia: false }), true);
+    assert.equal(vis({ deckMode: false, activityPopup: true, islandOpen: true, popupActivityIsMedia: true, compactIsMedia: false }), true);
+    assert.equal(vis({ deckMode: false, activityPopup: true, islandOpen: true, popupActivityIsMedia: false }), false);
+});
+
+const seek = (h, i, pos, now) => JSON.parse(JSON.stringify(ctx.seek(h, Object.assign({ key: 'a', playing: true, rate: 1, length: 0 }, i), pos, now)));
+
+test('a forward and a backward seek re-anchor the clock', () => {
+    const held = step(null, { reported: 10e6 }, 1000);
+    const fwd = seek(held, {}, 60e6, 2000);
+    assert.equal(step(fwd, {}, 3000).pos, 61e6);
+    const back = seek(fwd, {}, 5e6, 4000);
+    assert.equal(step(back, {}, 5000).pos, 6e6);
+});
+
+test('in a burst of Seeked signals the last one wins', () => {
+    let h = step(null, { reported: 10e6 }, 1000);
+    for (const [p, t] of [[30e6, 2000], [31e6, 2050], [32e6, 2120]])
+        h = seek(h, {}, p, t);
+    assert.equal(step(h, {}, 2120).pos, 32e6);
+});
+
+test('a seek while paused holds still', () => {
+    const h = seek(null, { playing: false }, 42e6, 1000);
+    assert.equal(step(h, { playing: false }, 9000).pos, 42e6);
+});
+
+test('a seek beyond the length is clamped', () => {
+    assert.equal(seek(null, { length: 100e6 }, 500e6, 1000).pos, 100e6);
+});
+
+test('a seek uses the player rate', () => {
+    const h = seek(null, { rate: 2 }, 10e6, 1000);
+    assert.equal(step(h, { rate: 2 }, 2000).pos, 12e6);
+});

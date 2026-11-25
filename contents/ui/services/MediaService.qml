@@ -179,6 +179,19 @@ Item {
         position = heldPosition.pos;
     }
 
+    function seeked(posUs) {
+        const current = player;
+        if (!current)
+            return;
+        heldPosition = MediaPosition.seek(heldPosition, {
+            "key": MediaPlayers.lengthKey(current),
+            "playing": current.playbackStatus === status.playing,
+            "rate": Utils.finiteNumber(current.rate, 1),
+            "length": length
+        }, posUs, Date.now());
+        refreshPosition();
+    }
+
     function idleEvent(event) {
         const r = MediaIdle.reduce({ "expired": graceExpired }, event);
         graceExpired = r.expired;
@@ -268,6 +281,31 @@ Item {
                 service.player.updatePosition();
             service.refreshPosition();
 
+        }
+    }
+
+    // Firefox publishes no position after a seek while playing, only Seeked (D-63); the watcher lives only while a browser
+    // is the shown player.
+    Loader {
+        id: seekLoader
+
+        // The watcher's own `service` property would shadow this object's id, so it reads through the loader.
+        readonly property string bus: service.hasPlayer && service.player.objectName ? "org.mpris.MediaPlayer2." + service.player.objectName : ""
+
+        function relay(posUs: double): void {
+            service.seeked(posUs);
+        }
+
+        active: bus !== "" && MediaPlayers.isBrowserish(service.player)
+        sourceComponent: DBus.SignalWatcher {
+            busType: DBus.BusType.Session
+            service: seekLoader.bus
+            path: "/org/mpris/MediaPlayer2"
+            iface: "org.mpris.MediaPlayer2.Player"
+
+            function dbusSeeked(position: double): void {
+                seekLoader.relay(position);
+            }
         }
     }
 
