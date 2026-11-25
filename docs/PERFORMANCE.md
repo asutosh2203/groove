@@ -287,3 +287,35 @@ aggregator). Samples every 5 minutes; the first row has no CPU figure.
   the 0.16% media-paused figure of W2.1): before (HEAD) 0.43, 0.47, 0.50%, median **0.47%**, 653 MB; after 0.53, 0.45, 0.50%,
   median **0.50%**, 634 MB. Within noise. The scrub adds no timer or animation outside a scrub (the dwell `Timer` and the
   detent animation only start during one). Raw: `perf/results/*d4-ab-*`.
+
+## After L3 (System Monitor widget, D-65)
+
+All in one plasmashell process, 4 windows of 30 s per scenario (`utime + stime` from `/proc`, percent of one core, all threads), the user's
+browser playing video the whole time (so kwin is high and every figure is higher than a quiet idle). The dev build carried a throwaway
+debug poller (a `Timer` that reads a command file); its cost is measured below and is part of the (c) figure only because the deck had to be
+held open. `ksystemstats` is shared with other subscribers.
+
+| Scenario | plasmashell | ksystemstats |
+|---|---|---|
+| (a) no System Monitor placed, deck closed (0 `Sensor` objects, clock stopped) | **0.76%** (0.70 to 0.93) | 0.24% |
+| (b) 4x1 placed (12 sensors), deck closed, 5 s tick, run 1 | 1.28% (0.70 to 1.83) | 0.25% |
+| (b) same, run 2 | **0.77%** (0.67 to 1.03) | 0.24% |
+| (b) same with the debug poller at 1 s (control for (c)) | 0.99% (0.70 to 1.53) | 0.24% |
+| (c) deck open on the 4x1 page, 1 s tick | **1.72%** (0.97 to 2.70) | 0.25% |
+
+- **Closed deck costs nothing measurable.** (b) run 2 equals (a); run 1 started right after the presets changed and is the sensors being
+  created plus the first samples. The hidden 5 s tick reads 12 values and pushes a few arrays, and adds no animation.
+- **Open deck: about +0.7% over the same state closed** (c against its control), for four graphs and four heroes updating once a second.
+  The windows swing between 1.0 and 2.7% because the deck opening and closing is part of them (the auto-close brought it down once).
+- **ksystemstats does not move** (0.24 to 0.25%) whether 0 or 12 sensors are subscribed from here: the other subscribers dominate.
+  `updateRateLimit` thins QML events (240, 117 and 43 per 20 s at the default, 1 s and 5 s for 8 sensors) but not the daemon's D-Bus signals
+  (84 each); only `enabled: false` removed our share.
+- **GPU power state:** the NVIDIA card (`0000:01:00.0`) was `active` for 120 of 120 samples with no `Sensor` object and 120 of 120 with
+  `gpu/gpu0/{usage,temperature,name}` subscribed, `runtime_suspended_time` unchanged (0 ms) in both. plasmashell and KWin render on it, so
+  the sensors cannot be what keeps it awake and disabling them while the deck is closed would save nothing.
+- Raw numbers: `~/os_setup/perf-l3/` (not in the repository).
+
+**After the whole-graph tint and the enum picker page** (same method, 4 x 30 s): scenario (c), deck open on the 4x1 page, 1 s tick, with the debug
+poller running at 1 s: plasmashell **1.68%** (1.00, 0.97, 1.23, 3.53; the last window includes a deck re-open), ksystemstats 0.28%. Before the change
+the same scenario read 1.72%. The smoothed path and the fill gradient change the two path strings per sample and add no timer or animation outside
+the 300 ms tint; the picker page exists only while the form is open.

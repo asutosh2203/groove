@@ -62,6 +62,7 @@ CC6 (notification list density/scrolling) was dropped.
   focus through Plasma, and Kove's own pop-ins now respect DND. The editor's settings form was reworked at the same time
   (stage layout, steppers, zero labels, the `note` field type; D-56). Timers are in memory only: persistence across a
   plasmashell restart is later work (see Backlog).
+- **L3: System Monitor widget (on `feat/system-monitor`).** D-65: the `sysmon` service (one hub, KDE's sensor framework, a two-minute in-memory history, 1 s visible and 5 s hidden cadence, off while the screen is locked), the `system-monitor` widget at 1x1, 2x1 and 4x1 (CPU, GPU, RAM, CPU and GPU temperature, network, disk), hot level with hysteresis, a smoothed sparkline whose whole graph tints red while hot, an enum picker page for every widget's enum fields, optional hot alerts, and the contract's new `spans` field key and option availability hook.
 
 ## B1: bug batch (done)
 Found while moving code in Q2; behaviour was kept during the moves, then fixed one commit per item.
@@ -192,3 +193,4 @@ persistence. Still open there: the proposed contract details and context-aware p
 - Multi-monitor islands.
 - A first-run tour.
 - Pomodoro: keep timers across a plasmashell restart (persist deadlines).
+- System Monitor: a per-disk and per-interface picker (dynamic enum options), a top-processes widget, a hover peek with the two-minute peak and average, fan and NVMe temperatures, and multi-GPU with a stable GPU choice (by name, not index: `gpu0` is the first the daemon lists).
