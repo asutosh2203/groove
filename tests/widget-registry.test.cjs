@@ -105,3 +105,19 @@ test('enum labels are optional, keyed by an option, each with an en text', () =>
     assert.equal(bad(m => { m.settings[2].labels = { z: { en: 'Z' } }; }).ok, false);
     assert.equal(bad(m => { m.settings[2].labels = { a: 'A' }; }).ok, false);
 });
+
+test('a field spans list must be a non-empty subset of the widget spans', () => {
+    const withSpans = spans => bad(m => { m.settings[1].spans = spans; });
+    assert.equal(withSpans(['2x1']).ok, true);
+    assert.equal(withSpans([]).ok, false);
+    assert.equal(withSpans(['9x9']).ok, false);
+    assert.equal(withSpans('2x1').ok, false);
+    assert.match(bad(m => { m.spans = ['1x1']; m.settings[1].spans = ['2x1']; }).errors.join(), /among the widget's spans/);
+});
+
+test('an enum may declare at most 12 options (the picker page never scrolls)', () => {
+    const enumWith = n => bad(m => { m.settings[2].options = Array.from({ length: n }, (_, i) => 'o' + i); m.settings[2].default = 'o0'; });
+    assert.equal(enumWith(12).ok, true);
+    assert.equal(enumWith(13).ok, false);
+    assert.match(enumWith(13).errors.join(), /at most 12 options/);
+});

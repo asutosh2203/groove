@@ -54,6 +54,7 @@ QtObject {
     readonly property string editSearchNone: i18n("No matching places found.")
     readonly property string editSettingsOf: i18n("Settings")
     readonly property string editSize: i18n("Size")
+    readonly property string editOptionMissing: i18n("Not found")
     readonly property string editPreview: i18n("Live preview")
     readonly property string editGear: i18n("Control Center tiles")
 
@@ -394,6 +395,27 @@ QtObject {
     readonly property string now: i18n("Now")
     readonly property string sunrise: i18n("Sunrise")
     readonly property string sunset: i18n("Sunset")
+
+    // System Monitor (D-65). Kinds come from Sysmon.js.
+    function sysmonLabel(kind) {
+        return ({ "cpu": i18n("CPU"), "gpu": i18n("GPU"), "ram": i18n("RAM"), "cpuTemp": i18n("CPU temp"), "gpuTemp": i18n("GPU temp"), "network": i18n("Network"), "disk": i18n("Disk") })[kind] ?? "";
+    }
+
+    function sysmonError(kind, reason) {
+        return reason === "missing" ? i18n("No %1 sensor", sysmonLabel(kind)) : reason === "removed" ? i18n("Sensor removed") : i18n("Sensor not responding");
+    }
+
+    // The tall box's extra line: { key, value } from Sysmon.companion.
+    function sysmonCompanion(c) {
+        if (!c)
+            return "";
+        return c.key === "swap" ? i18n("Swap %1", c.value) : c.key === "gpu" && c.name.length > 0 ? i18n("%1 · %2", c.name, c.value) : c.value;
+    }
+
+    function sysmonAlert(kind, value, seconds) {
+        const subject = ({ "cpu": i18n("CPU"), "cpuTemp": i18n("CPU"), "gpu": i18n("GPU"), "gpuTemp": i18n("GPU"), "ram": i18n("RAM") })[kind] ?? "";
+        return seconds >= 90 ? i18n("%1 at %2 for %3 min", subject, value, Math.round(seconds / 60)) : i18n("%1 at %2 for %3 s", subject, value, seconds);
+    }
 
     // Pomodoro (D-64). Kinds come from PomodoroEngine: focus, break, long; plain means a single-phase timer.
     function pomodoroPhase(kind, plain) {

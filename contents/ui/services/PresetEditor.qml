@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import "../logic/PresetEdit.js" as PresetEdit
+import "../logic/Sysmon.js" as Sysmon
 import "../logic/WidgetRegistry.js" as Registry
 
 // The deck's edit mode (D-56): one session for the presets and the Control Center layout. The rules are pure
@@ -27,6 +28,8 @@ QtObject {
     // "grid" or "form"; the form edits the placement at formIndex.
     property string pane: "grid"
     property int formIndex: -1
+    // The key of the enum field whose picker page is open ("" while the form shows), D-64.
+    property string pickerKey: ""
     // The free cell chosen for "Add widget" (the insertion index a widget put there would take), or -1.
     property int cellIndex: -1
     property bool promptOpen: false
@@ -46,6 +49,8 @@ QtObject {
     readonly property int maxPresets: PresetEdit.limit()
     readonly property bool canAddPreset: editor.presetCount < editor.maxPresets
     readonly property string pageType: editor.preset ? editor.preset.page : "small"
+    readonly property var pickerField: editor.pickerKey.length > 0 && editor.placement && editor.registry.byId[editor.placement.widget] ? editor.registry.byId[editor.placement.widget].settings.find(f => f.key === editor.pickerKey) || null : null
+    readonly property string pickerLabel: editor.pickerField ? Registry.text(editor.pickerField.label, Qt.locale().name) : ""
     readonly property var placement: editor.preset && editor.formIndex >= 0 ? editor.preset.placements[editor.formIndex] || null : null
 
     // Where a placed or offered widget's name comes from: its manifest, in the user's language.
@@ -55,6 +60,9 @@ QtObject {
 
     // The places the draft's Weather widgets use, for the weather hub (a place picked but not saved still needs data).
     readonly property var weatherLocations: editor.active ? PresetEdit.weatherLocations(editor.draft, editor.registry) : []
+
+    // The draft's System Monitor widgets, for the sensor hub while the editor is open (a stat picked but not saved still needs data).
+    readonly property var sysmonSubs: Sysmon.subscriptions(editor.draft.presets, editor.registry)
 
     function apply(result) {
         editor.hint = result.ok ? "" : result.reason;
@@ -82,6 +90,7 @@ QtObject {
         editor.restoredNote = false;
         editor.promptOpen = false;
         editor.pane = "grid";
+        editor.pickerKey = "";
         editor.formIndex = -1;
         editor.layout.beginEdit();
         editor.view = start === "preset" && stored.draft.presets.length > 0 ? "preset" : "gear";
@@ -99,6 +108,7 @@ QtObject {
         editor.cellIndex = -1;
         editor.presetId = id;
         editor.pane = "grid";
+        editor.pickerKey = "";
         editor.formIndex = -1;
         editor.hint = "";
     }
@@ -106,6 +116,7 @@ QtObject {
     function selectGear() {
         editor.view = "gear";
         editor.pane = "grid";
+        editor.pickerKey = "";
         editor.formIndex = -1;
         editor.hint = "";
     }
@@ -113,12 +124,28 @@ QtObject {
     function openForm(index) {
         editor.formIndex = index;
         editor.pane = "form";
+        editor.pickerKey = "";
         editor.hint = "";
     }
 
     function backToGrid() {
         editor.pane = "grid";
+        editor.pickerKey = "";
         editor.formIndex = -1;
+    }
+
+    function openPicker(key) {
+        editor.pickerKey = key;
+    }
+
+    function closePicker() {
+        editor.pickerKey = "";
+    }
+
+    // A picked option is stored like any setting and the form slides back.
+    function pick(value) {
+        editor.setSetting(editor.pickerKey, value);
+        editor.closePicker();
     }
 
     function setPage(type) {
@@ -186,6 +213,7 @@ QtObject {
         editor.promptOpen = false;
         editor.restoredNote = false;
         editor.pane = "grid";
+        editor.pickerKey = "";
         editor.formIndex = -1;
     }
 
@@ -226,6 +254,8 @@ QtObject {
     function stepBack() {
         if (editor.promptOpen)
             editor.promptOpen = false;
+        else if (editor.pickerKey.length > 0)
+            editor.closePicker();
         else if (editor.pane === "form")
             editor.backToGrid();
         else

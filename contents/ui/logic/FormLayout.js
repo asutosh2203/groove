@@ -5,7 +5,7 @@
 // top holds the widget centred at real size, never scaled; below it the size row, the fields in two columns (the first
 // half left, the rest right) and the Remove widget row. The panel's width follows the span. The window is pre-sized for the
 // most the registry allows, so the form never scrolls and rows are never squeezed.
-// geom: cellW, cellH, padding, gap, editInset, editGap, editRow, editNote, editChipH, editStageH, editStagePad, editFormMinW.
+// geom: cellW, cellH, padding, gap, editInset, editGap, editRow, editEntry, editNote, editChipH, editStageH, editStagePad, editFormMinW.
 
 function box(pageType, span, geom) {
     const cell = ({ "small": [2, 1], "wide": [4, 1], "tall": [2, 2] })[pageType] || [2, 1];
@@ -17,8 +17,14 @@ function rowHeight(type, geom) {
     return type === "note" ? geom.editNote : geom.editRow;
 }
 
-// `types` are the manifest's field types in order. cols lists field indexes per column.
-function plan(types, span, pageType, geom) {
+// The picker page's height for `count` options in two columns (D-64).
+function pickerHeight(count, geom) {
+    return count > 0 ? Math.ceil(count / 2) * geom.editEntry + (Math.ceil(count / 2) - 1) * geom.gap : 0;
+}
+
+// `types` are the manifest's field types in order. cols lists field indexes per column. `pickerCount` is the most options any
+// enum has: the picker page gets at least that room, so opening it does not resize the island.
+function plan(types, span, pageType, geom, pickerCount) {
     const b = box(pageType, span, geom);
     const all = types.map((t, i) => i);
     const half = Math.ceil(all.length / 2);
@@ -36,6 +42,6 @@ function plan(types, span, pageType, geom) {
         "cols": cols,
         "stageH": stageH,
         "width": Math.max(geom.editFormMinW, b.w + 2 * geom.editStagePad + 2 * geom.editInset),
-        "contentH": stageH + geom.editGap + geom.editRow + tallest + geom.editGap + geom.editChipH
+        "contentH": Math.max(stageH + geom.editGap + geom.editRow + tallest + geom.editGap + geom.editChipH, pickerHeight(pickerCount || 0, geom))
     };
 }

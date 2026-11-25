@@ -1,0 +1,19 @@
+{
+  "contract": 1,
+  "id": "system-monitor",
+  "name": {"en": "System Monitor"},
+  "description": {"en": "Live CPU, GPU, memory, network and disk figures with a two-minute graph"},
+  "icon": ["utilities-system-monitor-symbolic", "cpu-symbolic", "speedometer-symbolic"],
+  "spans": ["1x1", "2x1", "4x1"],
+  "defaultSpan": "1x1",
+  "category": "Info",
+  "version": 1,
+  "services": ["sysmon"],
+  "settings": [
+    {"key": "slot1", "type": "enum", "label": {"en": "Stat 1"}, "default": "cpu", "options": ["cpu", "gpu", "ram", "cpuTemp", "gpuTemp", "network", "disk"], "labels": {"cpu": {"en": "CPU"}, "gpu": {"en": "GPU"}, "ram": {"en": "RAM"}, "cpuTemp": {"en": "CPU temp"}, "gpuTemp": {"en": "GPU temp"}, "network": {"en": "Network"}, "disk": {"en": "Disk"}}},
+    {"key": "slot2", "type": "enum", "label": {"en": "Stat 2"}, "default": "gpu", "options": ["cpu", "gpu", "ram", "cpuTemp", "gpuTemp", "network", "disk"], "labels": {"cpu": {"en": "CPU"}, "gpu": {"en": "GPU"}, "ram": {"en": "RAM"}, "cpuTemp": {"en": "CPU temp"}, "gpuTemp": {"en": "GPU temp"}, "network": {"en": "Network"}, "disk": {"en": "Disk"}}, "spans": ["2x1", "4x1"]},
+    {"key": "slot3", "type": "enum", "label": {"en": "Stat 3"}, "default": "ram", "options": ["cpu", "gpu", "ram", "cpuTemp", "gpuTemp", "network", "disk"], "labels": {"cpu": {"en": "CPU"}, "gpu": {"en": "GPU"}, "ram": {"en": "RAM"}, "cpuTemp": {"en": "CPU temp"}, "gpuTemp": {"en": "GPU temp"}, "network": {"en": "Network"}, "disk": {"en": "Disk"}}, "spans": ["4x1"]},
+    {"key": "slot4", "type": "enum", "label": {"en": "Stat 4"}, "default": "network", "options": ["cpu", "gpu", "ram", "cpuTemp", "gpuTemp", "network", "disk"], "labels": {"cpu": {"en": "CPU"}, "gpu": {"en": "GPU"}, "ram": {"en": "RAM"}, "cpuTemp": {"en": "CPU temp"}, "gpuTemp": {"en": "GPU temp"}, "network": {"en": "Network"}, "disk": {"en": "Disk"}}, "spans": ["4x1"]},
+    {"key": "alerts", "type": "bool", "label": {"en": "Alert when it runs hot"}, "default": false}
+  ]
+}

@@ -20,7 +20,7 @@ Item {
     readonly property var ed: form.app.editor
     readonly property var placement: form.ed.placement
     readonly property var manifest: form.placement ? form.ed.registry.byId[form.placement.widget] || null : null
-    readonly property var model: form.manifest ? FormModel.build(form.manifest, form.placement, span => form.fitsSpan(span), Qt.locale().name) : null
+    readonly property var model: form.manifest ? FormModel.build(form.manifest, form.placement, span => form.fitsSpan(span), Qt.locale().name, { "sensors": form.app.sysmon.available }) : null
     readonly property var plan: form.app.formPlan
 
     function fitsSpan(span) {
@@ -29,192 +29,216 @@ Item {
         return PageFit.fits(form.ed.pageType, spans);
     }
 
-    // The widget at its real size, centred on a full-width stage.
-    Rectangle {
-        id: stage
+    // The form and the picker page of an enum field slide side by side (D-64): opening a picker moves the form out to the left.
+    readonly property bool picking: form.ed.pickerKey.length > 0
+    readonly property var pickerModel: form.picking && form.model ? form.model.fields.find(f => f.key === form.ed.pickerKey) || null : null
+    // The last picker shown, kept while the page slides away.
+    property var lastPicker: null
 
-        width: form.width
-        height: form.plan ? form.plan.stageH : 0
-        radius: T.radiusInner
-        color: T.card
-        border.width: 1
-        border.color: T.border
-
-        Shell.WidgetSlot {
-            x: form.plan ? (stage.width - form.plan.box.w) / 2 : 0
-            y: form.plan ? (stage.height - form.plan.box.h) / 2 : 0
-            width: form.plan ? form.plan.box.w : 0
-            height: form.plan ? form.plan.box.h : 0
-            app: form.app
-            placement: form.placement
-        }
+    // The picker page is gone, so the deck takes the keyboard back (Esc steps out of the form).
+    onPickingChanged: {
+        if (!form.picking)
+            form.focusRoot.forceActiveFocus();
     }
 
-    // The size control, then the fields in two columns.
-    Column {
-        id: fields
+    onPickerModelChanged: {
+        if (form.pickerModel)
+            form.lastPicker = form.pickerModel;
+    }
 
-        readonly property real colGap: 2 * T.editInset
+    clip: true
 
-        y: stage.height + T.editGap
+    Item {
+        id: body
+
+        x: form.picking ? -form.width : 0
         width: form.width
-        spacing: 0
-        visible: form.model !== null && form.plan !== null
+        height: form.height
 
-        FormRow {
-            width: fields.width
-            label: form.app.strings.editSize
+        Behavior on x {
+            enabled: !form.app.reduceMotion
 
-            Loader {
-                sourceComponent: form.model && form.model.size.options.length > 1 ? sizeSegmented : sizeOnly
+            NumberAnimation {
+                duration: T.motionPage
+                easing.type: T.easingStandard
             }
+        }
 
-            Component {
-                id: sizeOnly
+        // The widget at its real size, centred on a full-width stage.
+        Rectangle {
+            id: stage
 
-                PlasmaLabel {
-                    text: form.app.strings.spanOnly(form.model.size.current)
-                    color: T.textSecondary
-                    font.pixelSize: T.fontHeader
+            width: form.width
+            height: form.plan ? form.plan.stageH : 0
+            radius: T.radiusInner
+            color: T.card
+            border.width: 1
+            border.color: T.border
+
+            Shell.WidgetSlot {
+                x: form.plan ? (stage.width - form.plan.box.w) / 2 : 0
+                y: form.plan ? (stage.height - form.plan.box.h) / 2 : 0
+                width: form.plan ? form.plan.box.w : 0
+                height: form.plan ? form.plan.box.h : 0
+                app: form.app
+                placement: form.placement
+            }
+        }
+
+        // The size control, then the fields in two columns.
+        Column {
+            id: fields
+
+            readonly property real colGap: 2 * T.editInset
+
+            y: stage.height + T.editGap
+            width: form.width
+            spacing: 0
+            visible: form.model !== null && form.plan !== null
+
+            FormRow {
+                width: fields.width
+                label: form.app.strings.editSize
+
+                Loader {
+                    sourceComponent: form.model && form.model.size.options.length > 1 ? sizeSegmented : sizeOnly
+                }
+
+                Component {
+                    id: sizeOnly
+
+                    PlasmaLabel {
+                        text: form.app.strings.spanOnly(form.model.size.current)
+                        color: T.textSecondary
+                        font.pixelSize: T.fontHeader
+                    }
+                }
+
+                Component {
+                    id: sizeSegmented
+
+                Segmented {
+                    options: form.model ? form.model.size.options.map(o => ({ "value": o.value, "label": form.app.strings.spanName(o.value), "enabled": o.enabled })) : []
+                    value: form.model ? form.model.size.current : ""
+                    onPicked: value => form.ed.setSpan(value)
+                }
                 }
             }
 
-            Component {
-                id: sizeSegmented
+            Row {
+                spacing: fields.colGap
 
-            Segmented {
-                options: form.model ? form.model.size.options.map(o => ({ "value": o.value, "label": form.app.strings.spanName(o.value), "enabled": o.enabled })) : []
-                value: form.model ? form.model.size.current : ""
-                onPicked: value => form.ed.setSpan(value)
-            }
-            }
-        }
+                Repeater {
+                    model: form.plan ? form.plan.cols : []
 
-        Row {
-            spacing: fields.colGap
+                    delegate: Column {
+                        id: fieldColumn
 
-            Repeater {
-                model: form.plan ? form.plan.cols : []
+                        required property var modelData
 
-                delegate: Column {
-                    id: fieldColumn
+                        width: form.plan ? (fields.width - (form.plan.cols.length - 1) * fields.colGap) / form.plan.cols.length : 0
 
-                    required property var modelData
+                        Repeater {
+                            model: fieldColumn.modelData
 
-                    width: form.plan ? (fields.width - (form.plan.cols.length - 1) * fields.colGap) / form.plan.cols.length : 0
+                            delegate: FormRow {
+                                id: fieldRow
 
-                    Repeater {
-                        model: fieldColumn.modelData
+                                required property int modelData
+                                readonly property var field: form.model.fields[fieldRow.modelData]
 
-                        delegate: FormRow {
-                            id: fieldRow
+                                width: fieldColumn.width
+                                // An open dropdown or search must draw over the other column too.
+                                onZChanged: fieldColumn.z = fieldRow.z
+                                kind: fieldRow.field.control
+                                label: fieldRow.field.control === "note" ? "" : fieldRow.field.label
 
-                            required property int modelData
-                            readonly property var field: form.model.fields[fieldRow.modelData]
+                                Loader {
+                                    id: control
 
-                            width: fieldColumn.width
-                            // An open dropdown or search must draw over the other column too.
-                            onZChanged: fieldColumn.z = fieldRow.z
-                            kind: fieldRow.field.control
-                            label: fieldRow.field.control === "note" ? "" : fieldRow.field.label
-
-                            Loader {
-                                id: control
-
-                                sourceComponent: ({ "segmented": segmentedControl, "location": locationControl, "switch": switchControl, "text": textControl, "stepper": numberControl, "dropdown": dropdownControl, "timezone": timezoneControl, "note": noteControl })[fieldRow.field.control] || null
-                            }
-
-                            // A computed read-only line (D-64): it spans the whole row, so the row's own label is empty.
-                            Component {
-                                id: noteControl
-
-                                PlasmaLabel {
-                                    width: fieldRow.width
-                                    text: form.app.strings.widgetNote(fieldRow.field.note)
-                                    color: T.textSecondary
-                                    font.pixelSize: T.fontCaption
-                                    elide: Text.ElideRight
+                                    sourceComponent: ({ "picker": pickerControl, "location": locationControl, "switch": switchControl, "text": textControl, "stepper": numberControl, "timezone": timezoneControl, "note": noteControl })[fieldRow.field.control] || null
                                 }
-                            }
 
-                            Component {
-                                id: segmentedControl
+                                // A computed read-only line (D-64): it spans the whole row, so the row's own label is empty.
+                                Component {
+                                    id: noteControl
 
-                                Segmented {
-                                    options: fieldRow.field.options
-                                    value: String(fieldRow.field.value)
-                                    onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
+                                    PlasmaLabel {
+                                        width: fieldRow.width
+                                        text: form.app.strings.widgetNote(fieldRow.field.note)
+                                        color: T.textSecondary
+                                        font.pixelSize: T.fontCaption
+                                        elide: Text.ElideRight
+                                    }
                                 }
-                            }
 
-                            Component {
-                                id: dropdownControl
+                                Component {
+                                    id: pickerControl
 
-                                DropdownField {
-                                    options: fieldRow.field.options
-                                    value: String(fieldRow.field.value)
-                                    onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
-                                    onOpenChanged: fieldRow.z = open ? 1 : 0
+                                    PickerButton {
+                                        text: fieldRow.field.shown
+                                        onActivated: form.ed.openPicker(fieldRow.field.key)
+                                    }
                                 }
-                            }
 
-                            Component {
-                                id: switchControl
+                                Component {
+                                    id: switchControl
 
-                                SwitchControl {
-                                    checked: fieldRow.field.value === true
-                                    onToggled: checked => form.ed.setSetting(fieldRow.field.key, checked)
+                                    SwitchControl {
+                                        checked: fieldRow.field.value === true
+                                        onToggled: checked => form.ed.setSetting(fieldRow.field.key, checked)
+                                    }
                                 }
-                            }
 
-                            Component {
-                                id: textControl
+                                Component {
+                                    id: textControl
 
-                                TextEntry {
-                                    width: T.editFieldW
-                                    app: form.app
-                                    focusRoot: form.focusRoot
-                                    value: String(fieldRow.field.value)
-                                    onCommitted: text => form.ed.setSetting(fieldRow.field.key, text)
+                                    TextEntry {
+                                        width: T.editFieldW
+                                        app: form.app
+                                        focusRoot: form.focusRoot
+                                        value: String(fieldRow.field.value)
+                                        onCommitted: text => form.ed.setSetting(fieldRow.field.key, text)
+                                    }
                                 }
-                            }
 
-                            Component {
-                                id: numberControl
+                                Component {
+                                    id: numberControl
 
-                                NumberEntry {
-                                    value: Number(fieldRow.field.value)
-                                    text: FormModel.valueText(fieldRow.field, fieldRow.field.value)
-                                    min: fieldRow.field.min
-                                    max: fieldRow.field.max
-                                    step: fieldRow.field.step
-                                    onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
+                                    NumberEntry {
+                                        value: Number(fieldRow.field.value)
+                                        text: FormModel.valueText(fieldRow.field, fieldRow.field.value)
+                                        min: fieldRow.field.min
+                                        max: fieldRow.field.max
+                                        step: fieldRow.field.step
+                                        onPicked: value => form.ed.setSetting(fieldRow.field.key, value)
+                                    }
                                 }
-                            }
 
-                            Component {
-                                id: locationControl
+                                Component {
+                                    id: locationControl
 
-                                LocationField {
-                                    width: T.editFieldW
-                                    app: form.app
-                                    focusRoot: form.focusRoot
-                                    value: fieldRow.field.value
-                                    onPicked: location => form.ed.setSetting(fieldRow.field.key, location)
-                                    onEditingChanged: fieldRow.z = editing ? 1 : 0
+                                    LocationField {
+                                        width: T.editFieldW
+                                        app: form.app
+                                        focusRoot: form.focusRoot
+                                        value: fieldRow.field.value
+                                        onPicked: location => form.ed.setSetting(fieldRow.field.key, location)
+                                        onEditingChanged: fieldRow.z = editing ? 1 : 0
+                                    }
                                 }
-                            }
 
-                            Component {
-                                id: timezoneControl
+                                Component {
+                                    id: timezoneControl
 
-                                TimezoneField {
-                                    width: T.editFieldW
-                                    app: form.app
-                                    focusRoot: form.focusRoot
-                                    value: String(fieldRow.field.value)
-                                    onPicked: zone => form.ed.setSetting(fieldRow.field.key, zone)
-                                    onEditingChanged: fieldRow.z = editing ? 1 : 0
+                                    TimezoneField {
+                                        width: T.editFieldW
+                                        app: form.app
+                                        focusRoot: form.focusRoot
+                                        value: String(fieldRow.field.value)
+                                        onPicked: zone => form.ed.setSetting(fieldRow.field.key, zone)
+                                        onEditingChanged: fieldRow.z = editing ? 1 : 0
+                                    }
                                 }
                             }
                         }
@@ -222,50 +246,79 @@ Item {
                 }
             }
         }
+
+        // Bottom left, under the fields.
+        Rectangle {
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            visible: form.model !== null
+            width: removeLabel.implicitWidth + 2 * T.padding + T.iconTransport + T.gap
+            height: T.editChipH
+            radius: T.radiusInner
+            color: removeHover.hovered ? T.cardHover : T.raised
+
+            Row {
+                anchors.centerIn: parent
+                spacing: T.gap
+
+                Kirigami.Icon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: T.iconTransport
+                    height: T.iconTransport
+                    source: "edit-delete-symbolic"
+                    fallback: "edit-delete"
+                    isMask: true
+                    color: T.textCaption
+                }
+
+                PlasmaLabel {
+                    id: removeLabel
+
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: form.app.strings.editRemoveWidget
+                    color: T.textCaption
+                    font.pixelSize: T.fontBody
+                }
+            }
+
+            HoverHandler {
+                id: removeHover
+
+                cursorShape: Qt.PointingHandCursor
+            }
+
+            TapHandler {
+                onTapped: form.ed.removePlacement(form.ed.formIndex)
+            }
+        }
     }
 
-    // Bottom left, under the fields.
-    Rectangle {
-        anchors.left: parent.left
-        anchors.bottom: parent.bottom
-        visible: form.model !== null
-        width: removeLabel.implicitWidth + 2 * T.padding + T.iconTransport + T.gap
-        height: T.editChipH
-        radius: T.radiusInner
-        color: removeHover.hovered ? T.cardHover : T.raised
+    Item {
+        id: pickerHost
 
-        Row {
-            anchors.centerIn: parent
-            spacing: T.gap
+        x: form.picking ? 0 : form.width
+        width: form.width
+        height: form.height
 
-            Kirigami.Icon {
-                anchors.verticalCenter: parent.verticalCenter
-                width: T.iconTransport
-                height: T.iconTransport
-                source: "edit-delete-symbolic"
-                fallback: "edit-delete"
-                isMask: true
-                color: T.textCaption
-            }
+        Behavior on x {
+            enabled: !form.app.reduceMotion
 
-            PlasmaLabel {
-                id: removeLabel
-
-                anchors.verticalCenter: parent.verticalCenter
-                text: form.app.strings.editRemoveWidget
-                color: T.textCaption
-                font.pixelSize: T.fontBody
+            NumberAnimation {
+                duration: T.motionPage
+                easing.type: T.easingStandard
             }
         }
 
-        HoverHandler {
-            id: removeHover
+        Loader {
+            anchors.fill: parent
+            active: form.lastPicker !== null && (form.picking || pickerHost.x < form.width)
 
-            cursorShape: Qt.PointingHandCursor
-        }
-
-        TapHandler {
-            onTapped: form.ed.removePlacement(form.ed.formIndex)
+            sourceComponent: PickerPage {
+                options: form.lastPicker.options
+                value: String(form.lastPicker.value)
+                missingText: form.app.strings.editOptionMissing
+                onPicked: value => form.ed.pick(value)
+            }
         }
     }
 
