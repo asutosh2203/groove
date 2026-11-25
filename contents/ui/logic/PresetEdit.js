@@ -17,7 +17,7 @@ function clone(v) {
 }
 
 function normalizePlacement(p) {
-    const out = { "widget": p.widget, "span": p.span, "settings": isObject(p.settings) ? p.settings : {} };
+    const out = { "pid": p.pid, "widget": p.widget, "span": p.span, "settings": isObject(p.settings) ? p.settings : {} };
     if (p.settingsVersion !== undefined)
         out.settingsVersion = p.settingsVersion;
     return out;
@@ -45,7 +45,27 @@ function load(text) {
         "page": String(p.page),
         "placements": p.placements.filter(q => isObject(q) && typeof q.widget === "string" && typeof q.span === "string").map(normalizePlacement)
     }));
-    return { "readable": true, "draft": { "presets": presets }, "error": "" };
+    return { "readable": true, "draft": ensurePids({ "presets": presets }), "error": "" };
+}
+
+// Every placement gets a pid that is unique in the whole draft; a missing or repeated one is replaced, the first keeps its own.
+function ensurePids(draft) {
+    const used = {};
+    for (const preset of draft.presets) {
+        for (const p of preset.placements) {
+            p.pid = Presets.uniquePid(used, p.pid);
+            used[p.pid] = true;
+        }
+    }
+    return draft;
+}
+
+function usedPids(draft) {
+    const used = {};
+    for (const preset of draft.presets)
+        for (const p of preset.placements)
+            used[p.pid] = true;
+    return used;
 }
 
 function dirty(original, draft) {
@@ -134,8 +154,8 @@ function addPlacement(draft, id, widgetId, at, registry) {
     const where = Catalogue.placeAt(preset.page, spansOf(preset), at, manifest);
     if (!where.ok)
         return fail(draft, "nofit");
-    const r = edit(draft, id, p => {
-        p.placements.splice(where.index, 0, { "widget": widgetId, "span": where.span, "settings": {}, "settingsVersion": manifest.version });
+    const r = edit(draft, id, (p, d) => {
+        p.placements.splice(where.index, 0, { "pid": Presets.uniquePid(usedPids(d), undefined), "widget": widgetId, "span": where.span, "settings": {}, "settingsVersion": manifest.version });
     });
     r.index = where.index;
     return r;
