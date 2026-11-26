@@ -77,7 +77,7 @@ use the same interface with no Kove change.
 
 ## Limits
 - **tmux, screen, systemd services:** a session whose process chain has no window (and no app scope) is not clickable.
-  It still shows, and notifications still work.
+  It still shows, and notifications still work. A tmux lookup to make such tiles clickable is planned (`docs/ROADMAP.md`).
 - **Flatpak terminals and editors** are sandboxed: their hooks never start the aggregator, and they can only reach it if you
   expose the socket directory, once per app:
   `flatpak override --user --filesystem=xdg-run/kove <app-id>`. Without it they log a one-time hint and do nothing.

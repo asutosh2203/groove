@@ -1,6 +1,7 @@
 # Widget architecture
 
-Status: the deck, the host, the registry, presets and the first widgets are built (D1, D2). The preset editor is D3.
+Status: the deck, the host, the registry, presets, the preset editor and the built-in widgets (clock, world clock, weather,
+pomodoro, system monitor, Claude Code) are built (D1 to D4, L1 to L3).
 Everything is **decided** unless marked **proposed** (a draft for review). Decisions cite their entry (D-xx,
 principles in `DECISIONS.md`). The plan lives in `ROADMAP.md`.
 
@@ -125,7 +126,8 @@ Control Center tile editor is merged in as the gear chip.
 - Views are created when their page shows and destroyed when it hides. The idle face is an ordinary subscriber; the popup
   copy of it is not.
 - The host renders the standard states: loading, ready, stale, error, needs setup.
-- Migrated: WeatherService (the panel idle face subscribes while visible). Others follow with their widgets.
+- Migrated: WeatherService (the panel idle face subscribes while visible). The clock, timer and sysmon services (below) are
+  the host's handles for their widgets; `agents` is always on and needs no subscription.
 
 ## Widget contract
 
@@ -149,7 +151,8 @@ Built-in widgets first; third-party extensions only after this contract is stabl
 - Views: one per supported span, named `View<span>.qml` (for example `View2x1.qml`) next to the manifest; shared
   sub-components are allowed. A view lays out from its injected pixel box only, never from hardcoded cell sizes (a 1x1 is
   154 wide on Small, 158 on Wide and 104 tall on Tall).
-- Settings field types: bool, enum, string, number (with `min`, `max`, `step`), location, timezone, app. Each has a label
+- Settings field types: bool, enum, string, number (with `min`, `max`, `step`), location, timezone, app, note (read-only, no
+  value, D-64; `app` is reserved and not built). Each has a label
   and a default; the host stores values per placement. There is no colour picker (D-45).
 - Enum option labels (added in D3, D-56): an enum field may carry `labels`, an object keyed by option id whose values are
   locale-keyed texts with `en` required, for example `"labels": { "highlow": { "en": "High / low" } }`. The settings form shows
@@ -202,8 +205,8 @@ Two additions to contract v1 (D-65), both optional and backward compatible:
   slots 3 and 4 on 4x1 only.
 - **Option availability.** `logic/WidgetOptions.js`, a function keyed by manifest id in the pattern of `WidgetNotes.js`, tells the form
   which options of an enum field exist on this machine; `FormModel.build` adds `enabled` to each option from it (`env` carries what the
-  machine offers, here the daemon's sensor ids). A disabled option stays in the picker, greyed (`Segmented` and `DropdownField` both
-  honour `enabled`), never replaced by a placeholder. A placement that still names one shows the widget's error state.
+  machine offers, here the daemon's sensor ids). A disabled option stays in the picker, greyed (the picker page and the size control's
+  `Segmented` both honour `enabled`), never replaced by a placeholder. A placement that still names one shows the widget's error state.
 
 `agents` is the host's handle on `AgentService` (the island's own instance, always on and event-driven, so it needs no
 subscription). A view that acts on a part of itself, such as a row, emits `runAction(action)`; the host runs it like a
@@ -223,3 +226,6 @@ subscription). A view that acts on a part of itself, such as a row, emits `runAc
 
 - How third-party widgets are isolated (D-25), since v1 has no permission model.
 - Context-aware presets (later).
+- **Contract v2 (planned, not designed):** interactive 2×2 widgets on the Tall page, with scrolling and text input allowed
+  inside the widget, actions routed through services and confirmation for risky ones. A Claude Code 2×2 is meant to be its
+  first widget. Nothing is decided yet; v1 stays plain clicks only (see ROADMAP, Backlog).

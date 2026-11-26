@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated: 16 November 2026. Decisions referenced as D-xx live in [DECISIONS.md](DECISIONS.md).
+Last updated: 26 November 2026 (everything below up to L3 is merged into `main`). Decisions referenced as D-xx live in [DECISIONS.md](DECISIONS.md).
 
 ## Done
 | Milestone | Scope | Commit |
@@ -24,45 +24,31 @@ Last updated: 16 November 2026. Decisions referenced as D-xx live in [DECISIONS.
 | D-33 | Notification popup duration: app timeout shortens the setting (2 s floor), critical at least 6 s | `63eb31f` |
 | Q2 | `main.qml` breakup (D-37): services, tested logic, `Strings.qml`, `shell/` components; per-file qmllint ratchet and probe | `17a85d1` ... `7571027` |
 | G1 | Cursor glow on expanded surfaces and the Control Center (D-41, D-42): shader pipeline with a CI check, settings toggles, Control Center stays put on media changes; measured in `docs/PERFORMANCE.md` ("After G1") | `0184e1d`, `b59a6bd`, `cc482ff`, `4990889` |
+| B1 | Bug batch (see below) | one commit per item, see below |
+| D1 | Deck shell: deck, page-control capsule, Live page with job tiles, list and accordion, content-aware Live glyph (D-51 to D-53); closed-deck check in `docs/PERFORMANCE.md` ("After D1") | `cdde11c`, `83c4c12`, `1612008`, `c316c16` |
+| D2 | Widget host, manifest registry, versioned presets, minute-tick clock service, Clock, World Clock, Weather; contract v1 (D-54, D-55). Presets came from the hidden `devPresets` key; `deckDummyPages` is retired | `d1ad2cb`, `08a8f96` |
+| D3 | Preset editor: one edit mode from the Control Center's pencil, grid, catalogue sidebar, manifest-generated settings form, chips bar, transactional session (D-56). A first pass to live with | `4c23e62`, `75d3086` |
+| D4 | Capsule scrub: press and drag across the page-control capsule; `scrubDwell` is 120 ms because pure live (0) lurched through every page (D-62) | `ea47584`, `6049485` |
+| W2, W2.1 | Agents as a native Live activity, then command timer, exact-sleep countdown and subagents (D-57, D-58) | `9102387`, `338f7c5`, `5134add`; `50d82ab`, `5f07753` |
+| N1 | Inline notification reply shelf (D-43, D-44). Live-checked in Notch and Pill with a D-Bus test sender (`tests/tools/`); a real Telegram or KDE Connect check needs a test conversation | `08e7a36` |
+| L1 | Claude Code widget: budget and outcomes, 1x1 and 2x1, opt-in status-line helper (D-60, D-61) | `5ccbd7a` |
+| T1 | Token pass on the top findings of `docs/TOKEN-AUDIT.md`, plus a token ratchet (D-47) | `ca53642`, `38738f3` |
+| L2 | Pomodoro widget: `timer` service, 1x1, 2x1 and 4x1 views, Live tile, closed-capsule rank, phase-end pop-in, Do Not Disturb during focus, Kove pop-ins respect DND, form rework and enum labels (D-64). Timers are in memory only (persisting them is in Ideas). Merged as PR #7 | `4bdf9f6` |
+| Media | Elapsed time, seeks, live streams and the polling gate (D-63). Merged as PR #8 | `86039a4` |
+| L3 | System Monitor widget: `sysmon` hub on KDE's sensor framework, two-minute history, 1 s visible and 5 s hidden cadence, off while locked, 1x1, 2x1 and 4x1, hot level with hysteresis, tinted smoothed sparkline, enum picker page for every enum, optional hot alerts, contract's `spans` field key and option availability (D-65). Merged as PR #9 | `ccb4480` |
 
 CC6 (notification list density/scrolling) was dropped.
 
 ## Now
-- Q2 final pass: the performance check is done (see `docs/PERFORMANCE.md`, "After Q2"); the final Q2 report is left.
-- B1: still to look at live: the notice accent colours (Critical red, Normal orange, Low grey). The Theme settings tile and
-  icon fix were checked on screen.
-
-- **D1: deck shell (done, pushed).** D-51, D-52 and D-53: the deck, the page-control capsule, the
-  Live page with job tiles, list and accordion, the content-aware Live glyph, job and media clicks, and the hidden
-  `deckDummyPages` flag. The closed-deck performance re-check shows no regression (`docs/PERFORMANCE.md`, "After D1").
-  Next: the widget host and registry (D2).
-
-- **D2: widget host, registry, presets and the first widgets (done; checked live in Notch and Pill).**
-  D-54 and D-55: contract v1, the manifest registry (JSON is the source of truth, a generated mirror with a drift test),
-  versioned presets with validation and migrations, preset pages in the deck, the widget host with the standard states, the
-  minute-tick clock service, and Clock, World Clock and Weather. D2's presets come from the hidden `devPresets` key;
-  `deckDummyPages` is retired.
-
-- **D3: the preset editor (done, pushed; a first pass to live with).** D-56: one edit mode entered from the Control Center's
-  pencil, with the grid (remove, add, drag reorder), the catalogue sidebar, the settings form generated from the manifest
-  (every field type, Open-Meteo location search, Plasma time zone data), the chips bar with silhouettes, the tile editor
-  merged in as the gear chip, a transactional session with a discard prompt, a draft kept on focus loss, and the
-  `devPresets` lock. Checked live in Notch and Pill. Next: use it for a few days, then
-  refine (see the list below), then the first-run starter presets.
-- **D4: capsule scrub (done).** D-62: press and drag across the page-control capsule to move
-  between pages, with the swell and a visible detent. `scrubDwell` is 120 ms: pure live (0) was tried by hand and a fast flick
-  lurched through every page. Checked live in Notch and Pill.
-  - Possible later: right-click a preset page to edit that preset (a shortcut; the capsule stays symmetric, D-51). A scrolling
-    form for widgets with more than four settings. A catalogue search. Keyboard reordering. An `app` field type when a
-    widget needs it.
-
-- **L2: Pomodoro widget (done on `feat/pomodoro`, checked live).** D-64: the `timer` service (deadline-based, one timer per
-  placement, keyed by a new stable `pid`; presets format 2 with a tested migration), 1x1, 2x1 and 4x1 views, a Live tile and row,
-  a closed-capsule rank (focus above media, break below), a phase-end pop-in with its own Start button, Do Not Disturb during
-  focus through Plasma, and Kove's own pop-ins now respect DND. The editor's settings form was reworked at the same time
-  (stage layout, steppers, zero labels, the `note` field type; D-56). Timers are in memory only: persistence across a
-  plasmashell restart is later work (see Backlog).
-- **L3: System Monitor widget (on `feat/system-monitor`).** D-65: the `sysmon` service (one hub, KDE's sensor framework, a two-minute in-memory history, 1 s visible and 5 s hidden cadence, off while the screen is locked), the `system-monitor` widget at 1x1, 2x1 and 4x1 (CPU, GPU, RAM, CPU and GPU temperature, network, disk), hot level with hysteresis, a smoothed sparkline whose whole graph tints red while hot, an enum picker page for every widget's enum fields, optional hot alerts, and the contract's new `spans` field key and option availability hook.
+- Release prep: see "Before the first public release" below.
+- Follow-ups of the finished deck and widget work (the milestones themselves are in the Done table):
+  - D3 is a first pass to live with: use the editor for a few days, then refine, then add first-run starter presets.
+  - Possible later for the editor: right-click a preset page to edit that preset (a shortcut; the capsule stays symmetric,
+    D-51); a catalogue search; keyboard reordering; an `app` field type when a widget needs it.
+  - L3 not verified live: the middle of the 300 ms tint fade, the sustain reset on dropping below the exit threshold, a lock of over
+    a minute while hot, and the picker with a real pointer beyond what was tried. L2's "not verified live" list was never closed out.
+  - 2 to 4 option enums (weather units and detail, clock time format) now use the picker too; the one-line switch back to
+    segmented is `FormModel.controlFor`.
 
 ## B1: bug batch (done)
 Found while moving code in Q2; behaviour was kept during the moves, then fixed one commit per item.
@@ -77,37 +63,36 @@ Found while moving code in Q2; behaviour was kept during the moves, then fixed o
    players seen. Follow-up (`3e178d4`): a ghost browser tab that claims to play no longer blocks the idle face (D-35).
 7. **Notice accent colour.** *Done* (`04c9a78`): mapped from the urgency kind (Critical red, Normal orange, Low grey); the
    Control Center's critical marker no longer compares urgency numbers either, and a test guards against any such comparison.
+   Confirmed by Asutosh in daily use on 26 Nov 2026.
 
 ## Next
 1. **Frosted-glass spike** (D-23): time-boxed prototype of real KWin blur with a shape-matched region.
    - A small native C++ helper could provide both blur-behind (`KWindowEffects`) and input-region trimming (`QWindow::setMask`, which would remove the click-swallowing reply strip, D-43).
-2. **Widget architecture**: Q2 produced the services and logic layers (D-37); formalise them, together with
-   `ActivityProvider` / `ModuleRegistry`, into the widget contract (D-24, D-25).
-3. **T1: token pass, before W1.** Fix only the top findings of `docs/TOKEN-AUDIT.md`: an `easingStandard` token for the
-   `Easing.OutCubic` sites; fold the 100/105/110 ms Control Center durations into `motionFast`; raise 9 px text to the smallest
-   token; one size for the transport buttons; one radius for the activity tiles (job, keyboard, activity pages); a
-   `radiusSmall` for bar and pill ends. The Wi-Fi and Bluetooth tiles are left to C8. Adds a token ratchet (a Node test) that
-   fails when a file gains hardcoded layout or motion literals.
-4. **First new widget**: Mirror or AI Agent Status.
-5. **What is left of the quality work:**
-   - Lint warnings: 471 remain (the baseline is per file, `.github/qmllint-baseline.txt`), almost all in the Control Center
-     tiles and a few views; move their translated text into `Strings.qml` the way `main.qml` did and give the views
-     required properties, then lower the baselines.
+2. **What is left of the quality work:** (the widget contract is built, D-54, and the token pass is done, T1 in the Done table)
+   - Lint warnings: the per-file baseline (`.github/qmllint-baseline.txt`) sums to 454, almost all in the Control Center
+     tiles and a few views (a local qmllint currently counts 478, see `docs/CI.md`); move their translated text into
+     `Strings.qml` the way `main.qml` did and give the views required properties, then lower the baselines.
    - Performance follow-ups (see `docs/PERFORMANCE.md`): the Control Center while open is measured (0.97%, see the Q2 section); the expanded media popup is re-measured (G1); still to re-measure: the notification popup, Pill mode; the "idle for 5 minutes"
      pause once an event-driven idle source exists for QML; `IslandButton` Canvas glyph repaints.
    - Not covered by tests yet: the click versus double-click discrimination (it lives in `IslandCompact` and `main.qml`'s
      click timer) and weather caching.
 
-## Unscheduled
-- **N1: inline notification reply: done on `feat/n1-inline-reply`, awaiting review** (D-43, D-44). Live-checked in Notch and
-  Pill with a D-Bus test sender (`tests/tools/`); a real Telegram or KDE Connect check needs a test conversation.
+## Before the first public release
+- **Naming and listing (D-66).** Kove is published as a new KDE Store entry with its own plugin ID; the upstream listing is not
+  updated. Still to do: change the `metadata.json` name, ID, authors (keep upstream credit), Website and BugReportUrl (the
+  repository is `asutosh2203/groove`), the extras layout template's ID, and the README credits. Nothing of this is done: today the
+  package is still "Dynamic Island", `com.manu028.dynamicisland`.
+- **KDE Store listing** as an explicit release step: description, screenshots and categories (also in `RELEASE_CHECKLIST.md`).
+- **Manifest i18n pipeline** (see Backlog): export the widget manifests' translatable text to the catalogue and back.
+- **Hybrid-laptop check:** with the GPU sensors subscribed, confirm the discrete GPU still runtime-suspends in offload mode.
+  Not applicable on the development desktop, where the RTX 4060 drives the display (D-65 measured it `active` either way).
 
 ## Widget library
 
 ### Design notes
 Full design in [`WIDGET-ARCHITECTURE.md`](WIDGET-ARCHITECTURE.md): the deck ([Live] -> presets -> [Control Center]), the
-cell-span grid (D-48), the preset editor, ref-counted services (WeatherService migrated), the widget contract and
-persistence. Still open there: the proposed contract details and context-aware presets.
+cell-span grid (D-48), the preset editor, ref-counted services, the widget contract and persistence. Still open there:
+context-aware presets and how third-party widgets would be isolated.
 
 ### W1 / W2: Claude Code integration
 - **W1 (superseded):** hooks, a per-session daemon and notifications, with the work shown as a disguised KDE job (D-49). The
@@ -123,7 +108,10 @@ persistence. Still open there: the proposed contract details and context-aware p
   Follow-ups: accordion overlap and scroll-into-view fixes (D-53), working agents rank below media on the closed capsule (D-58),
   cover art cache (D-59).
 - Deliberately deferred: approve/reject buttons on the waiting tile (they need a second channel into Claude Code).
-- **L1 (built, awaiting review): the Claude Code widget (D-60).** Budget and outcomes, 1x1 and 2x1, fed by an opt-in
+- **Agents: tmux click-through.** A session running inside tmux has no window in its process chain, so its tile is not
+  clickable. Add a tmux lookup (find the client's terminal window through tmux) so the click can raise it; keep the rule
+  that nothing is guessed. The current limit is in `integrations/claude-code/README.md`.
+- **L1 (done, merged): the Claude Code widget (D-60).** Budget and outcomes, 1x1 and 2x1, fed by an opt-in
   status-line helper that chains the user's original status line. Usage ring, spend mode for API keys, recent sessions in
   memory, hover peek, row and tile clicks. Soak: docs/PERFORMANCE.md "After L1".
 - Future note only: other agents (Codex, Aider, Gemini CLI, ...) via small adapters. The island side is agent-agnostic; the
@@ -132,7 +120,11 @@ persistence. Still open there: the proposed contract details and context-aware p
 ## Backlog
 - **Contract v2: interactive 2×2 widgets (Tall page only).** Actions go through services (a widget never runs commands),
   scrolling and text input are allowed inside a 2×2, and risky actions ask for confirmation. Not started; logged so it is not
-  forgotten (v1 widgets are plain clicks only).
+  forgotten (v1 widgets are plain clicks only). **First widget on v2: a Claude Code 2×2.** It would be the first widget that
+  needs v2's interactivity; a v2 decision entry comes when it is designed, not before.
+- **System Monitor sparkline: try `ShapePath.strokeGradient`.** A gradient stroke could replace the single tint colour. Measure
+  its render cost against the current line (`CurveRenderer`, `Sparkline.qml`) before adopting it; keep the current look if it
+  costs more than a measurable amount of CPU.
 - **Map the gateway `spend_limit` onto the ring.** Behind a Claude gateway the status line carries
   `rate_limits.spend_limit` with real `used_usd`, `limit_usd` and `period`. L1 treats that setup as spend mode; the ring could
   show the real percentage and the detail "$12 of $50 · resets Mon" instead of the estimated cost.
@@ -148,6 +140,7 @@ persistence. Still open there: the proposed contract details and context-aware p
 - **Pre-release: manifest i18n pipeline.** KDE's tooling will not extract translatable text from our custom widget JSON
   manifests (`name`, `description`, setting labels are locale-keyed objects with `en` only). Needs a step that exports them
   to the translation catalogue and back, before the first public release.
+- **Scroll on the closed island (inherited from upstream; found by reading `shell/IslandCompact.qml` `onWheel`, not tested live).** (a) A horizontal-only wheel event has `angleDelta.y == 0`, so `angleDelta.y > 0` is false and it lowers the volume. (b) Every wheel event applies one full step (0.04 for a player, one `volumeUp`/`volumeDown` for the system) whatever its size, so a touchpad that sends many small events may change the volume very fast. Normal vertical scroll for volume and middle click for play/pause work (confirmed by Asutosh, 26 Nov). Possible fix: ignore `y == 0` and accumulate the delta per step.
 - Glow 60 fps cap ready on `perf/glow-60fps`; needs a real-pointer before/after measurement.
 - Reply shelf: multi-line input (v1 is a single line); host the notification's other actions (Mark as read, Mute) in the shelf.
 - **Native popup coexistence:** detect whether Plasma's own notification popups are active; never change it automatically (D-05). Show a one-time dismissible hint and a permanent note in settings with an "Open notification settings" button; document in the README. Investigate the officially supported way to disable Plasma popups without stopping the notification server. The island respects Do Not Disturb since D-64 (no pop-ins while DND is on, critical still pops).
@@ -174,8 +167,6 @@ persistence. Still open there: the proposed contract details and context-aware p
 - Project-wide icon migration to theme symbolic names (D-26), incl. `IslandButton` Canvas glyphs
 - KDE Connect via its native QML module
 - File shelf, system HUD, Bluetooth/USB events
-- Release housekeeping: add maintainer to `metadata.json` authors (keep upstream credit), point
-  Website/BugReportUrl at `groove`, README upstream/inspiration credits, own plugin ID/name
 
 ### Ideas, not committed
 - A generic Live Activity D-Bus API for any script or app (generalising the agents protocol).

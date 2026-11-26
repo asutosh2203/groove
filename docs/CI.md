@@ -5,8 +5,12 @@ push to `main`, every pull request and every `v*` tag; a tag also publishes a re
 
 ## What it checks
 
-1. Node tests: `node --test tests/*.test.cjs`
-2. `scripts/check-qml.sh`: `qmllint` over every QML and JS file under `contents/`
+1. Shaders are current: `scripts/build-shaders.sh --check` in stamp-only mode (the stamp holds the sha256 of every shader
+   source and committed `.qsb`; both must match the files and the sources must still compile; a byte-for-byte rebuild is not a
+   gate because the container's `qsb` compiles to different bytes than a desktop's).
+2. Node tests: `node --test tests/*.test.cjs`
+3. Claude Code integration tests: `python3 -m unittest discover -s integrations/claude-code -q`
+4. `scripts/check-qml.sh`: `qmllint` over every QML and JS file under `contents/`
    - errors (any non-zero qmllint exit, for example a syntax error) fail the job;
    - any `[import]` warning fails the job (a module that cannot be loaded would weaken every other check);
    - the warning count of each FILE may not go above its line in `.github/qmllint-baseline.txt` (`<count> <path>`; a
@@ -26,11 +30,26 @@ push to `main`, every pull request and every `v*` tag; a tag also publishes a re
      `NotificationManager.Notifications` is only partly analysed (an undefined function call in it is not flagged), so
      that element stays confined to `NotificationService`. The probe cannot see that kind of blind spot inside function
      bodies, only the places it plants the name;
-3. Qt Quick tests: `qmltestrunner -input tests` (offscreen, software backend)
-4. Package build: `scripts/package.sh`, then `unzip -t`
+5. Qt Quick tests: `qmltestrunner -input tests` (offscreen, software backend)
+6. Package build: `scripts/package.sh`, then `unzip -t`
 
-You can run 2 locally with `scripts/check-qml.sh`. The baseline is defined by the qmllint in the CI container; a
-different local Qt can count a little differently.
+You can run 4 locally with `scripts/check-qml.sh`. The baseline is defined by the qmllint in the CI container; a
+different local Qt can count a little differently. **Known local drift (2026-11-26):** the development machine's
+`scripts/check-qml.sh` reports 478 warnings against a baseline of 454 (in `ControlCenterModuleCard`, `ThemeGlyph`,
+`NotificationService`, `WeatherHub` and `DeckCapsule`), and the count is the same on a pristine `origin/main`. CI's pinned
+container is the reference; the cause of the difference is not confirmed, and the baseline has not been changed for it.
+
+## Branch protection
+
+`main` is protected on GitHub:
+- a pull request is required (0 approvals);
+- the check **Checks (pinned Arch container)** (the job in `ci.yml`) must pass;
+- the branch does not need to be up to date with `main` before merging;
+- administrators cannot bypass these rules;
+- force pushes and deletion of `main` are blocked.
+
+So every change, including documentation, reaches `main` through a pull request. Pushing a branch alone does not run CI;
+opening the pull request does.
 
 ## Bumping the pinned environment
 

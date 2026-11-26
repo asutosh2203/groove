@@ -1,5 +1,8 @@
 # Colour audit (D-45)
 
+> **Dated record, kept as history.** It describes the code as found at B2 (November 2026). File names, line numbers and counts
+> were not updated afterwards, and "the N1 branch" below is long merged. Re-run the search before relying on any row.
+
 Every hardcoded colour in `contents/ui` (QML and JS, not the weather SVGs, which are content), as found at B2.
 The rule (D-45): colour encodes attention, never decoration. About 130 literals across 40 files; most are neutral
 graphite and left alone. This lists what is **not** monochrome. Nothing below was changed by B2 unless marked.
