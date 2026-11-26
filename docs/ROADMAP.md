@@ -36,6 +36,7 @@ Last updated: 26 November 2026 (everything below up to L3 is merged into `main`)
 | L2 | Pomodoro widget: `timer` service, 1x1, 2x1 and 4x1 views, Live tile, closed-capsule rank, phase-end pop-in, Do Not Disturb during focus, Kove pop-ins respect DND, form rework and enum labels (D-64). Timers are in memory only (persisting them is in Ideas). Merged as PR #7 | `4bdf9f6` |
 | Media | Elapsed time, seeks, live streams and the polling gate (D-63). Merged as PR #8 | `86039a4` |
 | L3 | System Monitor widget: `sysmon` hub on KDE's sensor framework, two-minute history, 1 s visible and 5 s hidden cadence, off while locked, 1x1, 2x1 and 4x1, hot level with hysteresis, tinted smoothed sparkline, enum picker page for every enum, optional hot alerts, contract's `spans` field key and option availability (D-65). Merged as PR #9 | `ccb4480` |
+| Disc | Pill disc spin: the compact artwork turns while music plays (10 deg/s on the shared 8 fps clock), held angle in a media-service state object, ring hub; variants A to F10 measured, D and E rejected on cost (D-68) | this branch |
 
 CC6 (notification list density/scrolling) was dropped.
 
@@ -184,3 +185,5 @@ context-aware presets and how third-party widgets would be isolated.
 - A first-run tour.
 - Pomodoro: keep timers across a plasmashell restart (persist deadlines).
 - System Monitor: a per-disk and per-interface picker (dynamic enum options), a top-processes widget, a hover peek with the two-minute peak and average, fan and NVMe temperatures, and multi-GPU with a stable GPU choice (by name, not index: `gpu0` is the first the daemon lists).
+- Agents: background tasks are mostly invisible. The Claude Code integration is hook-driven only (`install.sh` events; nothing in `kove_logic.py` or `kove_hook.py` mentions `run_in_background`). Foreground exact `sleep N` becomes a countdown (D-58). A background Bash command is tracked only from PreToolUse to PostToolUse, which for a background run ends when the tool call returns (inferred, not tested). Subagents come from SubagentStart/SubagentStop, so background ones probably show until they stop (not verified: D-58 only checked foreground ones, on Claude Code 2.1.325). A session shows done after Stop even if a background task still runs, and Monitor and scheduled wakeups show only for the instant of the call. Next step if wanted: a read-only investigation of what Claude Code emits for background shells and tasks (there may be no event for it) before any design.
+- A Notch artwork spin, or another record idea for the Notch (not decided, D-68 keeps the Notch still).
