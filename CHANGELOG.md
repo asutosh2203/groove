@@ -7,6 +7,7 @@ All notable user-facing changes should be documented here.
 Work since 0.3.2 (the last upstream release) on the Kove fork. No version has been bumped for it yet.
 
 - **Renamed to Kove:** the package is now **Kove** with its own plugin ID, `io.github.asutosh2203.kove` (D-66), so it installs next to the upstream Dynamic Island instead of replacing it. Plasma keeps settings per plugin ID, so a fresh install starts with default settings, presets and Control Center layout. The optional panel preset is now **Kove Panel**, and the release file is `kove-<version>.plasmoid`.
+- **Spinning disc (Pill):** the compact album art turns slowly like a record while music plays, with a small hub, holds its angle when paused and starts at the beginning for a new track. It uses the shared 8 fps clock and costs nothing while paused (D-68).
 - **Two looks:** Dynamic Notch (flush with the top edge) and Dynamic Pill (floating), chosen in the settings.
 - **Idle face:** time and weather (Open-Meteo, manual city, Celsius or Fahrenheit); the time opens a calendar and the weather the forecast. The idle face returns 30 seconds after playback stops.
 - **Deck:** the island expands into pages: Live, up to three presets and the Control Center, with a page-control capsule that also scrubs by dragging.

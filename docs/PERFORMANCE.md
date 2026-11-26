@@ -322,6 +322,42 @@ poller running at 1 s: plasmashell **1.68%** (1.00, 0.97, 1.23, 3.53; the last w
 the same scenario read 1.72%. The smoothed path and the fill gradient change the two path strings per sample and add no timer or animation outside
 the 300 ms tint; the picker page exists only while the form is open.
 
+## After disc spin (2026-11-26, Pill artwork turning while music plays, D-68)
+
+Method as above: Pill mode, Spotify playing a track with real artwork and left untouched, `frames-on`, `scripts/perf-baseline.sh <label> 60 3`, medians,
+plasmashell restarted and about 2 minutes of settling before each variant, a screen-saver and an idle inhibit held. The display ran 1920x1080 at
+164.92 Hz. Each variant changed only `degPerSecond` and `fps` (`logic/DiscSpin.js`), except D, which used a render-thread `RotationAnimator`.
+One deg is about 0.24 px at the rim of the 28 px disc.
+
+| Variant | Setting | Step | Runs (CPU %) | Median CPU | Median fps | Verdict |
+|---|---|---|---|---|---|---|
+| A | no spin (origin/main) | | 0.65, 0.66, 2.12* | 0.66% | 8.0 | the baseline |
+| B | 8 fps, 40 deg/s | 5.0 deg | 0.70, 1.43*, 0.68 | 0.70% | 8.0 | choppy |
+| C | 15 fps, 40 deg/s | 2.7 deg | 1.02, 1.47*, 1.78* | 1.47% (clean run 1.02% at 15.9 fps) | 21.5 | choppy |
+| D | `RotationAnimator`, 40 deg/s | continuous | 5.87, 5.83, 5.77 | 5.83% | 161.4 | rejected on cost |
+| E | 30 fps, 40 deg/s | 1.3 deg | 1.87, 1.85, 2.43* | 1.87% | 31.3 | over the budget |
+| F20 | 8 fps, 20 deg/s | 2.5 deg | 0.60, 1.03*, 0.60 | 0.60% | 8.0 | |
+| F15 | 8 fps, 15 deg/s | 1.9 deg | 0.62, 1.00*, 1.40* | 1.00% (clean run 0.62% at 8.0 fps) | 10.1 | |
+| **F10** | 8 fps, 10 deg/s | 1.25 deg | 0.69, 1.42*, 0.67 | **0.69%** | 8.0 | **chosen** |
+
+\* a run in which a second window was also drawing (2 to 6 fps, a popup or another surface), which raises both the CPU and the frame count; the median
+drops one such run in A, B, E and F10 but C's and F15's medians contain two, so their clean runs are the fairer figure. Raw files are in the
+gitignored `perf/results/` (`disc-A`, `disc-B`, `disc-C`, `disc-D`, `disc-E`, `disc-F20`, `disc-F15`, `disc-F10`).
+
+- **Budget (D-34, media playing at most 1% added):** A, B, F20, F15 and F10 are inside it, and B, F20, F15 and F10 draw no frame the audio bars do
+  not already draw: the bars hold the clock at 8 fps while media plays. C is at the budget by its median. E is about 1.2% over A, and it
+  runs the bars at 30 fps too (the clock follows the highest lease). D is about 5.2% over A.
+- **D scales with the refresh rate.** The animator removes the GUI-thread work but not the render cost, and it redraws at the display rate: 161.4
+  fps here, QSGRenderThread 3.3% of the 5.8%. At 60 Hz it would cost less, at 240 Hz more (about 0.03 percentage points per fps).
+- **Paused and idle, old build against F10 (paired, same method):** paused pill (one 20 s window, since the idle face takes over after the 30 s
+  grace, D-35) origin/main 0.45% at 3.2 fps, F10 0.45% at 3.1 fps. Idle face, 3 x 60 s: origin/main 0.55% (0.53, 0.57, 0.55) at 8.5 fps; F10
+  0.69% (0.55, 0.69, 1.15*) at 8.8 fps. F10's cleanest run equals the old build; the median is lifted by a run with a second window, so
+  the difference is within the noise. The disc holds no clock lease while paused or idle: a temporary log in `DecorClockLease` showed
+  acquires only for the idle weather icon and, once playing, the bars and the disc. The idle face is not 0% because the weather icon holds one 8 fps lease.
+- **An earlier single paused run** with the spin code (25 s, 1.72% at 15.4 fps, other windows drawing) was not reproduced by the paired runs and is
+  unexplained; it is recorded here and not relied on.
+- Frame logging adds roughly 0.3 to 1.5% CPU, so every figure includes it; compare like with like.
+
 ## Not measured
 
 No figures exist for these changes; none are claimed.
