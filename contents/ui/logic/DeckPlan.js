@@ -8,11 +8,14 @@ const cells = { "small": { w: 2, h: 1 }, "wide": { w: 4, h: 1 }, "tall": { w: 2,
 // At most three presets, so the worst case is five rail glyphs (Live + 3 + Control Center), which fit the Small page.
 const maxPresets = 3;
 
-// [Live] -> [presets, at most three] -> [Control Center, always last]. Live is in the cycle only while something runs.
-function buildCycle(liveActive, presets) {
+// [Live] -> [Welcome] -> [presets, at most three] -> [Control Center, always last]. Live is in the cycle only while something
+// runs; Welcome (D-69) only while the tour is pending, and it is a Wide page that is not a preset.
+function buildCycle(liveActive, presets, tourPending) {
     const pages = [];
     if (liveActive)
         pages.push({ "id": "live", "type": "live" });
+    if (tourPending)
+        pages.push({ "id": "welcome", "type": "wide" });
     for (const preset of presets.filter(p => p.inCycle !== false).slice(0, maxPresets))
         pages.push(preset);
     pages.push({ "id": "control", "type": "control" });
@@ -24,6 +27,7 @@ function buildCycle(liveActive, presets) {
 const glyphChains = {
     "live": ["music-note-16th-symbolic", "audio-volume-high-symbolic", "media-playback-start-symbolic"], // overridden by LiveGlyphs
     "control": ["configure-symbolic", "preferences-system-symbolic", "emblem-system-symbolic"],
+    "welcome": ["help-about-symbolic", "dialog-information-symbolic", "help-hint-symbolic"],
     "small": ["window-symbolic", "view-grid-symbolic", "folder-symbolic"],
     "wide": ["view-split-left-right-symbolic", "view-grid-symbolic", "folder-symbolic"],
     "tall": ["view-split-top-bottom-symbolic", "view-grid-symbolic", "folder-symbolic"]
@@ -74,11 +78,13 @@ function windowSize(cycle, geom) {
     return { "w": w, "h": h };
 }
 
-// Which page a capsule click opens: "double" is the Control Center; "click" is Live when it exists, else the page last
-// used this session, else the first page.
-function entryPage(cycle, lastUsedId, intent) {
+// Which page a capsule click opens: "double" is the Control Center; "click" is Welcome the first time while the tour is
+// pending (`welcomeFirst`, D-69), else Live when it exists, else the page last used this session, else the first page.
+function entryPage(cycle, lastUsedId, intent, welcomeFirst) {
     if (intent === "double")
         return "control";
+    if (welcomeFirst && indexOf(cycle, "welcome") >= 0)
+        return "welcome";
     if (indexOf(cycle, "live") >= 0)
         return "live";
     if (indexOf(cycle, lastUsedId) >= 0)
@@ -87,14 +93,14 @@ function entryPage(cycle, lastUsedId, intent) {
 }
 
 // The page-control capsule, left to right in deck order; null for a one-page deck. Live and the Control Center are glyphs
-// (with their fallback chains), each preset a dot; the current page is flagged.
+// (with their fallback chains), as is Welcome (D-69); each preset is a dot; the current page is flagged.
 function indicator(cycle, currentId, liveGlyphs) {
     if (cycle.length < 2)
         return null;
     return cycle.map(page => ({
                 "id": page.id,
-                "kind": page.type === "live" || page.type === "control" ? "glyph" : "dot",
-                "glyphs": page.type === "live" && liveGlyphs ? liveGlyphs : glyphChains[page.type] || glyphChains.small,
+                "kind": page.type === "live" || page.type === "control" || page.id === "welcome" ? "glyph" : "dot",
+                "glyphs": page.type === "live" && liveGlyphs ? liveGlyphs : glyphChains[page.id === "welcome" ? "welcome" : page.type] || glyphChains.small,
                 "current": page.id === currentId
             }));
 }
