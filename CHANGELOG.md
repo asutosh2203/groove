@@ -2,6 +2,21 @@
 
 All notable user-facing changes should be documented here.
 
+## Unreleased
+
+Work since 0.3.2 (the last upstream release) on the Kove fork. No version has been bumped for it yet.
+
+- **Two looks:** Dynamic Notch (flush with the top edge) and Dynamic Pill (floating), chosen in the settings.
+- **Idle face:** time and weather (Open-Meteo, manual city, Celsius or Fahrenheit); the time opens a calendar and the weather the forecast. The idle face returns 30 seconds after playback stops.
+- **Deck:** the island expands into pages: Live, up to three presets and the Control Center, with a page-control capsule that also scrubs by dragging.
+- **Live page:** media, jobs and downloads as tiles or a compact list.
+- **Preset editor and widgets:** arrange widgets per page in an edit mode. New built-in widgets: Clock, World Clock, Weather, Pomodoro, System Monitor and Claude Code.
+- **Claude Code integration (optional):** sessions as live tiles with "Needs your OK" and "Done" states, notifications, click-through to the session's window and an opt-in status-line helper for plan usage.
+- **Notifications:** click-through (live action, URL, then app), inline reply from the expanded popup, a priority order by urgency, and Do Not Disturb respected by Kove's own pop-ins.
+- **Media:** elapsed time (also when a browser gives no track length), better player choice, remote cover art cached on disk, and YouTube hover previews no longer pop up.
+- **Control Center:** a cursor glow on expanded surfaces (switchable), edge fades on scrolling content, and the Light/Dark tile replaced by "Theme settings", which only opens Global Theme settings.
+- **Performance:** decorative animation runs on one shared 8 fps clock and pauses under a fullscreen window; the idle face's animated weather icon costs about 0.3–0.45% of one core above a static idle. Measurements are in `docs/PERFORMANCE.md`.
+
 ## 0.3.2
 
 - Added Node regression tests for notification text parsing, entity decoding, and emoji-safe truncation, and included the existing network/QML tests in the repository.

@@ -1,5 +1,9 @@
 # Token audit
 
+> **Dated record, kept as history.** It describes the code as found at B2 (November 2026). The token pass T1 (`ca53642`) acted
+> on its top findings and a token ratchet (`38738f3`, D-47) now guards against new literals, so counts and the "tokens that
+> exist today" list below are out of date.
+
 Hardcoded layout and motion values outside `controlcenter/Tokens.js`, as found on `fix/b2-job-style-r1` (B2 included).
 Nothing was changed. Companion to `COLOUR-AUDIT.md`.
 

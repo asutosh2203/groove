@@ -7,7 +7,7 @@ Q1 work. All numbers are plasmashell CPU as a percentage of one core (all thread
 
 `scripts/perf-baseline.sh <label> [duration=60] [runs=3]` samples plasmashell from `/proc` (process CPU time, busiest
 threads, RSS) and, when present, `nvidia-smi`. It is read-only towards the system. Results go to the gitignored
-`perf/results/`.
+`perf/results/`, so the raw files cited below exist only on the machine that measured them (they are not in the repository).
 
 - **Frames per second:** `scripts/perf-baseline.sh frames-on` sets `QSG_RENDER_TIMING=1` in the systemd user
   environment and restarts plasmashell; Qt then logs one `syncAndRender: frame rendered` line per frame with the
@@ -217,7 +217,9 @@ these numbers are higher and noisier than "After D2" (media paused) and must onl
 - Plasma keeps the compact representation's wrapper `visible` at opacity 0 while a popup covers it and overrides a
   `visible` binding set on it, so visibility cannot tell the pill it is covered; gate on `panelHidden` instead.
 - Shape layers (`layer.enabled`, 4x MSAA) cost memory, not CPU. Switching the shapes to the Qt Quick Shapes
-  CurveRenderer was measured and used more memory (Notch 645 to 716 MB, Pill 649 to 669 MB), so it was not shipped.
+  CurveRenderer was measured and used more memory (Notch 645 to 716 MB, Pill 649 to 669 MB), so it was not shipped for the
+  shell shapes. (The System Monitor sparkline, D-65, does use `CurveRenderer`; that is a separate, small `Shape`, measured
+  under "After L3".)
 - Rendering stops by itself when the screen is locked or off (the compositor stops frame callbacks), so those
   states need no rule.
 
@@ -319,3 +321,12 @@ held open. `ksystemstats` is shared with other subscribers.
 poller running at 1 s: plasmashell **1.68%** (1.00, 0.97, 1.23, 3.53; the last window includes a deck re-open), ksystemstats 0.28%. Before the change
 the same scenario read 1.72%. The smoothed path and the fill gradient change the two path strings per sample and add no timer or animation outside
 the 300 ms tint; the picker page exists only while the form is open.
+
+## Not measured
+
+No figures exist for these changes; none are claimed.
+- **L2, the Pomodoro widget (D-64):** not measured. The design intent (a deadline one-shot, a 5 s coarse tick only while a timer
+  runs, a 1 s tick only while a visible view shows mm:ss) is in D-64, but its cost was not measured.
+- **N1, the inline reply shelf (D-43):** not measured.
+- **The media polling gate and elapsed time (D-63, PR #8):** not measured.
+- **Pill mode and the notification popup** remain unmeasured (see the lists under G1 and D1).
