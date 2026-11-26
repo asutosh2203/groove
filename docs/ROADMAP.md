@@ -78,10 +78,7 @@ Found while moving code in Q2; behaviour was kept during the moves, then fixed o
      click timer) and weather caching.
 
 ## Before the first public release
-- **Naming and listing (D-66).** Kove is published as a new KDE Store entry with its own plugin ID; the upstream listing is not
-  updated. Still to do: change the `metadata.json` name, ID, authors (keep upstream credit), Website and BugReportUrl (the
-  repository is `asutosh2203/groove`), the extras layout template's ID, and the README credits. Nothing of this is done: today the
-  package is still "Dynamic Island", `com.manu028.dynamicisland`.
+- **Naming (D-66, D-67): renamed to Kove** (plugin ID `io.github.asutosh2203.kove`, name, URLs, authors, panel preset, release file name). Left for release time: the version number and the icon in `metadata.json`.
 - **KDE Store listing** as an explicit release step: description, screenshots and categories (also in `RELEASE_CHECKLIST.md`).
 - **Manifest i18n pipeline** (see Backlog): export the widget manifests' translatable text to the catalogue and back.
 - **Hybrid-laptop check:** with the GPU sensors subscribed, confirm the discrete GPU still runtime-suspends in offload mode.
@@ -141,6 +138,8 @@ context-aware presets and how third-party widgets would be isolated.
   manifests (`name`, `description`, setting labels are locale-keyed objects with `en` only). Needs a step that exports them
   to the translation catalogue and back, before the first public release.
 - **Scroll on the closed island (inherited from upstream; found by reading `shell/IslandCompact.qml` `onWheel`, not tested live).** (a) A horizontal-only wheel event has `angleDelta.y == 0`, so `angleDelta.y > 0` is false and it lowers the volume. (b) Every wheel event applies one full step (0.04 for a player, one `volumeUp`/`volumeDown` for the system) whatever its size, so a touchpad that sends many small events may change the volume very fast. Normal vertical scroll for volume and middle click for play/pause work (confirmed by Asutosh, 26 Nov). Possible fix: ignore `y == 0` and accumulate the delta per step.
+- **Pill on a fresh install can sit flush against the top edge (design question, touches D-05).** Pill only acts on the panel when the original settings are stored (`panelOrigPanelId`, `panelOrigFloating`); a clean config has none, so `PanelPlan.decide` leaves an attached panel as it is and the pill is glued to the bezel. Switching to Notch stores the originals, and Pill then floats the panel. Open: should Pill float the panel by itself when nothing is recorded, for a new user with an ordinary attached top panel? Not decided, not urgent.
+- **Two QML warnings in the journal (not diagnosed; a small bug batch after release prep).** (a) `shell/editor/SettingsForm.qml`: "Cannot read property 'control' of undefined" in the FormRow delegate's `form.model.fields[fieldRow.modelData]` bindings; likely a delegate reading the fields array before it updates when the form's model switches. (b) `shell/PopupContent.qml` "Binding loop detected for property noticeClickable" on the notice row's `MouseArea` (it reads `app.notifications` and `popupMode`).
 - Glow 60 fps cap ready on `perf/glow-60fps`; needs a real-pointer before/after measurement.
 - Reply shelf: multi-line input (v1 is a single line); host the notification's other actions (Mark as read, Mute) in the shelf.
 - **Native popup coexistence:** detect whether Plasma's own notification popups are active; never change it automatically (D-05). Show a one-time dismissible hint and a permanent note in settings with an "Open notification settings" button; document in the README. Investigate the officially supported way to disable Plasma popups without stopping the notification server. The island respects Do Not Disturb since D-64 (no pop-ins while DND is on, critical still pops).

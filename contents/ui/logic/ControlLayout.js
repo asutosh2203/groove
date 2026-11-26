@@ -65,7 +65,7 @@ function committed(raw) {
                 return sanitize(parsed);
 
         } catch (e) {
-            console.warn("Dynamic Island: invalid control center layout JSON", e);
+            console.warn("Kove: invalid control center layout JSON", e);
         }
     }
     return ModuleRegistry.defaultLayout();

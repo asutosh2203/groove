@@ -1,5 +1,5 @@
 <svg width="1200" height="360" viewBox="0 0 1200 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Dynamic Island for KDE Plasma 6</title>
+  <title id="title">Kove for KDE Plasma 6</title>
   <desc id="desc">A dark Dynamic Island style pill above a blue KDE Plasma inspired background.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="360" gradientUnits="userSpaceOnUse">
@@ -38,5 +38,5 @@
     <rect x="532" y="190" width="137" height="14" rx="7" fill="#CBD5E1"/>
     <circle cx="738" cy="198" r="14" fill="#63E6BE"/>
   </g>
-  <text x="600" y="314" text-anchor="middle" fill="#F8FAFC" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="38" font-weight="700">Dynamic Island for KDE Plasma 6</text>
+  <text x="600" y="314" text-anchor="middle" fill="#F8FAFC" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="38" font-weight="700">Kove for KDE Plasma 6</text>
 </svg>

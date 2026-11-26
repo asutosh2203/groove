@@ -12,7 +12,7 @@ import "logic/Utils.js" as Utils
 // instance per island (no singleton); main.qml exposes it as `strings`.
 QtObject {
     // qmllint disable unqualified
-    readonly property string appTitle: i18n("Dynamic Island")
+    readonly property string appTitle: i18n("Kove")
     readonly property string idleTitle: i18n("Widgets")
     readonly property string idleSubtitle: i18n("Click to cycle pages, double-click for Control Center")
     readonly property string notificationFallback: i18n("Notification")

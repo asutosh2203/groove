@@ -5,18 +5,21 @@
             {
                 "Email": "manueldistefano@live.it",
                 "Name": "Manuel Di Stefano"
+            },
+            {
+                "Name": "Asutosh"
             }
         ],
         "Category": "Multimedia",
         "Description": "A Dynamic Island style pill for Plasma with media, jobs, and notifications.",
         "EnabledByDefault": false,
         "Icon": "media-playback-start",
-        "Id": "com.manu028.dynamicisland",
+        "Id": "io.github.asutosh2203.kove",
         "License": "GPL-3.0-or-later",
-        "Name": "Dynamic Island",
+        "Name": "Kove",
         "Version": "0.3.2",
-        "Website": "https://github.com/manu028-727/kde-plasma-dynamic-island",
-        "BugReportUrl": "https://github.com/manu028-727/kde-plasma-dynamic-island/issues"
+        "Website": "https://github.com/asutosh2203/groove",
+        "BugReportUrl": "https://github.com/asutosh2203/groove/issues"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

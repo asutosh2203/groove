@@ -12,7 +12,7 @@ if [ -z "$version" ]; then
     version="$(python3 -c 'import json; print(json.load(open("metadata.json"))["KPlugin"]["Version"])')"
 fi
 
-output="dynamic-island-${version}.plasmoid"
+output="kove-${version}.plasmoid"
 rm -f "$output"
 
 zip -q -r "$output" \

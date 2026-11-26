@@ -9,7 +9,7 @@ panel.floatingApplets = true;
 panel.opacityMode = "translucent";
 panel.hiding = "windowsgobelow";
 
-panel.addWidget("com.manu028.dynamicisland");
+panel.addWidget("io.github.asutosh2203.kove");
 
 var colorizer = panel.addWidget("luisbocanegra.panel.colorizer");
 if (colorizer) {

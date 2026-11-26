@@ -79,7 +79,7 @@ jobs:
         run: |
           chmod +x scripts/package.sh
           scripts/package.sh
-          unzip -t dynamic-island-*.plasmoid
+          unzip -t kove-*.plasmoid
 
   release:
     name: Publish release
@@ -112,7 +112,7 @@ jobs:
         run: |
           chmod +x scripts/package.sh
           scripts/package.sh "${{ steps.version.outputs.version }}"
-          unzip -t dynamic-island-*.plasmoid
+          unzip -t kove-*.plasmoid
 
       - name: Show artifact
         run: ls -la *.plasmoid
@@ -120,7 +120,7 @@ jobs:
       - name: Upload release asset
         uses: softprops/action-gh-release@v3
         with:
-          files: dynamic-island-*.plasmoid
+          files: kove-*.plasmoid
           fail_on_unmatched_files: true
           prerelease: ${{ steps.version.outputs.prerelease }}
           generate_release_notes: true

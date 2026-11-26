@@ -345,7 +345,7 @@ Item {
         limit: 8
         showNotifications: true
         showJobs: true
-        // Keep Plasma popup history visible in Dynamic Island after the system popup times out or is hidden. Closing it
+        // Keep Plasma popup history visible in Kove after the system popup times out or is hidden. Closing it
         // here still calls close().
         showExpired: true
         showDismissed: true

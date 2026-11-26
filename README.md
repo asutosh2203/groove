@@ -22,8 +22,6 @@
 
 Kove is a fork of [Manu028's kde-plasma-dynamic-island](https://github.com/manu028-727/kde-plasma-dynamic-island) and keeps its GPL-3.0-or-later licence and credit. It is also inspired by [TaqsBlaze/notched](https://github.com/TaqsBlaze/notched), DynamicNotch and NexNotch.
 
-> The package in this repository still carries the upstream name and ID in `metadata.json` (**Dynamic Island**, `com.manu028.dynamicisland`). Renaming it, and publishing Kove as its own KDE Store entry with its own plugin ID, is planned but not done yet (see [docs/ROADMAP.md](docs/ROADMAP.md) and D-66 in [docs/DECISIONS.md](docs/DECISIONS.md)).
-
 ## Instability warning
 
 This package is in alpha state. It is usable, but bugs, visual glitches, missing edge cases, or Plasma-version-specific issues may happen while the widget is still evolving.
@@ -80,11 +78,11 @@ This needs `python-dbus` and PyGObject, copies a few scripts to `~/.local/share/
 
 For the best visual result, install **Panel Colorizer** (`luisbocanegra.panel.colorizer`) first.
 
-Kove can run without Panel Colorizer in a normal Plasma panel, but Panel Colorizer is required for the included **Dynamic Island Panel** preset because the preset uses it to make the panel background fully transparent.
+Kove can run without Panel Colorizer in a normal Plasma panel, but Panel Colorizer is required for the included **Kove Panel** preset because the preset uses it to make the panel background fully transparent.
 
 ### KDE Store
 
-Kove is not published in the KDE Store yet. The existing "Dynamic Island" listing there is the upstream project, not this fork. A separate Kove listing is planned (D-66).
+Kove is not published in the KDE Store yet. The "Dynamic Island" listing there is the upstream project, not this fork. A separate Kove listing is planned (D-66).
 
 ### Manual Install
 
@@ -101,7 +99,7 @@ From this folder:
 kpackagetool6 --type Plasma/Applet --install .
 ```
 
-The package ID is still the upstream one (`com.manu028.dynamicisland`), so installing it replaces an upstream Dynamic Island installed the same way, and the widget appears in the picker as **Dynamic Island**.
+The package ID is `io.github.asutosh2203.kove`, separate from the upstream widget, so both can be installed side by side. The widget appears in the picker as **Kove**.
 
 If you reinstall after edits:
 
@@ -130,17 +128,17 @@ It still works in a normal panel; the dedicated transparent panel is only the in
 This repository includes an optional Plasma panel preset in `extras/` for users installing from a clone. It is not shipped in the `.plasmoid` release because it requires Panel Colorizer (`luisbocanegra.panel.colorizer`) for the intended transparent panel setup. To install it, from the root of the project folder:
 
 ```bash
-kpackagetool6 --type Plasma/LayoutTemplate --install extras/layout-template/com.manu028.dynamicisland.panel
+kpackagetool6 --type Plasma/LayoutTemplate --install extras/layout-template/io.github.asutosh2203.kove.panel
 ```
 
 You can either install it this way or follow the panel setup steps above.
 
-After installing it, use Plasma's **Add Panel** menu and choose **Dynamic Island Panel**. The preset creates a small centered top panel, adds this widget, adds Panel Colorizer, hides Panel Colorizer's own widget during normal use, and disables the native panel background for a transparent island panel.
+After installing it, use Plasma's **Add Panel** menu and choose **Kove Panel**. The preset creates a small centered top panel, adds this widget, adds Panel Colorizer, hides Panel Colorizer's own widget during normal use, and disables the native panel background for a transparent island panel.
 
 If you edit the preset, upgrade it with:
 
 ```bash
-kpackagetool6 --type Plasma/LayoutTemplate --upgrade extras/layout-template/com.manu028.dynamicisland.panel
+kpackagetool6 --type Plasma/LayoutTemplate --upgrade extras/layout-template/io.github.asutosh2203.kove.panel
 ```
 
 ## Development and testing

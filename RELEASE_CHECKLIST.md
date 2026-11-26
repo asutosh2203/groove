@@ -17,7 +17,7 @@ and the hybrid-laptop GPU power check.
    scripts/check-qml.sh
    QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software qmltestrunner -input tests
    scripts/package.sh
-   unzip -t dynamic-island-*.plasmoid
+   unzip -t kove-*.plasmoid
    ```
 
    `qmllint` and `qmltestrunner` live in `/usr/lib/qt6/bin` on Arch. A local `scripts/check-qml.sh` may count more warnings

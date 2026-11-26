@@ -82,11 +82,11 @@ Item {
         phase = 0;
         attempts = 0;
         if (!reply.ok) {
-            console.warn("Dynamic Island: could not identify its panel, leaving it untouched");
+            console.warn("Kove: could not identify its panel, leaving it untouched");
         } else if (handledPhase === 1) {
             const plan = PanelPlan.decide(reply, originals, notch, notchThickness);
             if (plan.warn)
-                console.warn("Dynamic Island: " + plan.warn);
+                console.warn("Kove: " + plan.warn);
             if (plan.capture)
                 originalsCaptured(plan.capture.panelId, plan.capture.floating, plan.capture.thickness);
             if (plan.clear)
@@ -96,7 +96,7 @@ Item {
         } else if (handledPhase === 2) {
             const result = PanelPlan.evaluateApply(reply, action, originals, notchThickness);
             if (result.warn)
-                console.warn("Dynamic Island: " + result.warn);
+                console.warn("Kove: " + result.warn);
             if (result.clear)
                 originalsCleared();
         }
