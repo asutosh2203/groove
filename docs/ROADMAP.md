@@ -78,10 +78,7 @@ Found while moving code in Q2; behaviour was kept during the moves, then fixed o
      click timer) and weather caching.
 
 ## Before the first public release
-- **Naming and listing (D-66).** Kove is published as a new KDE Store entry with its own plugin ID; the upstream listing is not
-  updated. Still to do: change the `metadata.json` name, ID, authors (keep upstream credit), Website and BugReportUrl (the
-  repository is `asutosh2203/groove`), the extras layout template's ID, and the README credits. Nothing of this is done: today the
-  package is still "Dynamic Island", `com.manu028.dynamicisland`.
+- **Naming (D-66, D-67): renamed to Kove** (plugin ID `io.github.asutosh2203.kove`, name, URLs, authors, panel preset, release file name). Left for release time: the version number and the icon in `metadata.json`.
 - **KDE Store listing** as an explicit release step: description, screenshots and categories (also in `RELEASE_CHECKLIST.md`).
 - **Manifest i18n pipeline** (see Backlog): export the widget manifests' translatable text to the catalogue and back.
 - **Hybrid-laptop check:** with the GPU sensors subscribed, confirm the discrete GPU still runtime-suspends in offload mode.

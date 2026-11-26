@@ -8,12 +8,12 @@
             }
         ],
         "Category": "",
-        "Description": "A centered top panel preset for the Dynamic Island plasmoid.",
+        "Description": "A centered top panel preset for the Kove plasmoid.",
         "EnabledByDefault": true,
-        "Id": "com.manu028.dynamicisland.panel",
+        "Id": "io.github.asutosh2203.kove.panel",
         "License": "GPL-3.0-or-later",
-        "Name": "Dynamic Island Panel",
-        "Website": "https://github.com/manu028-727/kde-plasma-dynamic-island"
+        "Name": "Kove Panel",
+        "Website": "https://github.com/asutosh2203/groove"
     },
     "X-Plasma-ContainmentCategories": [
         "panel"

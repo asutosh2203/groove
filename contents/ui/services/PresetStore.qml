@@ -31,8 +31,8 @@ Item {
     }
 
     function report() {
-        store.result.log.forEach(line => console.warn("groove:", line));
-        store.registry.skipped.forEach(skipped => console.warn("groove: widget", skipped.id, "skipped:", skipped.errors.join("; ")));
+        store.result.log.forEach(line => console.warn("Kove:", line));
+        store.registry.skipped.forEach(skipped => console.warn("Kove: widget", skipped.id, "skipped:", skipped.errors.join("; ")));
     }
 
     onResultChanged: {
