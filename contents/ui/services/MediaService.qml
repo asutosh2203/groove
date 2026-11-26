@@ -16,6 +16,10 @@ import "../logic/Utils.js" as Utils
 Item {
     id: service
 
+    DiscSpin {
+        id: discSpin
+    }
+
     // The island's CommandRunner: remote cover art is fetched through it (ArtworkCache); null shows the player's URL as it is.
     property var runner: null
     // The shown player's cover art, ready to load: a cached local file, "" while it is being fetched, else the player's URL.
@@ -41,6 +45,8 @@ Item {
     property bool previewPlaying: false
     // The player entries, untyped on purpose: qmllint types objectAt() as a bare QObject and cannot see the delegate's members.
     readonly property var entries: instantiator
+    // The Pill artwork's held angle (D-68).
+    readonly property alias disc: discSpin
     readonly property var player: {
         if (revision < 0) // never true: reading it re-evaluates this whenever a player changes
             return null;
