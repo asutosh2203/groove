@@ -166,6 +166,17 @@ function openInput(desktopEntry, expired, hasDefaultAction, urls, info) {
     };
 }
 
+// Desktop entries the launcher has not answered for yet: distinct, cleaned, non-empty. info: the launcher's answers by entry.
+function entriesToLookUp(entries, info) {
+    const wanted = [];
+    entries.forEach(entry => {
+        const name = TextUtils.cleanText(entry);
+        if (name.length > 0 && info[name] === undefined && wanted.indexOf(name) < 0)
+            wanted.push(name);
+    });
+    return wanted;
+}
+
 // What a click does for a resolved target ({ kind: "action" | "url" | "app" | "none" }): invoke the live action, or open
 // the URL / launch the app and then close the notification when it can be closed.
 function openPlan(kind, closable) {
