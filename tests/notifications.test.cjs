@@ -179,3 +179,12 @@ test('pop-ins respect Do Not Disturb: only Critical gets through a held-back not
     assert.equal(N.popInAllowed('critical', true), true);
     assert.equal(N.popInAllowed('normal', false), true);
 });
+
+test('entriesToLookUp asks once for each unanswered desktop entry and never for empty ones', () => {
+    const N = ctx;
+    const out = (entries, info) => JSON.parse(JSON.stringify(N.entriesToLookUp(entries, info)));
+    assert.deepEqual(out(['a', 'b', 'a', '', '  ', null, undefined], {}), ['a', 'b']);
+    assert.deepEqual(out(['a', 'b'], { a: { display: true }, b: { display: false } }), []);
+    assert.deepEqual(out(['a', 'b'], { a: { display: true } }), ['b']);
+    assert.deepEqual(out([], {}), []);
+});

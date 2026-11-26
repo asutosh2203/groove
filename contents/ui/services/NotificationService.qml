@@ -209,13 +209,18 @@ Item {
             dismissNotice(true);
     }
 
+    // Asked when rows arrive, never from openTarget: that runs inside bindings, and the answer writes desktopEntryInfo.
+    function lookUpEntries(first, last) {
+        const entries = [];
+        for (let row = first; row <= last; ++row)
+            entries.push(TextUtils.cleanText(rowValue(row, NotificationManager.Notifications.DesktopEntryRole, "")));
+        Notif.entriesToLookUp(entries, launcher.desktopEntryInfo).forEach(entry => launcher.lookupDesktopEntry(entry));
+    }
+
     // What a click on this notification would do (D-31). "none" rows are not clickable.
     function openTarget(row) {
         const entry = TextUtils.cleanText(rowValue(row, NotificationManager.Notifications.DesktopEntryRole, ""));
         const info = entry.length > 0 ? launcher.desktopEntryInfo[entry] : undefined;
-        if (entry.length > 0 && info === undefined)
-            launcher.lookupDesktopEntry(entry);
-
         return NotificationOpen.resolve(Notif.openInput(entry, rowValue(row, NotificationManager.Notifications.ExpiredRole, false), rowValue(row, NotificationManager.Notifications.HasDefaultActionRole, false), rowValue(row, NotificationManager.Notifications.UrlsRole, []), info));
     }
 
@@ -357,6 +362,7 @@ Item {
     Connections {
         function onRowsInserted(parent, first, last) {
             service.revision++;
+            service.lookUpEntries(first, last);
             let freshNoticeRow = -1;
             let hasInsertedJob = false;
             for (let row = first; row <= last; ++row) {
@@ -386,6 +392,7 @@ Item {
 
         function onModelReset() {
             service.revision++;
+            service.lookUpEntries(0, service.count() - 1);
             service.syncNotice();
         }
 
@@ -410,4 +417,7 @@ Item {
         hold: service.holdLifetime
         onTriggered: service.dismissNotice(service.popupTimerRunning)
     }
+
+    // Rows already in the history when the widget starts.
+    Component.onCompleted: Qt.callLater(() => service.lookUpEntries(0, service.count() - 1))
 }
