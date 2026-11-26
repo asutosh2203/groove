@@ -15,6 +15,7 @@ Item {
     // Focus taken by a mouse press shows no ring; keyboard focus keeps it.
     property bool mouseFocused: false
     readonly property bool showFocusRing: button.activeFocus && !button.mouseFocused
+    readonly property bool hovered: hover.hovered
 
     visible: !button.app.layoutService.editMode
     implicitWidth: T.headerButton
@@ -33,7 +34,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: mouse.pressed ? T.cardPressed : mouse.containsMouse ? T.chip : T.raised
+        color: mouse.pressed ? T.cardPressed : button.hovered ? T.chip : T.raised
         border.width: 1
         border.color: button.showFocusRing ? T.focusRing : T.border
     }
@@ -47,11 +48,17 @@ Item {
         opacity: mouse.pressed ? T.disabledOpacity : 1
     }
 
+    // Hover comes from a HoverHandler: a MouseArea's containsMouse can stay stale after a press or a re-layout.
+    HoverHandler {
+        id: hover
+
+        cursorShape: Qt.PointingHandCursor
+    }
+
     MouseArea {
         id: mouse
 
         anchors.fill: parent
-        hoverEnabled: true
         onPressed: {
             button.mouseFocused = true;
             button.forceActiveFocus(Qt.MouseFocusReason);
@@ -59,7 +66,7 @@ Item {
         onClicked: button.app.tour.retake()
     }
 
-    QQC2.ToolTip.visible: mouse.containsMouse || button.showFocusRing
+    QQC2.ToolTip.visible: button.hovered || button.showFocusRing
     QQC2.ToolTip.text: button.tooltipText
     QQC2.ToolTip.delay: 350
 }

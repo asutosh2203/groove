@@ -50,6 +50,18 @@ Item {
             compare(testRoot.retakes, 1);
         }
 
+        function test_hoverFollowsThePointerAndNeverSticks() {
+            mouseMove(button, 12, 12);
+            verify(button.hovered, "hovered while the pointer is over it");
+            mouseClick(button, 12, 12);
+            mouseMove(testRoot, 90, 50);
+            verify(!button.hovered, "not hovered after a click and leaving");
+            mouseMove(button, 12, 12);
+            verify(button.hovered);
+            mouseMove(testRoot, 90, 50);
+            verify(!button.hovered);
+        }
+
         function test_theKeyboardRetakes() {
             button.forceActiveFocus();
             keyClick(Qt.Key_Return);
