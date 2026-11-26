@@ -501,13 +501,14 @@ PlasmoidItem {
         liveJobs: root.jobActivityEnabled && root.dialogVisible && root.popupMode === "deck" ? jobService.runningRows() : []
         presets: presetStore.presets
         editing: presetEditor.active
+        tourPending: tourState.pending
         editSize: presetEditor.active ? DeckPlan.editSize(presetEditor.view, presetEditor.pageType, deckState.geom, root.formPlan) : null
         geom: ({
             "cellW": T.deckCellW,
             "cellH": T.deckCellH,
             "padding": T.deckPadding,
             "capsuleExtra": T.deckCapsuleGap + T.deckCapsuleHeight,
-            "capsuleW": 2 * T.deckCapsulePad + 5 * T.deckCapsuleItem,
+            "capsuleW": 2 * T.deckCapsulePad + 6 * T.deckCapsuleItem,
             "liveHeaderH": T.liveHeaderHeight,
             "liveRowH": T.liveRowHeight,
             "liveGap": T.liveGap,
@@ -544,7 +545,28 @@ PlasmoidItem {
         devPresets: String(root.settings.devPresets || "")
         registry: presetStore.registry
         layout: controlLayoutService
-        onSaveRequested: json => root.settings.presets = json
+        onSaveRequested: json => root.storePresets(json)
+    }
+
+    // The one place the presets blob is written: the editor's Done and the tour's example page both end here.
+    function storePresets(json) {
+        root.settings.presets = json;
+    }
+
+    readonly property alias tour: tourState
+
+    // The welcome tour (D-69): pending until Done or Skip stores the current version.
+    TourState {
+        id: tourState
+
+        storedVersion: Math.round(Utils.finiteNumber(root.settings.tourVersion, 0))
+        storedPresets: String(root.settings.presets || "")
+        presetsLocked: presetEditor.locked
+        draftKept: presetEditor.kept
+        registry: presetStore.registry
+        onVersionRequested: version => root.settings.tourVersion = version
+        onPresetsRequested: json => root.storePresets(json)
+        onPageRequested: id => deckState.goTo(id)
     }
 
     Activities.ActivityController {
