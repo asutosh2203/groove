@@ -22,6 +22,10 @@
 
 Kove is a fork of [Manu028's kde-plasma-dynamic-island](https://github.com/manu028-727/kde-plasma-dynamic-island) and keeps its GPL-3.0-or-later licence and credit. It is also inspired by [TaqsBlaze/notched](https://github.com/TaqsBlaze/notched), DynamicNotch and NexNotch.
 
+## First run
+
+The first time you open the island, the deck opens on a short welcome tour: five cards on the island, live activities, the deck, customizing it and the gestures. Skip it or finish it and it does not come back; the small "?" button beside the pencil in the Control Center (or "Show the welcome tour again" in the widget settings) replays it. The tour's fourth card has an optional "Add an example page" button that creates one page named Essentials (Clock, Weather, Pomodoro, System Monitor). Nothing is created unless you press it. Weather shows "Set a location" until you choose a city under **Idle display** in the widget settings.
+
 ## Instability warning
 
 This package is in alpha state. It is usable, but bugs, visual glitches, missing edge cases, or Plasma-version-specific issues may happen while the widget is still evolving.
@@ -48,7 +52,7 @@ This package is in alpha state. It is usable, but bugs, visual glitches, missing
 **Presets and widgets**
 - Presets are pages of widgets you arrange in an edit mode (entered from the Control Center's pencil): add, remove and reorder widgets, pick a page size (Small, Wide or Tall) and edit each widget's settings in a form generated from its manifest.
 - Built-in widgets: Clock, World Clock, Weather, Pomodoro (focus and break timer, optional Do Not Disturb during focus), System Monitor (CPU, GPU, RAM, temperatures, network and disk with a two-minute sparkline and optional hot alerts, read through KDE's sensor framework) and Claude Code (plan usage or spend, and recent sessions).
-- A fresh install has no presets; the deck is Live plus the Control Center.
+- A fresh install has no presets; the deck is Live plus the Control Center. The first-run tour can add one optional example page, "Essentials".
 
 **Control Center**
 - A modular grid with a persistent JSON layout, graphical edit mode, drag-to-swap, resizing and a module palette.
