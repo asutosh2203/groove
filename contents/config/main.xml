@@ -74,6 +74,9 @@
         <entry name="devPresets" type="String">
             <default></default>
         </entry>
+        <entry name="tourVersion" type="Int">
+            <default>0</default>
+        </entry>
         <entry name="usageCache" type="String">
             <default></default>
         </entry>

@@ -550,5 +550,70 @@ QtObject {
             return "";
         }
     }
+
+    // The welcome tour (D-69), keyed by the step ids of Tour.js.
+    function tourTitle(id) {
+        switch (id) {
+        case "island":
+            return i18n("Your island");
+        case "live":
+            return i18n("Live activities");
+        case "deck":
+            return i18n("The deck");
+        case "customize":
+            return i18n("Make it yours");
+        case "gestures":
+            return i18n("Gestures and setup");
+        default:
+            return "";
+        }
+    }
+
+    function tourBody(id) {
+        switch (id) {
+        case "island":
+            return i18n("Idle, Kove shows the time and weather. Click the time or weather for your calendar and forecast, or anywhere else on the island to open the deck. Choose Notch or Pill in the widget settings.");
+        case "live":
+            return i18n("Music, notifications, downloads, and Claude Code sessions take over the island while they run. Reply to a message right from its notification when the app offers a reply.");
+        case "deck":
+            return i18n("The capsule under the island moves between pages. Press and drag across it to scrub. Double-click the island to jump to the Control Center.");
+        case "customize":
+            return i18n("Click the pencil in the Control Center to add widgets: clocks, weather, Pomodoro, System Monitor, and Claude Code. Arrange up to three pages of your own.");
+        case "gestures":
+            return i18n("Scroll on the island for volume. Middle-click plays or pauses music. Set your weather city in the widget settings. Claude Code sessions need an optional helper from the Kove repository.");
+        default:
+            return "";
+        }
+    }
+
+    function tourCounter(n, total) {
+        return i18n("%1 of %2", n, total);
+    }
+
+    readonly property string tourRetake: i18n("Show the welcome tour")
+    readonly property string tourSkip: i18n("Skip")
+    readonly property string tourBack: i18n("Back")
+    readonly property string tourNext: i18n("Next")
+    readonly property string tourDone: i18n("Done")
+    readonly property string tourAddExample: i18n("Add an example page")
+    readonly property string tourShowExample: i18n("Show the example page")
+
+    // Why the example page cannot be added, by StarterPresets.status; "" when it can.
+    function tourExampleHint(state) {
+        switch (state) {
+        case "cap":
+            return i18n("Your three pages are full");
+        case "locked":
+            return i18n("Pages are locked by a developer setting");
+        case "draft":
+            return i18n("Finish your unsaved changes first");
+        case "unreadable":
+            return i18n("Your saved pages can't be read");
+        case "unavailable":
+            return i18n("Those widgets aren't available");
+        default:
+            return "";
+        }
+    }
     // qmllint enable unqualified
 }

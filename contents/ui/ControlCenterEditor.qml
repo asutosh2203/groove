@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import "controlcenter" as CC
 import "controlcenter/Tokens.js" as T
 import "logic/EdgeFade.js" as EdgeFade
 import "logic/Utils.js" as Utils
@@ -488,6 +489,10 @@ Item {
             font.pixelSize: T.fontCaption
             font.weight: Font.DemiBold
             elide: Text.ElideRight
+        }
+
+        CC.TourRetakeButton {
+            app: editor.app
         }
 
         IslandButton {

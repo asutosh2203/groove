@@ -28,8 +28,9 @@ Notifications and the keyboard layout stay pop-ins over the deck, not pages (the
 
 ## The deck (decided)
 
-- Order: [Live] → [Presets, at most 3] → [Control Center, always last]. Live shows only when something runs; with no
-  presets the deck is [Live] + [Control Center], close to today's behaviour. The worst case is five pages.
+- Order: [Live] → [Welcome] → [Presets, at most 3] → [Control Center, always last]. Live shows only when something runs and
+  Welcome only while the first-run tour is pending (D-69; a Wide page that is not a preset); with no presets the deck is
+  [Live] + [Control Center], close to today's behaviour. The worst case is six pages.
 - Navigation is by a page-control capsule: a small pill floating just below the island (about 7 px gap), centred on it
   and following its bottom edge as the island morphs. Left to right in deck order it holds a glyph for Live, one dot per
   preset (at most 3) and a glyph for the Control Center. The current page is full white (its dot stretches to a short pill),
@@ -219,7 +220,7 @@ subscription). A view that acts on a part of itself, such as a row, emits `runAc
 - Format changes ship tested pure-JS migrations. Each widget's settings carry their own version, migrated the same way.
 - A placement whose widget no longer exists keeps its data and shows a "Widget unavailable" slot; the preset is never
   dropped and nothing crashes.
-- A fresh install has no presets: the deck is Live + Control Center. Starter presets are deferred.
+- A fresh install has no presets: the deck is Live + Control Center, plus the Welcome page while the tour is pending (D-69). One starter page, "Essentials", exists but is opt-in: the tour's fourth card adds it through the same blob checks as the editor, and nothing is ever created for the user. No other starter presets are planned.
 - Presets save only on Done (see the editor).
 
 ## Open questions

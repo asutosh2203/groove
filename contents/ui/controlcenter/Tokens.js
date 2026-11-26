@@ -126,6 +126,12 @@ const deckDotSize = 5;
 const deckDotActiveWidth = 12;   // the current page's dot stretches to a short pill
 const deckSettle = 4;            // the capsule settles down this far as it fades in
 const deckSlideDistance = 24;   // how far a page slides during a transition
+// The welcome page (D-69)
+const welcomeIconTile = 44;      // the rounded square holding the step's glyph
+const welcomeIcon = 22;
+const headerButton = 24;         // a round Control Center header button (the pencil is the same size)
+const headerButtonGlyph = 14;
+const welcomeSlide = 8;          // how far a card slides in on a change of step
 // Capsule scrub (D-62)
 const scrubThreshold = 4;        // px of horizontal travel before a press becomes a scrub
 const scrubDwell = 120;          // ms: 0 switches the page on every crossing; > 0 only after resting that long (or on release)

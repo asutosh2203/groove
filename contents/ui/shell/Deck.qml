@@ -22,7 +22,7 @@ Item {
     readonly property var slots: [slotA, slotB, slotC]
 
     function componentFor(id) {
-        return id === "live" ? liveComponent : id === "control" ? deck.controlPage : presetComponent;
+        return id === "live" ? liveComponent : id === "control" ? deck.controlPage : id === "welcome" ? welcomeComponent : presetComponent;
     }
 
     function sameSize(a, b) {
@@ -140,7 +140,7 @@ Item {
             target: loader.item
             property: "pageId"
             value: slot.pageId
-            when: loader.item !== null && slot.pageId !== "live" && slot.pageId !== "control"
+            when: loader.item !== null && slot.pageId !== "live" && slot.pageId !== "control" && slot.pageId !== "welcome"
             restoreMode: Binding.RestoreNone
         }
     }
@@ -161,6 +161,14 @@ Item {
         id: liveComponent
 
         LivePage {
+            app: deck.app
+        }
+    }
+
+    Component {
+        id: welcomeComponent
+
+        WelcomePage {
             app: deck.app
         }
     }

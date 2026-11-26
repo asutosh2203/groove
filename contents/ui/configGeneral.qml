@@ -14,6 +14,7 @@ KCM.SimpleKCM {
     property real cfg_weatherLongitude
     property string cfg_weatherUnit
     property string cfg_calendarApp
+    property int cfg_tourVersion
     property var locationResults: []
     property string locationStatus: ""
 
@@ -259,6 +260,27 @@ KCM.SimpleKCM {
                 const parsed = parseInt(text);
                 return isFinite(parsed) ? Math.max(from, Math.min(to, parsed)) : from;
             }
+        }
+
+        Kirigami.Separator {
+            Kirigami.FormData.isSection: true
+            Kirigami.FormData.label: i18n("Welcome tour")
+        }
+
+        QQC2.Button {
+            Kirigami.FormData.label: i18n("Welcome tour:")
+            text: i18n("Show the welcome tour again")
+            icon.name: "view-refresh"
+            enabled: configPage.cfg_tourVersion !== 0
+            onClicked: configPage.cfg_tourVersion = 0
+        }
+
+        QQC2.Label {
+            visible: configPage.cfg_tourVersion === 0
+            text: i18n("The tour opens the next time you click the island.")
+            wrapMode: Text.WordWrap
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 20
+            color: Kirigami.Theme.disabledTextColor
         }
     }
 }

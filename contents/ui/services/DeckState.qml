@@ -24,6 +24,8 @@ Item {
     // The presets that show, from PresetStore.
     required property var presets
     required property bool editing
+    // The welcome tour is pending (D-69): the Welcome page is in the cycle.
+    required property bool tourPending
     // The preset editor's body size while it is open (D-56), else null.
     property var editSize: null
     required property var geom
@@ -33,8 +35,10 @@ Item {
     property var previousCycle: []
     // Set by the capsule while a scrub runs (D-62): the deck then shows same-size page changes as a pop.
     property bool scrubbing: false
+    // Welcome opens first once per session while the tour is pending (D-69).
+    property bool welcomeSeen: false
 
-    readonly property var cycle: DeckPlan.buildCycle(liveCount > 0, presets)
+    readonly property var cycle: DeckPlan.buildCycle(liveCount > 0, presets, tourPending)
     // Edit mode (zoom included) is pre-sized with the cycle, so entering it never resizes the window (D-43).
     readonly property var windowSize: {
         const deck = DeckPlan.windowSize(cycle, geom);
@@ -96,7 +100,7 @@ Item {
     }
 
     function open(intent) {
-        current = DeckPlan.entryPage(cycle, lastUsed, intent);
+        current = DeckPlan.entryPage(cycle, lastUsed, intent, tourPending && !welcomeSeen);
     }
 
     function goTo(id) {
@@ -112,7 +116,16 @@ Item {
             openJobId = "";
     }
 
-    onCurrentChanged: lastUsed = current
+    onCurrentChanged: {
+        lastUsed = current;
+        if (current === "welcome")
+            welcomeSeen = true;
+    }
+    // A replay brings Welcome first again.
+    onTourPendingChanged: {
+        if (tourPending)
+            welcomeSeen = false;
+    }
     // Live appearing adds its capsule glyph and stays put; Live emptying moves on to the next page (or the Control Center).
     onCycleChanged: {
         current = DeckPlan.reconcile(previousCycle.length > 0 ? previousCycle : cycle, cycle, current);

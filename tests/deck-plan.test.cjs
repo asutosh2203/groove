@@ -149,3 +149,45 @@ test('the edit window holds the biggest editor, zoomed, and no editor outgrows i
         assert.ok(s.w * 1.04 <= win.w && s.h * 1.04 <= win.h);
     }
 });
+
+test('welcome (D-69): after Live, before the presets, only while the tour is pending', () => {
+    assert.deepEqual(ids(ctx.buildCycle(true, dummy(), true)), ['live', 'welcome', 'a', 'b', 'c', 'control']);
+    assert.deepEqual(ids(ctx.buildCycle(false, [], true)), ['welcome', 'control']);
+    assert.deepEqual(ids(ctx.buildCycle(true, dummy(), false)), ['live', 'a', 'b', 'c', 'control']);
+    assert.deepEqual(ids(ctx.buildCycle(false, [], undefined)), ['control']);
+});
+
+test('welcome is a Wide page, so the window already has room for it', () => {
+    const page = j(ctx.buildCycle(false, [], true)[0]);
+    assert.equal(page.type, 'wide');
+    assert.deepEqual(j(ctx.pageSize(page.type, geom)), { w: 680, h: 120 });
+});
+
+test('welcome does not count against the three-preset cap', () => {
+    const four = [{ id: 'a', type: 'small' }, { id: 'b', type: 'small' }, { id: 'c', type: 'small' }, { id: 'd', type: 'small' }];
+    assert.deepEqual(ids(ctx.buildCycle(true, four, true)), ['live', 'welcome', 'a', 'b', 'c', 'control']);
+});
+
+test('welcome opens first on a click while pending, never on a double click, and only once', () => {
+    const cycle = ctx.buildCycle(true, dummy(), true);
+    assert.equal(ctx.entryPage(cycle, '', 'click', true), 'welcome');
+    assert.equal(ctx.entryPage(cycle, 'b', 'click', true), 'welcome');
+    assert.equal(ctx.entryPage(cycle, 'b', 'double', true), 'control');
+    assert.equal(ctx.entryPage(cycle, 'b', 'click', false), 'live');
+    assert.equal(ctx.entryPage(ctx.buildCycle(false, [], false), '', 'click', true), 'control');
+});
+
+test('the capsule shows welcome as a glyph with its own chain', () => {
+    const caps = j(ctx.indicator(ctx.buildCycle(true, dummy(), true), 'welcome'));
+    assert.deepEqual(caps.map(c => c.kind), ['glyph', 'glyph', 'dot', 'dot', 'dot', 'glyph']);
+    const welcome = caps.find(c => c.id === 'welcome');
+    assert.equal(welcome.current, true);
+    assert.deepEqual(welcome.glyphs, ['help-about-symbolic', 'dialog-information-symbolic', 'help-hint-symbolic']);
+});
+
+test('finishing the tour while viewing it moves on to the next page that is left', () => {
+    const before = ctx.buildCycle(false, dummy(), true);
+    const after = ctx.buildCycle(false, dummy(), false);
+    assert.equal(ctx.reconcile(before, after, 'welcome'), 'a');
+    assert.equal(ctx.reconcile(ctx.buildCycle(false, [], true), ctx.buildCycle(false, [], false), 'welcome'), 'control');
+});
