@@ -145,7 +145,10 @@ Item {
                                 id: fieldRow
 
                                 required property int modelData
-                                readonly property var field: form.model.fields[fieldRow.modelData]
+                                // The model and the layout plan update one after the other, so for a moment the plan can name a field
+                                // the new widget lacks; a blank field draws nothing until the plan catches up.
+                                readonly property var noField: ({ "control": "", "label": "", "key": "", "shown": "", "value": "", "options": [] })
+                                readonly property var field: (form.model ? form.model.fields[fieldRow.modelData] : undefined) || fieldRow.noField
 
                                 width: fieldColumn.width
                                 // An open dropdown or search must draw over the other column too.
