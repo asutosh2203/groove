@@ -40,10 +40,6 @@ Last updated: 26 November 2026 (everything below up to L3 is merged into `main`)
 CC6 (notification list density/scrolling) was dropped.
 
 ## Now
-- Q2 final pass: the performance check is done (see `docs/PERFORMANCE.md`, "After Q2"); the final Q2 report is left.
-- B1: still to look at live: the notice accent colours (Critical red, Normal orange, Low grey). The Theme settings tile and
-  icon fix were checked on screen.
-
 - Release prep: see "Before the first public release" below.
 - Follow-ups of the finished deck and widget work (the milestones themselves are in the Done table):
   - D3 is a first pass to live with: use the editor for a few days, then refine, then add first-run starter presets.
@@ -67,6 +63,7 @@ Found while moving code in Q2; behaviour was kept during the moves, then fixed o
    players seen. Follow-up (`3e178d4`): a ghost browser tab that claims to play no longer blocks the idle face (D-35).
 7. **Notice accent colour.** *Done* (`04c9a78`): mapped from the urgency kind (Critical red, Normal orange, Low grey); the
    Control Center's critical marker no longer compares urgency numbers either, and a test guards against any such comparison.
+   Confirmed by Asutosh in daily use on 26 Nov 2026.
 
 ## Next
 1. **Frosted-glass spike** (D-23): time-boxed prototype of real KWin blur with a shape-matched region.
@@ -170,8 +167,6 @@ context-aware presets and how third-party widgets would be isolated.
 - Project-wide icon migration to theme symbolic names (D-26), incl. `IslandButton` Canvas glyphs
 - KDE Connect via its native QML module
 - File shelf, system HUD, Bluetooth/USB events
-- Release housekeeping: add maintainer to `metadata.json` authors (keep upstream credit), point
-  Website/BugReportUrl at `groove`, README upstream/inspiration credits, own plugin ID/name
 
 ### Ideas, not committed
 - A generic Live Activity D-Bus API for any script or app (generalising the agents protocol).

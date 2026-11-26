@@ -1,6 +1,6 @@
 # Decisions
 
-Design principles and the decisions register for Dynamic Island for KDE Plasma. Newest entries at
+Design principles and the decisions register for Kove (D-66), a Dynamic Island for KDE Plasma. Newest entries at
 the bottom. Status is **Accepted** unless noted. Superseded entries stay, marked as such.
 
 This project is a fork of [Manu028's kde-plasma-dynamic-island](https://github.com/manu028-727/kde-plasma-dynamic-island)
