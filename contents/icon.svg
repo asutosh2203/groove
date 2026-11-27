@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Kove</title>
+  <g transform="translate(35.84 35.84) scale(.86)">
+  <path d="M116 0H191V6A46 46 0 0 0 237 52H275A46 46 0 0 0 321 6V0H396A116 116 0 0 1 512 116V396A116 116 0 0 1 396 512H116A116 116 0 0 1 0 396V116A116 116 0 0 1 116 0Z" fill="#2BB3A3"/>
+  <g transform="translate(27.4 51.6) scale(.9)">
+    <rect x="132" y="104" width="100" height="304" rx="50" fill="#15181D"/>
+    <path d="M206 258L326 358" stroke="#15181D" stroke-width="100" stroke-linecap="round" fill="none"/>
+    <circle cx="332" cy="148" r="44" fill="#EEF2F6"/>
+  </g>
+  </g>
+</svg>
