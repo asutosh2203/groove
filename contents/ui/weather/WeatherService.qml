@@ -33,6 +33,11 @@ Item {
     readonly property string forecastUrl: configured ? Codes.forecastUrl(latitude, longitude) : ""
     readonly property int refreshMs: 30 * 60 * 1000
     property bool busy: false
+    // QML's XMLHttpRequest ignores `timeout`, so a request that is accepted and never answered would keep `busy` forever;
+    // the watchdog ends it. `createRequest` lets a test hand in a request that never answers.
+    property int requestTimeoutMs: 15000
+    property var createRequest: () => new XMLHttpRequest()
+    property var pending: null
     property var subscribers: Subs.create()
     property bool active: false
 
@@ -107,22 +112,28 @@ Item {
         cfg.weatherForecastCache = Forecast.cacheWrite(String(cfg.weatherForecastCache || ""), Forecast.locationKey(latitude, longitude), entry);
     }
 
+    // Ends `request` once: from its own answer or error, or from the watchdog. A late answer after the watchdog is ignored.
+    function finish(request, ok) {
+        if (!request || pending !== request)
+            return ;
+        pending = null;
+        watchdog.stop();
+        busy = false;
+        failing = !ok;
+        if (ok)
+            retryTimer.stop();
+        else
+            retryTimer.restart();
+    }
+
     function refresh() {
         if (!configured || busy)
             return ;
         busy = true;
         const lat = latitude.toFixed(4);
         const lon = longitude.toFixed(4);
-        const request = new XMLHttpRequest();
-        request.timeout = 15000;
-        const done = ok => {
-            busy = false;
-            failing = !ok;
-            if (ok)
-                retryTimer.stop();
-            else
-                retryTimer.restart();
-        };
+        const request = createRequest();
+        const done = ok => finish(request, ok);
         request.onreadystatechange = () => {
             if (request.readyState !== XMLHttpRequest.DONE)
                 return ;
@@ -144,9 +155,10 @@ Item {
             }
             done(ok);
         };
-        request.ontimeout = () => done(false);
         request.onerror = () => done(false);
         request.open("GET", "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + Forecast.FORECAST_QUERY);
+        pending = request;
+        watchdog.restart();
         request.send();
     }
 
@@ -188,6 +200,19 @@ Item {
         id: graceTimer
 
         onTriggered: service.syncActive()
+    }
+
+    // Gives up on a request that never finishes and takes the failure path (and its retry).
+    Timer {
+        id: watchdog
+
+        interval: service.requestTimeoutMs
+        onTriggered: {
+            const request = service.pending;
+            service.finish(request, false);
+            if (request)
+                request.abort();
+        }
     }
 
     Timer {
