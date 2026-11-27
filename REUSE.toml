@@ -2,6 +2,14 @@ version = 1
 
 # Third-party files that carry no SPDX header of their own. Licence texts live in LICENSES/.
 
+# Listed before the Adwaita glyphs below: they share the folder, and the last matching annotation wins.
+[[annotations]]
+path = "contents/ui/weather/icons/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020-present Bas Milius"
+SPDX-License-Identifier = "MIT"
+SPDX-FileComment = "Weather icons split into animatable layers from Meteocons (the MIT npm package @meteocons/svg-static) by scripts/gen-weather-icons.py. The original licence notice is LICENSE-Meteocons.txt in the same folder."
+
 [[annotations]]
 path = ["contents/ui/weather/icons/sunrise-glyph.svg", "contents/ui/weather/icons/sunset-glyph.svg"]
 precedence = "aggregate"

@@ -155,6 +155,24 @@ If you edit the preset, upgrade it with:
 kpackagetool6 --type Plasma/LayoutTemplate --upgrade extras/layout-template/io.github.asutosh2203.kove.panel
 ```
 
+## Uninstall
+
+Remove Kove from the panel first (Plasma deletes the widget's settings with it), then remove the package and the cover-art cache:
+
+```bash
+kpackagetool6 --type Plasma/Applet --remove io.github.asutosh2203.kove
+rm -r ~/.cache/kove
+```
+
+`~/.cache/kove/art/` holds downloaded album art (at most 50 MB). If you installed the optional panel preset, remove it with `kpackagetool6 --type Plasma/LayoutTemplate --remove io.github.asutosh2203.kove.panel`.
+
+If you used the Claude Code integration, also:
+
+- Run `./integrations/claude-code/install.sh --statusline-remove` if you enabled the status line (it restores your own).
+- Delete the hook entries that point at `kove_hook.py` from `~/.claude/settings.json`. There is no removal flag for the hooks; each `--merge` left a backup next to the file (`settings.json.bak-kove-<time>`), but restoring one also undoes any later change you made. Delete the backups (`settings.json.bak-*`) when you no longer need them.
+- `rm -r ~/.local/share/kove ~/.local/state/kove` (the helper scripts, the saved status line, the error log).
+- `$XDG_RUNTIME_DIR/kove/` (the socket and per-session state) is cleared when you log out.
+
 ## Development and testing
 
 CI (see [docs/CI.md](docs/CI.md)) runs these checks, and so can you. The Qt tools live in `/usr/lib/qt6/bin` on Arch; on Ubuntu add that directory to `PATH` first.
@@ -189,6 +207,10 @@ The control center layout is stored in Plasma configuration as JSON and is reset
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).
+
+## Credits
+
+The weather icons are based on [Meteocons](https://github.com/basmilius/weather-icons) by Bas Milius (MIT, see `contents/ui/weather/icons/LICENSE-Meteocons.txt`). Weather data is by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0).
 
 ## License
 
