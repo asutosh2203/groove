@@ -15,3 +15,10 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "Kove contributors"
 SPDX-License-Identifier = "GPL-3.0-or-later"
 SPDX-FileComment = "Glyphs drawn for Kove (the Kove icon set). Named *.kove.svg so Kirigami never resolves them through the icon theme."
+
+[[annotations]]
+path = "contents/icon.svg"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Kove contributors"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+SPDX-FileComment = "The Kove app icon (the package icon named by metadata.json)."

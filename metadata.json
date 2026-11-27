@@ -13,7 +13,7 @@
         "Category": "Multimedia",
         "Description": "A Dynamic Island style pill for Plasma with media, jobs, and notifications.",
         "EnabledByDefault": false,
-        "Icon": "media-playback-start",
+        "Icon": "/icon.svg",
         "Id": "io.github.asutosh2203.kove",
         "License": "GPL-3.0-or-later",
         "Name": "Kove",
