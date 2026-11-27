@@ -8,7 +8,7 @@ import socket
 import sys
 import time
 
-from kove_hook import _num, log, sock_path, usage_windows
+from kove_hook import NO_RUNTIME, _num, hint_once, log, runtime_dir, sock_path, usage_windows
 
 MIN_INTERVAL = 2.0  # seconds between reports of one session
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -34,13 +34,11 @@ def extract(p):
     return msg
 
 
-def state_dir():
-    return os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "kove")
-
-
 def state_file(sid):
+    """None without XDG_RUNTIME_DIR: then nothing is recorded or sent."""
     import hashlib
-    return os.path.join(state_dir(), "sl-" + hashlib.sha1(sid.encode()).hexdigest()[:16])
+    d = runtime_dir()
+    return os.path.join(d, "sl-" + hashlib.sha1(sid.encode()).hexdigest()[:16]) if d else None
 
 
 def should_send(msg, now, state_path):
@@ -62,16 +60,21 @@ def should_send(msg, now, state_path):
             prune()
         except OSError:
             pass
-    tmp = "%s.%d.tmp" % (state_path, os.getpid())
-    with open(tmp, "w") as f:
-        json.dump({"key": key, "at": now}, f)
-    os.replace(tmp, state_path)
+    import tempfile  # only when writing: it costs about 10 ms to import, every render would pay it
+    fd, tmp = tempfile.mkstemp(dir=d, prefix=os.path.basename(state_path) + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump({"key": key, "at": now}, f)
+        os.replace(tmp, state_path)
+    except BaseException:
+        os.unlink(tmp)
+        raise
     return True
 
 
 def prune(max_age=86400):
     """Session state files older than a day (runtime dirs are cleared at logout; this covers long sessions)."""
-    d, cutoff = state_dir(), time.time() - max_age
+    d, cutoff = runtime_dir(), time.time() - max_age
     for n in os.listdir(d):
         p = os.path.join(d, n)
         if n.startswith("sl-") and os.path.getmtime(p) < cutoff:
@@ -100,7 +103,10 @@ def main():
     raw = sys.stdin.buffer.read()
     try:
         msg = extract(json.loads(raw))
-        if msg and should_send(msg, time.time(), state_file(msg["session_id"])):
+        path = state_file(msg["session_id"]) if msg else None
+        if msg and path is None:
+            hint_once(*NO_RUNTIME)
+        elif msg and should_send(msg, time.time(), path):
             forward(msg)
     except OSError:
         pass  # no aggregator: nothing listens, the hooks start it
