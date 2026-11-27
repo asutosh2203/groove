@@ -27,6 +27,7 @@ Item {
             readonly property var player: ({ "artUrl": "", "position": 0, "track": "Song", "artist": "Band" })
             readonly property var card: ({ "title": "Song", "subtitle": "Band" })
             readonly property string kind: "music"
+            readonly property string placeholderKind: "music"
             function previous() {}
             function playPause() {}
             function next() {}

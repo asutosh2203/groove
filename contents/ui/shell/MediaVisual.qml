@@ -10,9 +10,9 @@ MaskedArtwork {
     required property var app
     // D-68: the Pill's artwork is a disc; the held angle lives in the media service, so a view recreated after a
     // notification resumes where it stopped.
-    readonly property bool disc: !self.app.notchShape && self.hasArtwork && self.kind === "music"
+    readonly property bool disc: !self.app.notchShape && self.hasArtwork && self.app.media.kind === "music"
     readonly property string trackKey: self.app.media.hasPlayer ? [self.app.media.player.key, self.app.media.player.track, self.app.media.player.artist].join("|") : ""
-    readonly property bool spinning: Disc.spinWanted({ "pill": !self.app.notchShape, "playing": self.playing, "artworkReady": self.hasArtwork, "kind": self.kind, "panelHidden": self.app.panelHidden, "reduceMotion": self.app.reduceMotion })
+    readonly property bool spinning: Disc.spinWanted({ "pill": !self.app.notchShape, "playing": self.playing, "artworkReady": self.hasArtwork, "kind": self.app.media.kind, "panelHidden": self.app.panelHidden, "reduceMotion": self.app.reduceMotion })
 
     function sync() {
         self.app.media.disc.advance(self.trackKey, self.spinning, Date.now());
@@ -21,7 +21,7 @@ MaskedArtwork {
     artworkSource: self.app.media.artUrl
     cornerRadius: self.app.notchShape ? Math.round(Math.min(width, height) * 0.3) : Math.min(width, height) / 2 // notch: rounded square like expanded; pill: circle
     mode: "media"
-    kind: self.app.media.kind
+    kind: self.app.media.placeholderKind
     progress: self.app.activities.progressValueFor("media") / Math.max(1, self.app.activities.progressToFor("media"))
     playing: self.app.media.isPlaying
     rotation: self.disc ? self.app.media.disc.angleFor(self.trackKey) : 0

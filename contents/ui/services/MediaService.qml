@@ -61,9 +61,11 @@ Item {
         const record = activity[player.objectName || player.identity];
         return record ? record.startedAt : 0;
     }
-    // What the media card shows and which placeholder it falls back to (D-46); read only from the shown player.
+    // What the media card shows (D-46); read only from the shown player.
     readonly property var card: MediaPlayers.cardText(player)
     readonly property string kind: MediaPlayers.mediaKind(player)
+    // The no-artwork glyph: a browser counts as video (MediaPlayers.placeholderKind); `kind` still decides the disc.
+    readonly property string placeholderKind: MediaPlayers.placeholderKind(player)
     // Playing for the idle rule (D-35): a demoted browser tab that claims to play does not count, so it cannot keep the
     // media pill up.
     readonly property bool isPlaying: hasPlayer && MediaPlayers.countsAsPlaying(player, status)

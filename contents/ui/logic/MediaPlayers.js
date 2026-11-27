@@ -176,8 +176,8 @@ function cardText(player) {
 
 const videoPlayers = ["haruna", "vlc", "mpv", "celluloid", "totem", "smplayer", "mplayer", "dragon", "kaffeine", "parole"];
 
-// "video" or "music", for the placeholder shown when there is no artwork. The model exposes no stream URL, so this goes by
-// the player (a known video player), a video file name as the title, or a browser whose art is a YouTube thumbnail.
+// "video" or "music": what is playing, which also decides the Pill disc (D-68). The model exposes no stream URL, so this goes
+// by the player (a known video player), a video file name as the title, or a browser whose art is a YouTube thumbnail.
 function mediaKind(player) {
     if (!player)
         return "music";
@@ -189,4 +189,10 @@ function mediaKind(player) {
     if (isBrowserish(player) && /(^|[/.])(ytimg\.com|youtube\.com)\//i.test(text(player.artUrl)))
         return "video";
     return "music";
+}
+
+// The glyph shown when there is no artwork: a browser counts as video, since browsers mostly play video and browser music
+// (Spotify's web player) brings its own art. Only the stand-in changes; `mediaKind` still decides the disc.
+function placeholderKind(player) {
+    return mediaKind(player) === "video" || isBrowserish(player) ? "video" : "music";
 }

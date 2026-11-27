@@ -57,7 +57,7 @@ Rectangle {
             cornerRadius: activitySummary.compact ? 10 : T.radiusInner
             glyphSize: activitySummary.compact ? 28 : 36
             mode: activitySummary.summaryMode
-            kind: app.media.kind
+            kind: app.media.placeholderKind
             progress: Math.max(0, notificationsSource.jobsPercentage) / 100
             playing: app.media.isPlaying
         }
@@ -240,7 +240,7 @@ Rectangle {
                 cornerRadius: Math.max(6, T.radiusCard - twoColumnLayout.inset)
                 glyphSize: 36
                 mode: "media"
-                kind: app.media.kind
+                kind: app.media.placeholderKind
                 playing: app.media.isPlaying
                 scale: twoColumnLayout.raiseHover ? T.hoverScale : 1
 
@@ -394,7 +394,7 @@ Rectangle {
         cornerRadius: 10
         glyphSize: width * 0.7
         mode: activitySummary.summaryMode
-        kind: app.media.kind
+        kind: app.media.placeholderKind
         progress: Math.max(0, notificationsSource.jobsPercentage) / 100
         playing: app.media.isPlaying
     }
