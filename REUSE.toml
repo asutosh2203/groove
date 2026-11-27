@@ -30,3 +30,10 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "Kove contributors"
 SPDX-License-Identifier = "GPL-3.0-or-later"
 SPDX-FileComment = "The Kove app icon (the package icon named by metadata.json)."
+
+[[annotations]]
+path = "assets/readme-banner.svg"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Kove contributors"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+SPDX-FileComment = "The README banner. The wordmark and tagline are glyph outlines from Noto Sans (SIL OFL 1.1): the OFL covers the font itself, not artwork made with it. The tile is the app icon (contents/icon.svg)."
