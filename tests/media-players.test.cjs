@@ -251,7 +251,7 @@ test('the media card reads the shown player, never a competing activity (D-46)',
     assert.deepEqual(j(M.cardText(null)), { title: 'Media', subtitle: '' });
 });
 
-test('placeholder kind: video players, video file names and YouTube art are video, the rest music', () => {
+test('media kind: video players, video file names and YouTube art are video, the rest music', () => {
     assert.equal(M.mediaKind(null), 'music');
     assert.equal(M.mediaKind(spotify()), 'music');
     assert.equal(M.mediaKind(player({ identity: 'VLC media player', desktopEntry: 'vlc' })), 'video');
@@ -261,6 +261,21 @@ test('placeholder kind: video players, video file names and YouTube art are vide
     assert.equal(M.mediaKind(youtube({ artUrl: 'https://i.ytimg.com/vi/abc/hq.jpg' })), 'video');
     assert.equal(M.mediaKind(youtube({ artUrl: 'https://lh3.googleusercontent.com/x' })), 'music');
     assert.equal(M.mediaKind(player({ identity: 'Some player', artUrl: 'https://i.ytimg.com/vi/abc/hq.jpg' })), 'music');
+});
+
+test('placeholder kind: browsers and video are video, everything else music', () => {
+    assert.equal(M.placeholderKind(null), 'music');
+    assert.equal(M.placeholderKind(spotify()), 'music');
+    assert.equal(M.placeholderKind(player({ identity: 'Elisa', desktopEntry: 'org.kde.elisa', artUrl: '' })), 'music');
+    assert.equal(M.placeholderKind(player({ identity: 'VLC media player', desktopEntry: 'vlc' })), 'video');
+    assert.equal(M.placeholderKind(player({ identity: 'mpv', desktopEntry: 'mpv' })), 'video');
+    assert.equal(M.placeholderKind(youtube({ artUrl: '' })), 'video');
+    assert.equal(M.placeholderKind(player({ identity: 'Chromium', desktopEntry: 'chromium' })), 'video');
+    assert.equal(M.placeholderKind(player({ identity: 'Vivaldi', desktopEntry: 'vivaldi-stable' })), 'video');
+    assert.equal(M.placeholderKind(player({ identity: 'Brave', desktopEntry: 'brave-browser' })), 'video');
+    assert.equal(M.placeholderKind(youtube({ artUrl: 'https://i.ytimg.com/vi/abc/hq.jpg' })), 'video');
+    // The disc still follows mediaKind: browser music with its own art stays music there.
+    assert.equal(M.mediaKind(youtube({ artUrl: 'https://i.scdn.co/image/x' })), 'music');
 });
 
 // --- YouTube hover previews --------------------------------------------------------------------------------------------

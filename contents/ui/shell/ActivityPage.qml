@@ -25,7 +25,7 @@ RowLayout {
             cornerRadius: T.radiusInner
             glyphSize: 32
             mode: self.app.popupActivityMode()
-            kind: self.app.media.kind
+            kind: self.app.media.placeholderKind
             progress: self.app.activities.progressValueFor(self.app.popupActivityMode()) / Math.max(1, self.app.activities.progressToFor(self.app.popupActivityMode()))
             playing: self.app.popupActivityMode() === "media" ? self.app.media.isPlaying : self.app.popupActivityMode() === "job" ? !self.app.jobs.isSuspended(self.app.jobs.activeRow()) : false
         }
