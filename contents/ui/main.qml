@@ -422,7 +422,7 @@ PlasmoidItem {
     Plasmoid.status: hasActivity ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.PassiveStatus
     Plasmoid.title: translations.appTitle
     toolTipMainText: idleHoverTitle.length > 0 && !hasActivity ? idleHoverTitle : primaryText()
-    toolTipTextFormat: idleHoverTitle.length > 0 && !hasActivity ? Text.RichText : Text.AutoText
+    toolTipTextFormat: idleHoverTitle.length > 0 && !hasActivity ? Text.RichText : Text.PlainText
     toolTipSubText: idleHoverTitle.length > 0 && !hasActivity ? idleHoverText : secondaryText()
     compactRepresentation: islandComponent
     fullRepresentation: emptyFullRepresentation

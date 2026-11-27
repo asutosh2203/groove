@@ -161,15 +161,7 @@ MouseArea {
     }
 
     IslandToolTip {
-        id: networkToolTip
-
         visible: networkList.containsMouse || networkList.activeFocus
         text: networkList.networkStatus.detail
-        contentItem: PlasmaLabel {
-            text: networkToolTip.text
-            textFormat: Text.PlainText
-            color: networkToolTip.palette.toolTipText
-            wrapMode: Text.Wrap
-        }
     }
 }

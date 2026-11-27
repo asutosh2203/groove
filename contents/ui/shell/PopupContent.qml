@@ -313,6 +313,7 @@ MouseArea {
                 anchors.bottomMargin: 1
                 visible: popupRoot.app.replyShelf.error.length > 0
                 text: popupRoot.app.strings.replyFailed
+                textFormat: Text.PlainText
                 color: "#ff6b6b"
                 font.pixelSize: 10
             }
