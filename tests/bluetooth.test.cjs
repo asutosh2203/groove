@@ -14,7 +14,7 @@ vm.runInContext(read('Bluetooth.js'), ctx);
 const B = ctx;
 const j = (v) => JSON.parse(JSON.stringify(v));
 
-const show = 'Controller AA:BB:CC:DD:EE:FF (public)\n\tName: laptop\n\tAlias: cursed-cachy\n\tPowered: yes\n\tDiscoverable: no';
+const show = 'Controller AA:BB:CC:DD:EE:FF (public)\n\tName: laptop\n\tAlias: myhost\n\tPowered: yes\n\tDiscoverable: no';
 
 test('connected devices become one name per line', () => {
     assert.equal(B.parseDevices('Device AA:BB:CC:DD:EE:FF My Headphones\nDevice 11:22:33:44:55:66 Mouse'), 'My Headphones\nMouse');
