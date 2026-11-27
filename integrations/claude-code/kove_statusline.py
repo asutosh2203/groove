@@ -57,7 +57,7 @@ def should_send(msg, now, state_path):
     os.makedirs(d, mode=0o700, exist_ok=True)
     if new_session:
         try:
-            prune()
+            prune(d)
         except OSError:
             pass
     import tempfile  # only when writing: it costs about 10 ms to import, every render would pay it
@@ -72,9 +72,9 @@ def should_send(msg, now, state_path):
     return True
 
 
-def prune(max_age=86400):
-    """Session state files older than a day (runtime dirs are cleared at logout; this covers long sessions)."""
-    d, cutoff = runtime_dir(), time.time() - max_age
+def prune(d, max_age=86400):
+    """Session state files in `d` older than a day (runtime dirs are cleared at logout; this covers long sessions)."""
+    cutoff = time.time() - max_age
     for n in os.listdir(d):
         p = os.path.join(d, n)
         if n.startswith("sl-") and os.path.getmtime(p) < cutoff:

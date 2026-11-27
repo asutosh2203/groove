@@ -65,8 +65,10 @@ class ThrottleTest(unittest.TestCase):
         self.assertEqual(os.listdir(os.path.dirname(path)), ["sl-x"])  # no temp file left behind
 
     def test_one_state_file_per_session(self):
-        self.assertNotEqual(S.state_file("a"), S.state_file("b"))
-        self.assertEqual(S.state_file("a"), S.state_file("a"))
+        from unittest import mock
+        with mock.patch.dict(os.environ, {"XDG_RUNTIME_DIR": "/run/user/1000"}):
+            self.assertNotEqual(S.state_file("a"), S.state_file("b"))
+            self.assertEqual(S.state_file("a"), S.state_file("a"))
 
 
 class RuntimeDirTest(unittest.TestCase):
