@@ -5,6 +5,12 @@
 // A wanted id may arrive with a ".desktop" suffix (firefox.desktop) or really end in it (org.telegram.desktop,
 // whose file is org.telegram.desktop.desktop), so both the id and the suffix-stripped id are accepted.
 // A task's own ids are its app id and its launcher file name minus the file suffix; matching is exact.
+// A desktop id another app handed us (a notification, a player) is launched only in this plain shape. It must start with a
+// letter or digit: a leading dash would reach gtk-launch as an option.
+function isDesktopId(id) {
+    return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(String(id === null || id === undefined ? "" : id));
+}
+
 function clean(id) {
     return String(id === null || id === undefined ? "" : id).trim().toLowerCase();
 }

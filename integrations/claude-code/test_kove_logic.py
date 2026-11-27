@@ -341,6 +341,23 @@ class HookTest(unittest.TestCase):
         self.assertEqual((r.returncode, r.stdout, r.stderr), (0, b"", b""))
         self.assertFalse(os.path.exists(os.path.join(d, "kove")))
 
+    def test_no_runtime_dir_sends_nothing_spawns_nothing_and_hints_once(self):
+        import time
+        d = tempfile.mkdtemp()
+        env = {k: v for k, v in os.environ.items() if k != "XDG_RUNTIME_DIR"}
+        env["XDG_STATE_HOME"] = d
+        here = os.path.dirname(os.path.abspath(__file__))
+        ev = json.dumps({"session_id": "s", "hook_event_name": "UserPromptSubmit"}).encode()  # a spawning event
+        for _ in range(2):
+            r = subprocess.run([sys.executable, "-S", os.path.join(here, "kove_hook.py")], input=ev, env=env,
+                               capture_output=True, timeout=10)
+            self.assertEqual((r.returncode, r.stdout, r.stderr), (0, b"", b""))
+        time.sleep(0.5)
+        with open(os.path.join(d, "kove", "claude-code.log")) as f:
+            log = f.read()
+        self.assertEqual(log.count("XDG_RUNTIME_DIR is unset"), 1)
+        self.assertNotIn("daemon", log)  # a spawned aggregator would have logged its own refusal
+
     def test_garbage_input_logs_type_only(self):
         d = tempfile.mkdtemp()
         here = os.path.dirname(os.path.abspath(__file__))

@@ -88,6 +88,7 @@ TestCase {
         launcher.launch("a b");
         launcher.launch("x;rm -rf");
         launcher.launch("$(id)");
+        launcher.launch("--help");
         wait(300);
         compare(fakeRunner.calls.length, 0);
         compare(launcher.pendingLaunchEntry, "");

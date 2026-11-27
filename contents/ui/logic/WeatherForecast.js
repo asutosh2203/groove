@@ -65,7 +65,7 @@ function days(fc, nowMs, count) {
     return fc.daily.filter(r => r.date > date).slice(0, count).map(r => ({ "dow": r.dow, "code": r.code, "max": r.max, "min": r.min }));
 }
 
-// "Bengaluru, Karnataka, India" -> "Bengaluru".
+// "Springfield, Illinois, United States" -> "Springfield".
 function cityName(name) {
     return String(name).split(",")[0].trim();
 }

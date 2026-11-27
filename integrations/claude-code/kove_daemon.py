@@ -39,6 +39,8 @@ def main():
     import dbus.service
     from gi.repository import GLib
     first = sys.stdin.buffer.read()
+    if sock_path() is None:  # the hook never spawns without XDG_RUNTIME_DIR; this covers a manual start
+        return log("daemon: XDG_RUNTIME_DIR is unset")
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SessionBus()
     if bus.request_name(BUS_NAME, dbus.bus.NAME_FLAG_DO_NOT_QUEUE) != dbus.bus.REQUEST_NAME_REPLY_PRIMARY_OWNER:

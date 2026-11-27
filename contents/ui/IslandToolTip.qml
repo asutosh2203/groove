@@ -19,6 +19,12 @@ QQC2.ToolTip {
     }
 
     delay: 350
+    // The style's own label is AutoText; tooltips show device and network names, so they stay plain (PlasmaLabel).
+    contentItem: PlasmaLabel {
+        text: tip.text
+        color: tip.palette.toolTipText
+        wrapMode: Text.Wrap
+    }
     x: spot ? spot.x : 0
     y: spot ? spot.y : -tip.implicitHeight - 3
 }

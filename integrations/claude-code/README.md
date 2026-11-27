@@ -64,9 +64,11 @@ status-line payload, which Claude Code pipes to a `statusLine` command on every 
 - **Cost:** about 15 ms per render, and a report is sent only when a value changed, at most once per 2 s per session.
 
 ## Privacy
-Command text, file names, the task list and Claude's message are held in memory to be displayed and never stored or logged.
-The logs (`${XDG_STATE_HOME:-~/.local/state}/kove/claude-code.log`) carry error types only. The aggregator also records each
-session's process ids (no names or command lines) so Kove can find the right window.
+Command text, file names, the task list and Claude's message are held in memory to be displayed; none of it is written to
+disk or to the logs (`${XDG_STATE_HOME:-~/.local/state}/kove/claude-code.log` carries error types only). The aggregator also
+records each session's process ids (no names or command lines) so Kove can find the right window. The "needs your OK" and
+"done" notifications do carry the project name and Claude's first sentence: they go to the desktop's notification history
+and, if KDE Connect's notification sync is on, to your phone.
 
 ## How it works
 Hooks write one JSON event to `$XDG_RUNTIME_DIR/kove/agents.sock` (about 15 ms, always exit 0 and print nothing). The first
@@ -85,8 +87,10 @@ use the same interface with no Kove change.
   seconds apart.
 
 ## Uninstall
-Run `./install.sh --statusline-remove` if you enabled the status line. Remove the hook entries pointing at `kove_hook.py` from `~/.claude/settings.json` (or restore the `.bak` file), then
-`rm -r ~/.local/share/kove/claude-code`.
+Run `./install.sh --statusline-remove` if you enabled the status line. Remove the hook entries pointing at `kove_hook.py`
+from `~/.claude/settings.json` by hand: there is no removal flag for the hooks (restoring a `settings.json.bak-kove-<time>`
+backup also undoes later changes). Then `rm -r ~/.local/share/kove/claude-code ~/.local/state/kove`, and delete the
+`settings.json.bak-*` backups when you no longer need them. `$XDG_RUNTIME_DIR/kove/` is cleared at logout.
 
 ## Tests
 `cd integrations/claude-code && python3 -m unittest -q` (the end-to-end tests need a session bus and no running aggregator and

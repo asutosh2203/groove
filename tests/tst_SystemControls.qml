@@ -87,9 +87,9 @@ TestCase {
         compare(fakeRunner.calls[0], "whoami");
         compare(fakeRunner.calls[1], "hostname");
         fakeRunner.handlers["whoami"]("asutosh\n");
-        fakeRunner.handlers["hostname"](" cursed-cachy ");
+        fakeRunner.handlers["hostname"](" myhost ");
         compare(service.systemUsername, "asutosh");
-        compare(service.systemHostname, "cursed-cachy");
+        compare(service.systemHostname, "myhost");
         compare(service.faceUrl(), "file:///var/lib/AccountsService/icons/asutosh");
         service.applyAccountIcon("/home/asutosh/.face\n");
         compare(service.profileImageUrl, "file:///home/asutosh/.face");

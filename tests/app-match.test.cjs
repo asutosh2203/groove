@@ -61,3 +61,10 @@ test('loose matching for raising: a player id that starts a task id, exact match
     // the same task matching by both of its ids counts once
     assert.equal(loose('spotify', [{ appId: 'spotify-launcher', launcherUrl: 'applications:spotify-launcher.desktop', isWindow: true }]), 0);
 });
+
+test('only plain desktop ids that start with a letter or digit pass', () => {
+    for (const ok of ['firefox', 'org.telegram.desktop', 'spotify-launcher', '0ad', 'org.kde.dolphin.desktop'])
+        assert.equal(ctx.isDesktopId(ok), true, ok);
+    for (const bad of ['', null, undefined, '-help', '--version', '.hidden', '_x', 'a b', 'x;rm', '$(id)', 'a/b', '../x', 'a\nb'])
+        assert.equal(ctx.isDesktopId(bad), false, String(bad));
+});

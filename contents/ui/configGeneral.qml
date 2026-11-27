@@ -77,6 +77,7 @@ KCM.SimpleKCM {
         QQC2.Label {
             Kirigami.FormData.label: i18n("Weather location:")
             text: configPage.cfg_weatherLocationName.length > 0 ? configPage.cfg_weatherLocationName + "  (" + configPage.cfg_weatherLatitude.toFixed(2) + ", " + configPage.cfg_weatherLongitude.toFixed(2) + ")" : i18n("Not set")
+            textFormat: Text.PlainText
             opacity: configPage.cfg_weatherLocationName.length > 0 ? 1 : 0.6
         }
 
@@ -121,6 +122,7 @@ KCM.SimpleKCM {
         QQC2.Label {
             visible: configPage.locationStatus.length > 0
             text: configPage.locationStatus
+            textFormat: Text.PlainText
             opacity: 0.7
         }
 

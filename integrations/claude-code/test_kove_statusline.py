@@ -65,12 +65,45 @@ class ThrottleTest(unittest.TestCase):
         self.assertEqual(os.listdir(os.path.dirname(path)), ["sl-x"])  # no temp file left behind
 
     def test_one_state_file_per_session(self):
-        self.assertNotEqual(S.state_file("a"), S.state_file("b"))
-        self.assertEqual(S.state_file("a"), S.state_file("a"))
+        from unittest import mock
+        with mock.patch.dict(os.environ, {"XDG_RUNTIME_DIR": "/run/user/1000"}):
+            self.assertNotEqual(S.state_file("a"), S.state_file("b"))
+            self.assertEqual(S.state_file("a"), S.state_file("a"))
+
+
+class RuntimeDirTest(unittest.TestCase):
+    """No shared /tmp fallback: another local user could own that folder (and plant symlinks in it)."""
+
+    def test_paths_live_only_in_xdg_runtime_dir(self):
+        old = os.environ.pop("XDG_RUNTIME_DIR", None)
+        try:
+            self.assertIsNone(S.state_file("a"))
+            self.assertIsNone(S.sock_path())
+            os.environ["XDG_RUNTIME_DIR"] = "/run/user/1000"
+            self.assertEqual(S.sock_path(), "/run/user/1000/kove/agents.sock")
+            self.assertTrue(S.state_file("a").startswith("/run/user/1000/kove/sl-"))
+        finally:
+            os.environ.pop("XDG_RUNTIME_DIR", None)
+            if old is not None:
+                os.environ["XDG_RUNTIME_DIR"] = old
+
+    def test_the_temp_write_never_follows_a_planted_symlink(self):
+        d = tempfile.mkdtemp()
+        victim = os.path.join(d, "victim")
+        with open(victim, "w") as f:
+            f.write("precious")
+        path = os.path.join(d, "kove", "sl-x")
+        os.makedirs(os.path.dirname(path))
+        os.symlink(victim, "%s.%d.tmp" % (path, os.getpid()))  # the old predictable temp name
+        self.assertTrue(S.should_send(S.extract(payload()), 100, path))
+        with open(victim) as f:
+            self.assertEqual(f.read(), "precious")
+        with open(path) as f:
+            self.assertIn("key", json.load(f))
 
 
 class RunTest(unittest.TestCase):
-    def run_helper(self, d, original=None, raw=None, listen=False):
+    def run_helper(self, d, original=None, raw=None, listen=False, runtime=True):
         dest = os.path.join(d, "dest")
         os.makedirs(dest, exist_ok=True)
         for f in ("kove_statusline.py", "kove_hook.py"):
@@ -80,6 +113,8 @@ class RunTest(unittest.TestCase):
             with open(os.path.join(dest, "statusline-original.json"), "w") as f:
                 json.dump(original, f)
         env = dict(os.environ, XDG_RUNTIME_DIR=d, XDG_STATE_HOME=d, MARK="kept")
+        if not runtime:
+            del env["XDG_RUNTIME_DIR"]
         return subprocess.run([sys.executable, "-S", os.path.join(dest, "kove_statusline.py")],
                               input=raw if raw is not None else json.dumps(payload()).encode(), env=env, capture_output=True, timeout=10, cwd=d)
 
@@ -119,6 +154,16 @@ class RunTest(unittest.TestCase):
             self.assertEqual(self.run_helper(d).returncode, 0)
         self.assertEqual(len(got), 1)
         self.assertEqual(json.loads(got[0])["usage"]["fiveHour"]["pct"], 34)
+
+    def test_without_runtime_dir_it_still_chains_sends_nothing_and_hints_once(self):
+        d = tempfile.mkdtemp()
+        for _ in range(2):
+            r = self.run_helper(d, {"type": "command", "command": "cat >/dev/null; printf ok"}, runtime=False)
+            self.assertEqual((r.returncode, r.stdout, r.stderr), (0, b"ok", b""))
+        self.assertFalse(os.path.exists(os.path.join(d, "kove", "agents.sock")))
+        self.assertEqual([n for n in os.listdir(os.path.join(d, "kove")) if n.startswith("sl-")], [])
+        with open(os.path.join(d, "kove", "claude-code.log")) as f:
+            self.assertEqual(f.read().count("XDG_RUNTIME_DIR is unset"), 1)
 
     def test_garbage_logs_type_only(self):
         d = tempfile.mkdtemp()

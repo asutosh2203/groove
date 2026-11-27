@@ -173,7 +173,7 @@ test('the cache keeps the four most recent locations and ignores unreadable text
 });
 
 test('the city is the first part of the geocoder name', () => {
-    assert.equal(ctx.cityName('Bengaluru, Karnataka, India'), 'Bengaluru');
+    assert.equal(ctx.cityName('Springfield, Illinois, United States'), 'Springfield');
     assert.equal(ctx.cityName('Oslo'), 'Oslo');
     assert.equal(ctx.cityName('  Lisbon , Portugal'), 'Lisbon');
     assert.equal(ctx.cityName(''), '');

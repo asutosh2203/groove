@@ -13,8 +13,18 @@ KEEP = ("session_id", "cwd", "hook_event_name", "tool_name", "tool_input", "noti
 FLATPAK_INFO = os.environ.get("KOVE_FLATPAK_INFO", "/.flatpak-info")  # overridable so tests can fake a sandbox
 
 
+NO_RUNTIME = ("no-runtime-dir", "XDG_RUNTIME_DIR is unset: Kove's socket lives only there, so nothing is sent")
+
+
+def runtime_dir():
+    """Kove's folder in XDG_RUNTIME_DIR, or None without one: never a shared /tmp folder another user could own."""
+    run = os.environ.get("XDG_RUNTIME_DIR")
+    return os.path.join(run, "kove") if run else None
+
+
 def sock_path():
-    return os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "kove", "agents.sock")
+    d = runtime_dir()
+    return os.path.join(d, "agents.sock") if d else None
 
 
 WINDOWS = (("five_hour", "fiveHour"), ("seven_day", "sevenDay"))
@@ -91,6 +101,8 @@ def where():
 
 def main():
     ev = json.load(sys.stdin)
+    if sock_path() is None:
+        return hint_once(*NO_RUNTIME)
     msg = {k: ev[k] for k in KEEP if k in ev}
     if "tool_input" in msg:
         msg["tool_input"] = tool_input_slim(msg["tool_input"])
@@ -112,8 +124,7 @@ def main():
         if msg.get("hook_event_name") not in SPAWN_ON:
             return
         if os.path.exists(FLATPAK_INFO):  # a sandbox must not start host processes
-            hint_once()
-            return
+            return hint_once("flatpak-hint", "sandboxed: Kove is not running or the socket is hidden; see the README (flatpak override --filesystem=xdg-run/kove)")
         import subprocess  # only on the spawn path: 3 ms off every other hook call
         here = os.path.dirname(os.path.abspath(__file__))
         p = subprocess.Popen([sys.executable, os.path.join(here, "kove_daemon.py")], stdin=subprocess.PIPE,
@@ -122,10 +133,11 @@ def main():
         p.stdin.close()
 
 
-def hint_once():
-    flag = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "kove", "flatpak-hint")
+def hint_once(name, msg):
+    """Logs `msg` the first time only: a hook runs on every tool call."""
+    flag = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "kove", name)
     if not os.path.exists(flag):
-        log("sandboxed: Kove is not running or the socket is hidden; see the README (flatpak override --filesystem=xdg-run/kove)")
+        log(msg)
         try:
             open(flag, "w").close()
         except OSError:

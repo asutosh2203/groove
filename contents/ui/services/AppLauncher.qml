@@ -66,7 +66,7 @@ Item {
     // Telegram, which ignore a relaunch); otherwise the desktop file is launched.
     function launch(id) {
         const entry = String(id || "").trim();
-        if (!/^[A-Za-z0-9._-]+$/.test(entry) || pendingLaunchEntry.length > 0)
+        if (!AppMatch.isDesktopId(entry) || pendingLaunchEntry.length > 0)
             return ;
 
         pendingLaunchEntry = entry;
@@ -78,7 +78,7 @@ Item {
     // Raises an already-running app (the first of `entries` that has a window); never starts one. `missed` is called when
     // none is running.
     function raise(entries, missed) {
-        const ids = (entries || []).filter(id => /^[A-Za-z0-9._-]+$/.test(String(id)));
+        const ids = (entries || []).filter(id => AppMatch.isDesktopId(id));
         if (ids.length === 0 || pendingLaunchEntry.length > 0) {
             if (missed)
                 missed();
