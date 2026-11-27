@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls as QQC2
+import ".."
 import "../logic/DeckPlan.js" as DeckPlan
 import "Tokens.js" as T
 
@@ -66,7 +66,8 @@ Item {
         onClicked: button.app.tour.retake()
     }
 
-    QQC2.ToolTip.visible: button.hovered || button.showFocusRing
-    QQC2.ToolTip.text: button.tooltipText
-    QQC2.ToolTip.delay: 350
+    IslandToolTip {
+        visible: button.hovered || button.showFocusRing
+        text: button.tooltipText
+    }
 }

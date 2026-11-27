@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import ".."
 import "Tokens.js" as T
@@ -110,9 +109,10 @@ Item {
         font.features: { "tnum": 1 }
     }
 
-    QQC2.ToolTip.visible: hoverArea.containsMouse
-    QQC2.ToolTip.text: controlSlider.title + " " + controlSlider.valueText
-    QQC2.ToolTip.delay: 350
+    IslandToolTip {
+        visible: hoverArea.containsMouse
+        text: controlSlider.title + " " + controlSlider.valueText
+    }
 
     MouseArea {
         id: hoverArea

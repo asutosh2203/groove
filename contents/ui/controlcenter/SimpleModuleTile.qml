@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import ".."
@@ -171,7 +170,8 @@ MouseArea {
         onClicked: simpleTile.actionTriggered()
     }
 
-    QQC2.ToolTip.visible: (simpleTile.containsMouse || simpleTile.activeFocus) && (simpleTile.detailText.length > 0 || simpleTile.footerText.length > 0)
-    QQC2.ToolTip.text: simpleTile.title + (simpleTile.subtitle.length > 0 ? " - " + simpleTile.subtitle : "") + (simpleTile.detailText.length > 0 ? "\n" + simpleTile.detailText : "")
-    QQC2.ToolTip.delay: 350
+    IslandToolTip {
+        visible: (simpleTile.containsMouse || simpleTile.activeFocus) && (simpleTile.detailText.length > 0 || simpleTile.footerText.length > 0)
+        text: simpleTile.title + (simpleTile.subtitle.length > 0 ? " - " + simpleTile.subtitle : "") + (simpleTile.detailText.length > 0 ? "\n" + simpleTile.detailText : "")
+    }
 }
