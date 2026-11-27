@@ -88,7 +88,17 @@ Kove can run without Panel Colorizer in a normal Plasma panel, but Panel Coloriz
 
 Kove is not published in the KDE Store yet. The "Dynamic Island" listing there is the upstream project, not this fork. A separate Kove listing is planned (D-66).
 
-### Manual Install
+### From a release
+
+Download `kove-<version>.plasmoid` from the [releases page](https://github.com/asutosh2203/groove/releases) and install it:
+
+```bash
+kpackagetool6 --type Plasma/Applet --install kove-<version>.plasmoid
+```
+
+Use `--upgrade` instead of `--install` to update, then add **Kove** from Plasma's widget picker.
+
+### Manual Install (from a clone)
 
 Clone the repository and move into the project folder:
 
@@ -157,7 +167,7 @@ QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software qmltestrunner -input tests  
 scripts/package.sh                                             # build the installable archive
 ```
 
-Releases are built from `v*` tags; the numeric part of the tag must match `KPlugin.Version` in `metadata.json`, and `-alpha` is the only suffix the version check accepts (for example `v0.3.2-alpha` matches `0.3.2`). Tags with a suffix are published as prereleases. Design decisions are in [docs/DECISIONS.md](docs/DECISIONS.md); the widget system is described in [docs/WIDGET-ARCHITECTURE.md](docs/WIDGET-ARCHITECTURE.md).
+Releases are built from `v*` tags; the numeric part of the tag must match `KPlugin.Version` in `metadata.json`, and `-alpha` is the only suffix the version check accepts (for example `v0.4.0-alpha` matches `0.4.0`). Tags with a suffix are published as prereleases. Design decisions are in [docs/DECISIONS.md](docs/DECISIONS.md); the widget system is described in [docs/WIDGET-ARCHITECTURE.md](docs/WIDGET-ARCHITECTURE.md).
 
 ## Releases
 
@@ -165,7 +175,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ## Notes
 
-This targets Plasma 6. Besides Qt and Kirigami it uses these Plasma and KDE modules (several are private and may change between Plasma versions):
+This targets Plasma 6 and was developed and tested on Plasma 6.8 under Wayland; other versions and X11 are untested, and it has not been tried on hybrid-GPU laptops. The interface is English only for now. Besides Qt and Kirigami it uses these Plasma and KDE modules (several are private and may change between Plasma versions):
 
 - `org.kde.plasma.plasmoid`, `org.kde.plasma.core`, `org.kde.plasma.workspace.dbus`, `org.kde.plasma.workspace.keyboardlayout`, `org.kde.plasma.clock`
 - `org.kde.notificationmanager`, `org.kde.taskmanager`, `org.kde.ksysguard.sensors`

@@ -19,6 +19,7 @@ zip -q -r "$output" \
     contents \
     metadata.json \
     LICENSE \
+    LICENSES \
     README.md \
     assets/readme-banner.svg
 

@@ -11,13 +11,13 @@
             }
         ],
         "Category": "Multimedia",
-        "Description": "A Dynamic Island style pill for Plasma with media, jobs, and notifications.",
+        "Description": "A Dynamic Island for Plasma 6: media, notifications, jobs and widgets in one island.",
         "EnabledByDefault": false,
         "Icon": "/icon.svg",
         "Id": "io.github.asutosh2203.kove",
         "License": "GPL-3.0-or-later",
         "Name": "Kove",
-        "Version": "0.3.2",
+        "Version": "0.4.0",
         "Website": "https://github.com/asutosh2203/groove",
         "BugReportUrl": "https://github.com/asutosh2203/groove/issues"
     },
