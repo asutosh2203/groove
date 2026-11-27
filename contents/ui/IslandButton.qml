@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import "controlcenter/Tokens.js" as T
 
 Item {
@@ -391,8 +390,9 @@ Item {
         onClicked: control.clicked()
     }
 
-    QQC2.ToolTip.visible: (mouse.containsMouse || control.showFocusRing) && control.tooltipText.length > 0
-    QQC2.ToolTip.text: control.tooltipText
-    QQC2.ToolTip.delay: 350
+    IslandToolTip {
+        visible: (mouse.containsMouse || control.showFocusRing) && control.tooltipText.length > 0
+        text: control.tooltipText
+    }
 
 }

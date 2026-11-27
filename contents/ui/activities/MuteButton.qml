@@ -1,5 +1,5 @@
 import QtQuick
-import QtQuick.Controls as QQC2
+import ".."
 import "../controlcenter/Tokens.js" as T
 
 // System-wide (default sink) mute toggle. State comes from the sink, never kept here.
@@ -57,7 +57,8 @@ MouseArea {
         }
     }
 
-    QQC2.ToolTip.visible: containsMouse && large
-    QQC2.ToolTip.delay: 350
-    QQC2.ToolTip.text: muted ? i18n("Unmute system audio") : i18n("Mute system audio")
+    IslandToolTip {
+        visible: button.containsMouse && button.large
+        text: button.muted ? i18n("Unmute system audio") : i18n("Mute system audio")
+    }
 }

@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import ".."
@@ -161,12 +160,11 @@ MouseArea {
         color: networkList.networkStatus.connected ? T.iconActive : T.iconIdle
     }
 
-    QQC2.ToolTip {
+    IslandToolTip {
         id: networkToolTip
 
         visible: networkList.containsMouse || networkList.activeFocus
         text: networkList.networkStatus.detail
-        delay: 350
         contentItem: PlasmaLabel {
             text: networkToolTip.text
             textFormat: Text.PlainText

@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import ".."
 import "Tokens.js" as T
@@ -299,7 +298,8 @@ MouseArea {
         color: kdeTile.reachableDevices > 0 ? T.fill : T.textTertiary
     }
 
-    QQC2.ToolTip.visible: kdeTile.containsMouse || kdeTile.activeFocus
-    QQC2.ToolTip.text: kdeTile.hasDevices ? app.kdeConnectSummary() : i18n("No reachable KDE Connect devices")
-    QQC2.ToolTip.delay: 350
+    IslandToolTip {
+        visible: kdeTile.containsMouse || kdeTile.activeFocus
+        text: kdeTile.hasDevices ? kdeTile.app.kdeConnectSummary() : i18n("No reachable KDE Connect devices")
+    }
 }
