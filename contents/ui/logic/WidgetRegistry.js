@@ -123,8 +123,9 @@ function validate(raw) {
 }
 
 // rawList: [{ id, manifest }] as the generated mirror lists them. Returns { byId, ids, skipped: [{ id, errors }] }.
+// byId has no prototype: ids come from stored presets, and "__proto__" or "toString" must find nothing.
 function build(rawList) {
-    const byId = {};
+    const byId = Object.create(null);
     const ids = [];
     const skipped = [];
     for (const entry of rawList) {

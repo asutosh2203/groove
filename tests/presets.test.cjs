@@ -126,3 +126,21 @@ test('keepPids: an unreadable blob keeps the previous pids, a readable one (even
     assert.deepEqual(j(ctx.keepPids('   ', { presets: [] }, ['p1'])), []);
     assert.deepEqual(j(ctx.keepPids(ok, { presets: [] }, ['p1'])), []);
 });
+
+test('ids that name Object members are rejected cleanly, never thrown on', () => {
+    const one = (page, widget, span) => blob({ id: 'a', name: 'N', page, placements: [{ widget, span }] });
+    for (const widget of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+        const r = j(ctx.evaluate(one('small', widget, '1x1'), registry));
+        assert.equal(r.presets.length, 1, widget); // an unknown widget is shown as unavailable, as before
+    }
+    for (const page of ['constructor', '__proto__', 'toString']) {
+        const r = j(ctx.evaluate(one(page, 'clock', '1x1'), registry));
+        assert.deepEqual([r.presets.length, r.hidden.length], [0, 1], page);
+    }
+    for (const span of ['constructor', '__proto__']) {
+        const r = j(ctx.evaluate(one('small', 'clock', span), registry));
+        assert.deepEqual([r.presets.length, r.hidden.length], [0, 1], span);
+    }
+    assert.equal(ctx.pack('constructor', []), null);
+    assert.equal(ctx.pack('small', ['toString']), null);
+});

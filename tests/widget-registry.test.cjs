@@ -121,3 +121,10 @@ test('an enum may declare at most 12 options (the picker page never scrolls)', (
     assert.equal(enumWith(13).ok, false);
     assert.match(enumWith(13).errors.join(), /at most 12 options/);
 });
+
+test('byId finds nothing for ids that name Object members', () => {
+    const r = ctx.build([{ id: 'demo', manifest: good() }]);
+    for (const id of ['__proto__', 'constructor', 'toString', 'hasOwnProperty'])
+        assert.equal(r.byId[id], undefined, id);
+    assert.equal(r.byId.demo.id, 'demo');
+});

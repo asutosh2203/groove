@@ -39,6 +39,11 @@ const migrations = {
     }
 };
 
+// Keys come from the stored blob: "__proto__" or "constructor" must not find Object's own members.
+function own(map, key) {
+    return Object.prototype.hasOwnProperty.call(map, key);
+}
+
 function isObject(v) {
     return v !== null && typeof v === "object" && !Array.isArray(v);
 }
@@ -46,14 +51,14 @@ function isObject(v) {
 // Placements fill the page in order, row by row. spans: ["1x1", ...]. Returns [{ col, row, cols }] or null when a span is
 // wider than the page or the content does not fit its rows.
 function pack(page, spans) {
-    const grid = pages[page];
+    const grid = own(pages, page) ? pages[page] : null;
     if (!grid)
         return null;
     const out = [];
     let col = 0;
     let row = 0;
     for (const span of spans) {
-        const cols = spanCols[span];
+        const cols = own(spanCols, span) ? spanCols[span] : undefined;
         if (cols === undefined || cols > grid.cols)
             return null;
         if (col + cols > grid.cols) {
@@ -74,7 +79,7 @@ function pack(page, spans) {
 
 // Pixel boxes for packed cells inside a page content area of w x h.
 function boxes(page, w, h, gap, packed) {
-    const grid = pages[page];
+    const grid = own(pages, page) ? pages[page] : null;
     if (!grid || !packed)
         return [];
     const cw = (w - gap * (grid.cols - 1)) / grid.cols;
@@ -112,14 +117,14 @@ function problem(preset, registry) {
         return "no id";
     if (preset.id === "live" || preset.id === "control")
         return "the id " + preset.id + " is reserved";
-    if (!pages[preset.page])
+    if (!own(pages, preset.page))
         return "page must be small, wide or tall";
     if (!Array.isArray(preset.placements))
         return "placements must be a list";
     for (const p of preset.placements) {
-        if (!isObject(p) || typeof p.widget !== "string" || spanCols[p.span] === undefined)
+        if (!isObject(p) || typeof p.widget !== "string" || !own(spanCols, p.span))
             return "a placement needs a widget and a span (1x1, 2x1 or 4x1)";
-        const manifest = registry.byId[p.widget];
+        const manifest = own(registry.byId, p.widget) ? registry.byId[p.widget] : null;
         if (manifest && manifest.spans.indexOf(p.span) < 0)
             return p.widget + " does not support " + p.span;
     }
@@ -212,5 +217,5 @@ function limit() {
 
 // A page type's size in cells, or null.
 function gridOf(page) {
-    return pages[page] || null;
+    return own(pages, page) ? pages[page] : null;
 }
