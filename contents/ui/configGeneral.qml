@@ -57,17 +57,15 @@ KCM.SimpleKCM {
     property alias cfg_ongoingPopupDurationSeconds: ongoingPopupDurationSeconds.value
 
     Kirigami.FormLayout {
-        QQC2.ComboBox {
+        ConfigCombo {
             id: shellShape
 
             Kirigami.FormData.label: i18n("Appearance:")
-            textRole: "text"
-            valueRole: "value"
-            model: [
+            rows: [
                 { "text": i18n("Dynamic Pill"), "value": "pill" },
                 { "text": i18n("Dynamic Notch"), "value": "notch" }
             ]
-            currentIndex: Math.max(0, indexOfValue(configPage.cfg_shellShape))
+            selected: configPage.cfg_shellShape
             onActivated: configPage.cfg_shellShape = currentValue
         }
 
@@ -126,17 +124,15 @@ KCM.SimpleKCM {
             opacity: 0.7
         }
 
-        QQC2.ComboBox {
+        ConfigCombo {
             id: weatherUnit
 
             Kirigami.FormData.label: i18n("Temperature:")
-            textRole: "text"
-            valueRole: "value"
-            model: [
+            rows: [
                 { "text": i18n("Celsius (°C)"), "value": "celsius" },
                 { "text": i18n("Fahrenheit (°F)"), "value": "fahrenheit" }
             ]
-            currentIndex: Math.max(0, indexOfValue(configPage.cfg_weatherUnit))
+            selected: configPage.cfg_weatherUnit
             onActivated: configPage.cfg_weatherUnit = currentValue
         }
 
